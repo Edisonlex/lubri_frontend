@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { AuthProvider } from "@/contexts/auth-context";
 import { POSProvider } from "@/contexts/pos-context";
+import { GISProvider } from "@/contexts/gis-context";
 import { AlertProvider } from "@/contexts/alerts-context";
 
 export const viewport: Viewport = {
@@ -20,9 +21,47 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "LubriSmart - Sistema de Gestión para Lubricadoras",
+  title: {
+    default: "LubriSmart - Sistema de Gestión para Lubricadoras",
+    template: "%s | LubriSmart",
+  },
   description:
-    "Sistema integral para la gestión de lubricadoras con POS, inventario, CRM y análisis",
+    "Sistema integral para la gestión de lubricadoras en La Maná, Ecuador: POS, inventario, CRM, servicios y análisis.",
+  keywords: [
+    "lubricadora",
+    "La Maná",
+    "Ecuador",
+    "POS",
+    "inventario",
+    "CRM",
+    "servicios",
+    "facturación electrónica",
+  ],
+  authors: [{ name: "LubriSmart" }],
+  creator: "LubriSmart",
+  metadataBase: new URL("https://lubrismart.ec"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_EC",
+    siteName: "LubriSmart",
+    title: "LubriSmart - Sistema de Gestión para Lubricadoras",
+    description:
+      "Gestión completa de lubricadoras: ventas, inventario, clientes y servicios.",
+    url: "https://lubrismart.ec/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LubriSmart",
+    description:
+      "Sistema de gestión para lubricadoras en La Maná, Ecuador.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -45,8 +84,10 @@ export default function RootLayout({
           <AlertProvider>
             <AuthProvider>
               <POSProvider>
-                <Toaster />
-                {children}
+                <GISProvider>
+                  <Toaster />
+                  {children}
+                </GISProvider>
               </POSProvider>
             </AuthProvider>
           </AlertProvider>

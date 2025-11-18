@@ -24,25 +24,44 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
+import { useAuth } from "@/contexts/auth-context"
 
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
-  { name: "Inventario", href: "/inventory", icon: Package },
-  { name: "Clientes", href: "/customers", icon: IdCard },
-  { name: "Proveedores", href: "/suppliers", icon: Truck },
-  { name: "Usuarios", href: "/users", icon: Users },
-  { name: "Análisis", href: "/analytics", icon: BarChart3 },
-  { name: "Configuración", href: "/settings", icon: Settings },
-  { name: "Mi Perfil", href: "/profile", icon: User },
-];
+function getNavigation(role: "admin" | "cashier" | "technician") {
+  const admin = [
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
+    { name: "Inventario", href: "/inventory", icon: Package },
+    { name: "Clientes", href: "/customers", icon: IdCard },
+    { name: "Proveedores", href: "/suppliers", icon: Truck },
+    { name: "Usuarios", href: "/users", icon: Users },
+    { name: "Análisis", href: "/analytics", icon: BarChart3 },
+    { name: "Configuración", href: "/settings", icon: Settings },
+    { name: "Mi Perfil", href: "/profile", icon: User },
+  ]
+  const cashier = [
+    { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Clientes", href: "/customers", icon: IdCard },
+    { name: "Inventario", href: "/inventory", icon: Package },
+    { name: "Mi Perfil", href: "/profile", icon: User },
+  ]
+  const technician = [
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Clientes", href: "/customers", icon: IdCard },
+    { name: "Inventario", href: "/inventory", icon: Package },
+    { name: "Mi Perfil", href: "/profile", icon: User },
+  ]
+  if (role === "admin") return admin
+  if (role === "cashier") return cashier
+  return technician
+}
 
 interface AppSidebarProps {
   className?: string
 }
 
-function MobileSidebar() {
+function MobileSidebar({ navigation }: { navigation: { name: string; href: string; icon: any }[] }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -105,7 +124,7 @@ function MobileSidebar() {
   )
 }
 
-function DesktopSidebar({ className }: { className?: string }) {
+function DesktopSidebar({ className, navigation }: { className?: string; navigation: { name: string; href: string; icon: any }[] }) {
   const [collapsed, setCollapsed] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -204,10 +223,13 @@ function DesktopSidebar({ className }: { className?: string }) {
 
 export function AppSidebar({ className }: AppSidebarProps) {
   const isMobile = useMobile()
+  const { user } = useAuth()
+  const role = user?.role || "admin"
+  const navigation = getNavigation(role)
 
   if (isMobile) {
-    return <MobileSidebar />
+    return <MobileSidebar navigation={navigation} />
   }
 
-  return <DesktopSidebar className={className} />
+  return <DesktopSidebar className={className} navigation={navigation} />
 }

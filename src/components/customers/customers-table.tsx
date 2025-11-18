@@ -40,6 +40,7 @@ import { usePOS } from "@/contexts/pos-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CustomersTableProps {
+  customers: Customer[];
   filters: {
     customerType: string;
     status: string;
@@ -55,21 +56,19 @@ interface CustomersTableProps {
 type Customer = ReturnType<typeof usePOS>["customers"][0];
 
 export function CustomersTable({
+  customers,
   filters,
   onViewCustomer,
   onEditCustomer,
   onMaintenanceReminder,
 }: CustomersTableProps) {
-  const { customers, loadingCustomers, refreshCustomers } = usePOS();
   const [sortField, setSortField] = useState<keyof Customer>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const isMobile = useIsMobile();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  // Cargar clientes al montar el componente
-  useEffect(() => {
-    refreshCustomers();
-  }, [refreshCustomers]);
-
+  const { refreshCustomers, loadingCustomers } = usePOS();
   const filteredCustomers = customers.filter((customer) => {
     const matchesType =
       filters.customerType === "all" ||
@@ -113,6 +112,15 @@ export function CustomersTable({
     return 0;
   });
 
+  const totalItems = sortedCustomers.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIdx = (page - 1) * pageSize;
+  const pagedCustomers = sortedCustomers.slice(startIdx, startIdx + pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters, pageSize]);
+
   const handleSort = (field: keyof Customer) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -142,13 +150,13 @@ export function CustomersTable({
   };
 
   // Loading State
-  if (loadingCustomers) {
+  if (!customers || customers.length === 0) {
     return (
       <Card>
         <CardContent className="p-8">
           <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Cargando clientes...</p>
+            <Users className="h-8 w-8 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No hay clientes disponibles</p>
           </div>
         </CardContent>
       </Card>
@@ -325,14 +333,14 @@ export function CustomersTable({
           {isMobile ? (
             // Mobile Card Layout
             <div className="space-y-3">
-              {sortedCustomers.map((customer, index) => (
+              {pagedCustomers.map((customer, index) => (
                 <CustomerCard
                   key={customer.id}
                   customer={customer}
                   index={index}
                 />
               ))}
-              {sortedCustomers.length === 0 && (
+              {totalItems === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No se encontraron clientes</p>
@@ -343,6 +351,31 @@ export function CustomersTable({
                   )}
                 </div>
               )}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Mostrar</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm">por página</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                    Anterior
+                  </Button>
+                  <span className="text-sm">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             // Desktop Table Layout
@@ -397,7 +430,7 @@ export function CustomersTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedCustomers.map((customer, index) => (
+                  {pagedCustomers.map((customer, index) => (
                     <motion.tr
                       key={customer.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -524,7 +557,7 @@ export function CustomersTable({
                   ))}
                 </TableBody>
               </Table>
-              {sortedCustomers.length === 0 && (
+              {totalItems === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <h3 className="text-lg font-medium mb-2">
@@ -540,6 +573,31 @@ export function CustomersTable({
                   </p>
                 </div>
               )}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Mostrar</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm">por página</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                    Anterior
+                  </Button>
+                  <span className="text-sm">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

@@ -99,9 +99,17 @@ export interface Supplier {
   email: string;
   phone: string;
   address: string;
-  category: string;
+  category?: string;
   status: "active" | "inactive";
-  notes?: string; // Agregar este campo
+  notes?: string;
+  city?: string;
+  country?: string;
+  ruc?: string;
+  paymentTerms?: string;
+  productsSupplied?: string[];
+  totalOrders?: number;
+  lastOrderDate?: string;
+  rating?: number;
 }
 
 export interface User {
@@ -134,6 +142,13 @@ export interface InventoryAnalytics {
   lowStockProducts: { name: string; value: number }[];
   inventoryValue: { name: string; value: number }[];
 }
+
+import {
+  mockCustomers as mdCustomers,
+  mockSuppliers as mdSuppliers,
+  inventoryAnalyticsData as mdInventoryAnalyticsData,
+  stockAlerts as mdStockAlerts,
+} from "./mock-data";
 
 // ===== INTERFACES DE CONFIGURACIÓN =====
 export interface CompanySettings {
@@ -304,91 +319,25 @@ const mockStockMovements: StockMovement[] = [
   },
 ];
 
-const mockCustomers: Customer[] = [
-  {
-    id: "1",
-    name: "Juan Pérez",
-    email: "juan@example.com",
-    phone: "555-1234",
-    address: "Calle Principal 123",
-    city: "Caracas",
-    idNumber: "V-12345678",
-    customerType: "individual",
-    vehicles: [
-      {
-        id: "v1",
-        plate: "ABC123",
-        brand: "Toyota",
-        model: "Corolla",
-        year: 2018,
-        engine: "1.8L",
-        mileage: 45000,
-        lastService: "2024-01-10",
-        nextService: "2024-07-10",
-        oilType: "5W-30",
-        filterType: "OF-123",
-        color: "Blanco",
-      },
-    ],
-    totalPurchases: 1500,
-    lastPurchase: "2024-01-15",
-    registrationDate: "2023-05-10",
-    status: "active",
-    notes: "Cliente frecuente",
-    preferredContact: "whatsapp",
-  },
-  {
-    id: "2",
-    name: "María González",
-    email: "maria@example.com",
-    phone: "555-5678",
-    address: "Avenida Central 456",
-    city: "Valencia",
-    idNumber: "V-87654321",
-    customerType: "individual",
-    vehicles: [
-      {
-        id: "v2",
-        plate: "XYZ789",
-        brand: "Honda",
-        model: "Civic",
-        year: 2020,
-        engine: "2.0L",
-        mileage: 25000,
-        lastService: "2024-01-05",
-        nextService: "2024-07-05",
-        oilType: "0W-20",
-        filterType: "OF-456",
-        color: "Gris",
-      },
-    ],
-    totalPurchases: 850,
-    lastPurchase: "2024-01-18",
-    registrationDate: "2023-08-15",
-    status: "active",
-    notes: "",
-    preferredContact: "email",
-  },
-  {
-    id: "3",
-    name: "Automotriz Rodríguez C.A.",
-    email: "info@rodriguez.com",
-    phone: "555-9012",
-    address: "Zona Industrial, Galpón 7",
-    city: "Maracaibo",
-    idNumber: "J-123456789",
-    customerType: "business",
-    businessName: "Automotriz Rodríguez C.A.",
-    ruc: "J-12345678-9",
-    vehicles: [],
-    totalPurchases: 5000,
-    lastPurchase: "2024-01-12",
-    registrationDate: "2023-01-20",
-    status: "active",
-    notes: "Empresa cliente mayorista",
-    preferredContact: "phone",
-  },
-];
+const mockCustomers: Customer[] = mdCustomers.map((c: any) => ({
+  id: c.id,
+  name: c.name,
+  email: c.email,
+  phone: c.phone,
+  address: c.address,
+  city: c.city,
+  idNumber: c.idNumber,
+  customerType: c.customerType,
+  businessName: c.businessName,
+  ruc: c.ruc,
+  vehicles: c.vehicles || [],
+  totalPurchases: c.totalPurchases || 0,
+  lastPurchase: c.lastPurchase || "",
+  registrationDate: c.registrationDate || "",
+  status: c.status,
+  notes: c.notes || "",
+  preferredContact: c.preferredContact || "phone",
+}));
 
 const mockSales: Sale[] = [
   {
@@ -495,63 +444,25 @@ const mockSales: Sale[] = [
   },
 ];
 
-const mockSuppliers: Supplier[] = [
-  {
-    id: "1",
-    name: "Distribuidora Central",
-    contactPerson: "Pedro Ramírez",
-    email: "pedro@distribuidoracentral.com",
-    phone: "555-1111",
-    address: "Zona Industrial, Calle 5",
-    category: "Distribuidor",
-    status: "active",
-    notes: "Proveedor principal con entrega rápida",
-  },
-  {
-    id: "2",
-    name: "Repuestos Toyota",
-    contactPerson: "Ana Martínez",
-    email: "ana@repuestostoyota.com",
-    phone: "555-2222",
-    address: "Av. Principal, Edificio Torre A, Piso 3",
-    category: "Repuestos",
-    status: "active",
-    notes: "Especialistas en repuestos originales Toyota",
-  },
-  {
-    id: "3",
-    name: "Castrol Ecuador",
-    contactPerson: "Carlos Jiménez",
-    email: "carlos@castrolecuador.com",
-    phone: "555-3333",
-    address: "Centro Comercial Automotriz, Local 15",
-    category: "Lubricantes",
-    status: "active",
-    notes: "Aceites de alta calidad para todo tipo de vehículos",
-  },
-  {
-    id: "4",
-    name: "Químicos del Sur",
-    contactPerson: "María López",
-    email: "maria@quimicossur.com",
-    phone: "555-4444",
-    address: "Parque Industrial Sur, Galpón 12",
-    category: "Químicos",
-    status: "active",
-    notes: "Productos químicos para limpieza automotriz",
-  },
-  {
-    id: "5",
-    name: "Shell Ecuador",
-    contactPerson: "Roberto Silva",
-    email: "roberto@shellecuador.com",
-    phone: "555-5555",
-    address: "Torre Empresarial, Piso 8",
-    category: "Combustibles",
-    status: "active",
-    notes: "Combustibles premium y lubricantes Shell",
-  },
-];
+const mockSuppliers: Supplier[] = mdSuppliers.map((s: any) => ({
+  id: s.id,
+  name: s.name,
+  contactPerson: s.contactPerson,
+  email: s.email,
+  phone: s.phone,
+  address: s.address,
+  category: s.productsSupplied?.[0] || s.category,
+  status: s.status,
+  notes: s.notes,
+  city: s.city,
+  country: s.country,
+  ruc: s.ruc,
+  paymentTerms: s.paymentTerms,
+  productsSupplied: s.productsSupplied,
+  totalOrders: s.totalOrders,
+  lastOrderDate: s.lastOrderDate,
+  rating: s.rating,
+}));
 
 
 const mockUsers: User[] = [
@@ -576,89 +487,25 @@ const mockUsers: User[] = [
     role: "manager",
     status: "active",
   },
-];
-
-const stockAlerts: StockAlert[] = [
   {
-    id: "1",
-    productName: "Aceite Mobil 1 5W-30",
-    currentStock: 3,
-    minStock: 10,
-    category: "Aceites Sintéticos",
-    urgency: "critical",
-    supplier: "Mobil Ecuador",
-    sku: "MOB-5W30-001",
-    lastUpdated: "2024-01-20",
-    trend: "worsening",
-    price: 45.5,
-    unit: "unidad",
+    id: "6",
+    name: "Técnico 1",
+    email: "tecnico1@lubricadora.com",
+    role: "manager",
+    status: "active",
   },
   {
-    id: "2",
-    productName: "Filtro Aire Toyota Corolla",
-    currentStock: 5,
-    minStock: 15,
-    category: "Filtros",
-    urgency: "high",
-    supplier: "Toyota Parts",
-    sku: "TOY-AIR-001",
-    lastUpdated: "2024-01-19",
-    trend: "stable",
-    price: 28.75,
-    unit: "unidad",
-  },
-  {
-    id: "3",
-    productName: "Lubricante Castrol GTX",
-    currentStock: 8,
-    minStock: 20,
-    category: "Lubricantes",
-    urgency: "medium",
-    supplier: "Castrol Ecuador",
-    sku: "CAS-GTX-001",
-    lastUpdated: "2024-01-18",
-    trend: "improving",
-    price: 52.25,
-    unit: "unidad",
+    id: "7",
+    name: "Técnico 2",
+    email: "tecnico2@lubricadora.com",
+    role: "manager",
+    status: "active",
   },
 ];
 
-const inventoryAnalyticsData: InventoryAnalytics = {
-  categoryDistribution: [
-    { name: "Aceites Sintéticos", value: 35 },
-    { name: "Aceites Convencionales", value: 28 },
-    { name: "Filtros", value: 22 },
-    { name: "Lubricantes", value: 18 },
-    { name: "Aditivos", value: 12 },
-  ],
-  stockLevels: [
-    { name: "Sin Stock", value: 5 },
-    { name: "Stock Bajo", value: 15 },
-    { name: "Stock Normal", value: 45 },
-    { name: "Stock Alto", value: 35 },
-  ],
-  topSellingProducts: [
-    { name: "Aceite Mobil 1 5W-30", value: 120 },
-    { name: "Filtro Aire Toyota", value: 95 },
-    { name: "Castrol GTX 20W-50", value: 85 },
-    { name: "Shell Helix Ultra", value: 75 },
-    { name: "Valvoline MaxLife", value: 65 },
-  ],
-  lowStockProducts: [
-    { name: "Aceite Mobil 1 5W-30", value: 3 },
-    { name: "Filtro Aire Toyota", value: 5 },
-    { name: "Aditivo STP", value: 2 },
-    { name: "Lubricante Castrol", value: 8 },
-    { name: "Shell V-Power", value: 4 },
-  ],
-  inventoryValue: [
-    { name: "Aceites Sintéticos", value: 15750 },
-    { name: "Aceites Convencionales", value: 8500 },
-    { name: "Filtros", value: 4200 },
-    { name: "Lubricantes", value: 6800 },
-    { name: "Aditivos", value: 2100 },
-  ],
-};
+const stockAlerts: StockAlert[] = mdStockAlerts as any;
+
+const inventoryAnalyticsData: InventoryAnalytics = mdInventoryAnalyticsData as any;
 
 // ===== DATOS MOCK DE CONFIGURACIÓN =====
 const mockCompanySettings: CompanySettings = {

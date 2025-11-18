@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +67,13 @@ export function SupplierForm({
 }: SupplierFormProps) {
   const [formData, setFormData] = useState<SupplierFormData>(initialData);
 
+  // Actualizar los datos del formulario cuando cambie initialData o se abra el diálogo
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialData);
+    }
+  }, [initialData, isOpen]);
+
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       toast.error("El nombre del proveedor es requerido");
@@ -99,7 +106,8 @@ export function SupplierForm({
   };
 
   const handleClose = () => {
-    setFormData(initialFormData);
+    // Restaurar al initialData para que al volver a abrir, se prellene correctamente
+    setFormData(initialData);
     onClose();
   };
 

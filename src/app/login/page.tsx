@@ -14,15 +14,36 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Wrench } from "lucide-react";
+import { Eye, EyeOff, Wrench, Info, Copy, CheckCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
+
+// Credenciales de prueba
+const loginCredentials = [
+  {
+    email: "admin@lubricadora.com",
+    password: "admin123",
+    userId: "1",
+  },
+  {
+    email: "cajero1@lubricadora.com",
+    password: "cajero123",
+    userId: "2",
+  },
+  {
+    email: "tecnico1@lubricadora.com",
+    password: "tecnico123",
+    userId: "6",
+  },
+];
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { login, isLoading } = useAuth();
   const router = useRouter();
 
@@ -45,6 +66,20 @@ export default function LoginPage() {
       console.error("Error completo:", error);
       toast.error("Error al iniciar sesión");
     }
+  };
+
+  const copyCredentials = (email: string, password: string, index: number) => {
+    navigator.clipboard.writeText(`Email: ${email}\nContraseña: ${password}`);
+    setCopiedIndex(index);
+    toast.success("Credenciales copiadas al portapapeles");
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const fillCredentials = (email: string, password: string) => {
+    setEmail(email);
+    setPassword(password);
+    setShowCredentials(false);
+    toast.success("Credenciales cargadas en el formulario");
   };
 
   return (
@@ -119,6 +154,7 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
+
               <Button
                 type="submit"
                 className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium mt-2 sm:mt-3"
@@ -139,6 +175,93 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+
+            {/* Sección de credenciales de prueba */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full flex items-center justify-center gap-2 text-xs"
+                onClick={() => setShowCredentials(!showCredentials)}
+              >
+                <Info className="h-3.5 w-3.5" />
+                {showCredentials ? "Ocultar" : "Mostrar"} credenciales de prueba
+              </Button>
+
+              {showCredentials && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-4 space-y-3"
+                >
+                  <p className="text-xs text-muted-foreground text-center">
+                    Usa estas credenciales para probar el sistema:
+                  </p>
+
+                  {loginCredentials.map((user, index) => (
+                    <div
+                      key={user.userId}
+                      className="p-3 bg-muted/50 rounded-lg border border-border"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1">
+                          <p className="text-xs font-medium">
+                            {user.email.includes("admin")
+                              ? "👑 Administrador"
+                              : user.email.includes("gerente")
+                              ? "💼 Gerente"
+                              : "💵 Cajero"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <strong>Email:</strong> {user.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Contraseña:</strong> {user.password}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() =>
+                              copyCredentials(user.email, user.password, index)
+                            }
+                            title="Copiar credenciales"
+                          >
+                            {copiedIndex === index ? (
+                              <CheckCheck className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-xs"
+                            onClick={() =>
+                              fillCredentials(user.email, user.password)
+                            }
+                            title="Usar estas credenciales"
+                          >
+                            →
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <p className="text-xs text-muted-foreground text-center italic">
+                    Selecciona un usuario y haz clic en la flecha para cargar
+                    sus credenciales
+                  </p>
+                </motion.div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </motion.div>

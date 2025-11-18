@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 
 // Definición de tipos
-export type UserRole = "admin" | "cashier" | "manager"
+export type UserRole = "admin" | "cashier" | "technician"
 
 export interface User {
   id: string;
@@ -29,10 +29,11 @@ interface AuthContextType {
 const roleMapping: Record<string, UserRole> = {
   admin: "admin",
   cashier: "cashier",
-  manager: "manager",
-  Administrador: "admin", // Agrega más mapeos si es necesario
+  technician: "technician",
+  manager: "technician",
+  Administrador: "admin",
   Cajero: "cashier",
-  Gerente: "manager",
+  Técnico: "technician",
 };
 
 // Datos de login simulados (en una aplicación real esto vendría del backend)
@@ -43,14 +44,24 @@ const loginCredentials = [
     userId: "1"
   },
   {
-    email: "cajero1@lubricadora.com", 
+    email: "cajero1@lubricadora.com",
     password: "cajero123",
     userId: "2"
   },
   {
-    email: "gerente@lubricadora.com",
-    password: "gerente123", 
-    userId: "3"
+    email: "cajero2@lubricadora.com",
+    password: "cajero123",
+    userId: "5"
+  },
+  {
+    email: "tecnico1@lubricadora.com",
+    password: "tecnico123",
+    userId: "6"
+  },
+  {
+    email: "tecnico2@lubricadora.com",
+    password: "tecnico123",
+    userId: "7"
   }
 ]
 
@@ -60,12 +71,29 @@ const rolePermissions: Record<UserRole, string[]> = {
     "pos.use",
     "inventory.manage",
     "customers.manage",
+    "customers.view",
     "analytics.view",
     "settings.manage",
     "profile.edit",
+    "sri.invoice",
+    "users.manage",
+    "backup.manage",
   ],
-  cashier: ["dashboard.view", "pos.use", "inventory.view", "customers.create", "profile.edit"],
-  manager: ["dashboard.view", "inventory.view", "customers.manage", "analytics.view", "profile.edit"],
+  cashier: [
+    "dashboard.view",
+    "pos.use",
+    "inventory.view",
+    "customers.create",
+    "profile.edit",
+    "sri.invoice",
+  ],
+  technician: [
+    "dashboard.view",
+    "inventory.view",
+    "services.use",
+    "customers.view",
+    "profile.edit",
+  ],
 }
 
 // Crear el contexto
@@ -137,6 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         JSON.stringify(userWithMappedRole)
       )}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
       setIsLoading(false);
+      if (userRole === "cashier") {
+        router.push("/pos");
+      } else if (userRole === "technician") {
+        router.push("/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
       return true;
     } catch (error) {
       console.error("Error en login:", error);

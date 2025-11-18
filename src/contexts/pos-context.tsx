@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import { api } from "@/lib/api";
+import type { Supplier } from "@/lib/api";
 
 // Tipos de datos - Simplificados para que coincidan con la API
 export interface Product {
@@ -103,17 +104,7 @@ export interface SaleItem {
   subtotal: number;
 }
 
-export interface Supplier {
-  id: string;
-  name: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  category: string;
-  status: "active" | "inactive";
-  notes?: string;
-}
+// Usar el tipo Supplier de la API para evitar incompatibilidades
 
 export interface User {
   id: string;
@@ -363,6 +354,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addProduct = useCallback(async (product: Omit<Product, "id">) => {
     try {
+      if (!product.name || !product.category || !product.brand) throw new Error("Datos inválidos");
+      if (product.price < 0 || product.cost < 0) throw new Error("Valores inválidos");
+      if (!product.sku) throw new Error("SKU requerido");
       const newProduct = await api.createProduct(product);
       setProducts((prev) => [...prev, newProduct]);
       return newProduct;
@@ -375,6 +369,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const updateProduct = useCallback(
     async (id: string, product: Partial<Product>) => {
       try {
+        if (product.price !== undefined && product.price < 0) throw new Error("Precio inválido");
+        if (product.cost !== undefined && product.cost < 0) throw new Error("Costo inválido");
         const updatedProduct = await api.updateProduct(id, product);
         setProducts((prev) =>
           prev.map((p) => (p.id === id ? updatedProduct : p))
@@ -435,6 +431,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addCustomer = useCallback(async (customer: Omit<Customer, "id">) => {
     try {
+      if (!customer.name || !customer.idNumber) throw new Error("Datos inválidos");
+      if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error("Email inválido");
+      if (customer.phone && customer.phone.length < 7) throw new Error("Teléfono inválido");
       const apiCustomer = convertContextCustomerToApiCustomer(customer);
       const newApiCustomer = await api.createCustomer(apiCustomer);
       const newCustomer = convertApiCustomerToContextCustomer(newApiCustomer);
@@ -449,6 +448,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const updateCustomer = useCallback(
     async (id: string, customer: Partial<Customer>) => {
       try {
+        if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error("Email inválido");
+        if (customer.phone && customer.phone.length < 7) throw new Error("Teléfono inválido");
         const apiCustomer = convertContextCustomerToApiCustomer(
           customer as Omit<Customer, "id">
         );
@@ -507,6 +508,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const addSale = useCallback(
     async (sale: Omit<Sale, "id" | "date" | "invoiceNumber">) => {
       try {
+        if (!sale.items || sale.items.length === 0) throw new Error("Venta vacía");
+        if (sale.total < 0) throw new Error("Total inválido");
         console.log("Iniciando addSale con datos:", sale);
 
         const apiSale = convertContextSaleToApiSale(sale);
@@ -565,6 +568,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addSupplier = useCallback(async (supplier: Omit<Supplier, "id">) => {
     try {
+      if (!supplier.name || !supplier.contactPerson || !supplier.email) throw new Error("Datos inválidos");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email)) throw new Error("Email inválido");
       const newSupplier = await api.createSupplier(supplier);
       setSuppliers((prev) => [...prev, newSupplier]);
       return newSupplier;
@@ -577,6 +582,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const updateSupplier = useCallback(
     async (id: string, supplier: Partial<Supplier>) => {
       try {
+        if (supplier.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email)) throw new Error("Email inválido");
         const updatedSupplier = await api.updateSupplier(id, supplier);
         setSuppliers((prev) =>
           prev.map((s) => (s.id === id ? updatedSupplier : s))
@@ -617,6 +623,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addUser = useCallback(async (user: Omit<User, "id">) => {
     try {
+      if (!user.name || !user.email) throw new Error("Datos inválidos");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) throw new Error("Email inválido");
       const newUser = await api.createUser(user);
       setUsers((prev) => [...prev, newUser]);
       return newUser;
@@ -628,6 +636,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(async (id: string, user: Partial<User>) => {
     try {
+      if (user.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) throw new Error("Email inválido");
       const updatedUser = await api.updateUser(id, user);
       setUsers((prev) => prev.map((u) => (u.id === id ? updatedUser : u)));
       return updatedUser;

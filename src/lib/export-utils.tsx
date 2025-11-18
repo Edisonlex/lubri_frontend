@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
+    lastAutoTable?: { finalY: number };
   }
 }
 
@@ -132,7 +133,7 @@ export const exportSalesToPDF = ({ headers, data, fileName }: ExportData) => {
   doc.text(
     `Total de Ventas: $${totalVentas.toFixed(2)}`,
     14,
-    doc.lastAutoTable.finalY + 10
+    (doc.lastAutoTable?.finalY ?? 25) + 10
   );
 
   doc.save(`${fileName}_${new Date().toISOString().split("T")[0]}.pdf`);
@@ -238,7 +239,7 @@ export const exportCustomersToPDF = ({
   doc.text(
     `Total de Clientes: ${data.length}`,
     14,
-    doc.lastAutoTable.finalY + 10
+    (doc.lastAutoTable?.finalY ?? 25) + 10
   );
   doc.save(`${fileName}_${new Date().toISOString().split("T")[0]}.pdf`);
 };

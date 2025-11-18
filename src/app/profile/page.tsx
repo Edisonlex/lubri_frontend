@@ -5,12 +5,14 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { api, User as UserType, Sale, AuditLog } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "next-themes";
 import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { PreferencesForm } from "@/components/profile/PreferencesForm";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { SecurityForm } from "@/components/profile/SecurityForm";
+import { ProtectedRoute } from "@/contexts/auth-context";
 
 // Importar componentes
 
@@ -49,6 +51,7 @@ interface UserStats {
 export default function ProfilePage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { user } = useAuth();
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [profile, setProfile] = useState<ProfileData>({
     name: "",
@@ -93,46 +96,43 @@ export default function ProfilePage() {
 
   // Cargar datos del usuario actual
   useEffect(() => {
-    if (mounted) {
-      loadUserData();
-    }
-  }, [mounted]);
-
-  const loadUserData = async () => {
-    try {
-      setIsLoading(true);
-      const users = await api.getUsers();
-      const currentUser = users[0];
-      setCurrentUser(currentUser);
+    if (mounted && user) {
+      setCurrentUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: "active",
+      } as any);
 
       setProfile({
-        name: currentUser.name,
-        email: currentUser.email,
-        phone: "0987654321",
+        name: user.name,
+        email: user.email,
+        phone: "",
         role:
-          currentUser.role === "admin"
+          user.role === "admin"
             ? "Administrador"
-            : currentUser.role === "manager"
-            ? "Gerente"
-            : "Cajero",
+            : user.role === "cashier"
+            ? "Cajero"
+            : "Técnico",
       });
 
-      await loadUserStats(currentUser.id);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      toast.error("Error al cargar los datos del usuario");
-    } finally {
-      setIsLoading(false);
+      (async () => {
+        await loadUserStats(user.id, user.email);
+        setIsLoading(false);
+      })();
     }
-  };
+  }, [mounted, user]);
 
-  const loadUserStats = async (userId: string) => {
+  const loadUserData = async () => {};
+
+  const loadUserStats = async (userId: string, userEmail?: string) => {
     try {
       const sales = await api.getSales();
       const userSales = sales.filter((sale) => sale.userId === userId);
       const auditLogs = await api.getAuditLogs();
       const userLogs = auditLogs.filter(
-        (log) => log.user === currentUser?.email
+        (log) => log.user === (userEmail ?? currentUser?.email)
       );
 
       const totalSales = userSales.length;
@@ -284,6 +284,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <ProtectedRoute>
     <div className="flex bg-background">
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
@@ -364,5 +365,6 @@ export default function ProfilePage() {
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

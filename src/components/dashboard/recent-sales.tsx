@@ -33,6 +33,8 @@ export function RecentSales() {
   const router = useRouter();
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   // Función para convertir ventas al formato de RecentSale
   const convertSalesToRecentSales = useCallback(() => {
@@ -51,8 +53,7 @@ export function RecentSales() {
           return false;
         }
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     console.log("Ventas de hoy filtradas:", todaySales);
 
@@ -180,7 +181,9 @@ export function RecentSales() {
         <CardContent>
           <div className="space-y-3">
             {recentSales.length > 0 ? (
-              recentSales.map((sale, index) => (
+              recentSales
+                .slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize)
+                .map((sale, index) => (
                 <motion.div
                   key={sale.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -243,6 +246,33 @@ export function RecentSales() {
               </div>
             )}
           </div>
+          {recentSales.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Mostrar</span>
+                <select
+                  className="border rounded px-2 py-1 text-sm"
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                </select>
+                <span className="text-sm">por página</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                  Anterior
+                </Button>
+                <span className="text-sm">
+                  {page} / {Math.max(1, Math.ceil(recentSales.length / pageSize))}
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setPage(Math.min(Math.max(1, Math.ceil(recentSales.length / pageSize)), page + 1))} disabled={page >= Math.ceil(recentSales.length / pageSize)}>
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

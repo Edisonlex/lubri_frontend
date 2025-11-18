@@ -17,6 +17,7 @@ import { CompanySettingsTab } from "@/components/settings/company-settings-tab";
 import { SriSettingsTab } from "@/components/settings/sri-settings-tab";
 import { BackupSettingsTab } from "@/components/settings/backup-settings-tab";
 import { AuditLogsTab } from "@/components/settings/audit-logs-tab";
+import { ProtectedRoute } from "@/contexts/auth-context";
 
 export default function SettingsPage() {
   const [companyData, setCompanyData] = useState<CompanySettings>({
@@ -83,6 +84,7 @@ export default function SettingsPage() {
   }
 
   return (
+    <ProtectedRoute permission="settings.manage">
     <div className="flex bg-background">
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
@@ -145,5 +147,6 @@ export default function SettingsPage() {
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

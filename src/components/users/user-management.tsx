@@ -8,6 +8,17 @@ import { usePOS } from "@/contexts/pos-context";
 import { UserForm } from "./user-form";
 import { UserFilters } from "./user-filters";
 import { UserList } from "./user-list";
+import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Download, FileText, Table as TableIcon } from "lucide-react";
 import {
   UserFormData,
   convertApiRoleToFormRole,
@@ -133,10 +144,71 @@ export function UserManagement() {
             Administra usuarios y sus roles en el sistema
           </p>
         </div>
-        <Button onClick={() => handleOpenForm()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Usuario
-        </Button>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-transparent">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Exportar Usuarios</DialogTitle>
+                <DialogDescription>
+                  Exporta tus usuarios. Se exportarán {filteredUsers.length}{" "}
+                  usuarios.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <Button
+                  onClick={() => {
+                    const headers = ["Nombre", "Email", "Rol", "Estado"];
+                    const data = filteredUsers.map((u) => [
+                      u.name,
+                      u.email,
+                      u.role,
+                      u.status,
+                    ]);
+                    exportToExcel({ headers, data, fileName: "Usuarios" });
+                  }}
+                  className="flex flex-col items-center justify-center h-24 gap-2"
+                  variant="outline"
+                >
+                  <TableIcon className="h-8 w-8 text-green-600" />
+                  <span>Excel (.xlsx)</span>
+                  <span className="text-xs text-muted-foreground">
+                    Recomendado para análisis
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => {
+                    const headers = ["Nombre", "Email", "Rol", "Estado"];
+                    const data = filteredUsers.map((u) => [
+                      u.name,
+                      u.email,
+                      u.role,
+                      u.status,
+                    ]);
+                    exportToPDF({ headers, data, fileName: "Usuarios" });
+                  }}
+                  className="flex flex-col items-center justify-center h-24 gap-2"
+                  variant="outline"
+                >
+                  <FileText className="h-8 w-8 text-red-600" />
+                  <span>PDF (.pdf)</span>
+                  <span className="text-xs text-muted-foreground">
+                    Para impresión
+                  </span>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={() => handleOpenForm()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

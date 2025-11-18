@@ -22,7 +22,7 @@ import {
   Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { stockAlerts, StockAlert } from "@/lib/mock-data";
+import { useAlerts } from "@/contexts/alerts-context";
 import { useState, useMemo } from "react";
 import {
   DropdownMenu,
@@ -35,23 +35,24 @@ import { useRouter } from "next/navigation";
 
 export function StockAlerts() {
   const router = useRouter();
+  const { alerts, loading } = useAlerts();
   const [filter, setFilter] = useState<string>("all");
   const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
   const filteredAlerts = useMemo(() => {
-    if (filter === "all") return stockAlerts;
-    return stockAlerts.filter((alert) => alert.urgency === filter);
-  }, [filter]);
+    if (filter === "all") return alerts;
+    return alerts.filter((alert) => alert.urgency === filter);
+  }, [filter, alerts]);
 
   const alertCounts = useMemo(
     () => ({
-      total: stockAlerts.length,
-      critical: stockAlerts.filter((a) => a.urgency === "critical").length,
-      high: stockAlerts.filter((a) => a.urgency === "high").length,
-      medium: stockAlerts.filter((a) => a.urgency === "medium").length,
-      low: stockAlerts.filter((a) => a.urgency === "low").length,
+      total: alerts.length,
+      critical: alerts.filter((a) => a.urgency === "critical").length,
+      high: alerts.filter((a) => a.urgency === "high").length,
+      medium: alerts.filter((a) => a.urgency === "medium").length,
+      low: alerts.filter((a) => a.urgency === "low").length,
     }),
-    []
+    [alerts]
   );
 
   const getUrgencyConfig = (urgency: string) => {
@@ -157,6 +158,11 @@ export function StockAlerts() {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        )}
         <AnimatePresence>
           {filteredAlerts.map((alert) => (
             <motion.div
@@ -234,7 +240,7 @@ export function StockAlerts() {
           ))}
         </AnimatePresence>
 
-        {filteredAlerts.length === 0 && (
+        {filteredAlerts.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -248,27 +254,7 @@ export function StockAlerts() {
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="default"
-            className="flex-1"
-            onClick={() => router.push("/inventory")}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Ver inventario completo
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-between pt-3 border-t text-xs text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-              Crítico: {alertCounts.critical}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-              Alto: {alertCounts.high}
-            </span>
-          </div>
+          {/* Acciones adicionales futuras */}
         </div>
       </CardContent>
     </Card>

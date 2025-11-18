@@ -1,13 +1,9 @@
-"use client"
+"use client";
 
-import { AppSidebar } from "@/components/layout/app-sidebar"
-import { AppHeader } from "@/components/layout/app-header"
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AppHeader } from "@/components/layout/app-header";
 
-export function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen">
       {/* Sidebar para desktop (oculto en móvil) */}
@@ -23,5 +19,5 @@ export function ProtectedLayout({
         </main>
       </div>
     </div>
-  )
+  );
 }

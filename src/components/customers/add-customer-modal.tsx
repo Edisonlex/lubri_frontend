@@ -26,13 +26,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Building2, Car, Plus, Trash2, Save } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Customer, Vehicle } from "@/lib/mock-data";
+import { Customer, Vehicle } from "@/lib/api";
+import { usePOS } from "@/contexts/pos-context";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   customer?: Customer | null;
-  onSave: (customer: Customer) => void;
+  onSave?: (customer: Customer) => void;
 }
 
 export function AddCustomerModal({
@@ -41,6 +42,7 @@ export function AddCustomerModal({
   customer,
   onSave,
 }: AddCustomerModalProps) {
+  const { addCustomer, updateCustomer } = usePOS();
   const [customerData, setCustomerData] = useState({
     name: "",
     email: "",
@@ -100,37 +102,37 @@ export function AddCustomerModal({
     setIsLoading(true);
 
     try {
-      const customerToSave: Customer = {
-        id: customer?.id || `customer-${Date.now()}`,
-        name: customerData.name,
-        email: customerData.email,
-        phone: customerData.phone,
-        address: customerData.address,
-        city: customerData.city,
-        idNumber: customerData.idNumber,
-        customerType: customerData.customerType,
-        businessName: customerData.businessName,
-        ruc: customerData.ruc,
-        vehicles: vehicles.map((vehicle, index) => ({
-          id: `vehicle-${Date.now()}-${index}`,
+      if (customer) {
+        // Actualización de cliente existente
+        const updatedVehicles = vehicles.map((vehicle, index) => ({
+          id: customer.vehicles[index]?.id || `vehicle-${Date.now()}-${index}`,
           ...vehicle,
-        })),
-        totalPurchases: customer?.totalPurchases || 0,
-        lastPurchase:
-          customer?.lastPurchase || new Date().toISOString().split("T")[0],
-        registrationDate:
-          customer?.registrationDate || new Date().toISOString().split("T")[0],
-        status: customerData.status,
-        notes: customerData.notes,
-        preferredContact: customerData.preferredContact,
-      };
+        }));
+        const updatedCustomer: Partial<Customer> = {
+          ...customerData,
+          vehicles: updatedVehicles,
+        };
+        const result = await updateCustomer(customer.id, updatedCustomer);
+        toast.success("Cliente actualizado exitosamente");
+        // Opcionalmente notificar hacia arriba
+        if (onSave) onSave(result);
+      } else {
+        // Creación de nuevo cliente
+        const newCustomer = {
+          ...customerData,
+          vehicles: vehicles.map((vehicle, index) => ({
+            id: `vehicle-${Date.now()}-${index}`,
+            ...vehicle,
+          })),
+          totalPurchases: 0,
+          lastPurchase: new Date().toISOString().split("T")[0],
+          registrationDate: new Date().toISOString().split("T")[0],
+        } as Omit<Customer, "id">;
 
-      onSave(customerToSave);
-      toast.success(
-        customer
-          ? "Cliente actualizado exitosamente"
-          : "Cliente creado exitosamente"
-      );
+        const created = await addCustomer(newCustomer);
+        toast.success("Cliente creado exitosamente");
+        if (onSave) onSave(created);
+      }
       onClose();
     } catch (error) {
       console.error("Error saving customer:", error);

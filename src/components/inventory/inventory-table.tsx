@@ -28,7 +28,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import type { Product } from "@/app/inventory/page";
+import type { Product } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mock inventory data
@@ -142,6 +142,8 @@ export function InventoryTable({
   const isMobile = useIsMobile();
   const [sortField, setSortField] = useState<keyof Product>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory =
@@ -198,6 +200,11 @@ export function InventoryTable({
     }
     return 0;
   });
+
+  const totalItems = sortedProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIdx = (page - 1) * pageSize;
+  const pagedProducts = sortedProducts.slice(startIdx, startIdx + pageSize);
 
   const getStockStatus = (product: Product) => {
     if (product.stock === 0)
@@ -340,7 +347,7 @@ export function InventoryTable({
           <CardTitle className="flex items-center gap-2">
             <Package className={isMobile ? "h-4 w-4" : "h-5 w-5"} />
             <span className={isMobile ? "text-sm" : "text-lg"}>
-              Productos ({sortedProducts.length})
+              Productos ({totalItems})
             </span>
           </CardTitle>
         </CardHeader>
@@ -370,13 +377,38 @@ export function InventoryTable({
           ) : isMobile ? (
             // Vista móvil - Cards
             <div className="space-y-2">
-              {sortedProducts.map((product, index) => (
+              {pagedProducts.map((product, index) => (
                 <MobileProductCard
                   key={product.id}
                   product={product}
                   index={index}
                 />
               ))}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Mostrar</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm">por página</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                    Anterior
+                  </Button>
+                  <span className="text-sm">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             // Vista desktop - Tabla
@@ -445,7 +477,7 @@ export function InventoryTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedProducts.map((product, index) => {
+                  {pagedProducts.map((product, index) => {
                     const stockStatus = getStockStatus(product);
                     return (
                       <motion.tr
@@ -550,6 +582,30 @@ export function InventoryTable({
                   })}
                 </TableBody>
               </Table>
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Mostrar</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm">por página</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                    Anterior
+                  </Button>
+                  <span className="text-sm">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

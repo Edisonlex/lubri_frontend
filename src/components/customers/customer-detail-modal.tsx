@@ -25,7 +25,7 @@ import {
   Bell,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Customer } from "@/lib/mock-data";
+import { Customer } from "@/lib/api";
 
 interface CustomerDetailModalProps {
   isOpen: boolean;

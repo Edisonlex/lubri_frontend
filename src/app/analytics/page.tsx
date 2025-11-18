@@ -11,6 +11,9 @@ import { ForecastTab } from "@/components/analytics/forecast-tab";
 import { InventoryRotationTab } from "@/components/analytics/inventory-rotation-tab";
 import { CompetitionAnalysisTab } from "@/components/analytics/competition-analysis-tab";
 import { ReportsTab } from "@/components/analytics/reports-tab";
+import { AnalyticsMap } from "@/components/gis/analytics-map";
+import { GISProvider } from "@/contexts/gis-context";
+import { ProtectedRoute } from "@/contexts/auth-context";
 
 interface SalesData {
   month: string;
@@ -137,6 +140,7 @@ export default function AnalyticsPage() {
   }
 
   return (
+    <ProtectedRoute permission="analytics.view">
     <div className="flex bg-background">
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
@@ -147,7 +151,7 @@ export default function AnalyticsPage() {
             />
 
             <Tabs defaultValue="sales" className="space-y-4 sm:space-y-6">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-2 p-1 bg-muted/50 rounded-lg">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 gap-2 p-1 bg-muted/50 rounded-lg">
                 <TabsTrigger
                   value="sales"
                   className="text-xs sm:text-sm px-2 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -195,6 +199,14 @@ export default function AnalyticsPage() {
                   <span className="hidden sm:inline">Reportes</span>
                   <span className="sm:hidden">Rep.</span>
                 </TabsTrigger>
+
+                <TabsTrigger
+                  value="gis"
+                  className="text-xs sm:text-sm px-2 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  <span className="hidden sm:inline">Mapa Geográfico</span>
+                  <span className="sm:hidden">GIS</span>
+                </TabsTrigger>
               </TabsList>
 
               <div className="mb-8"></div>
@@ -236,10 +248,17 @@ export default function AnalyticsPage() {
               <TabsContent value="reports" className="space-y-6">
                 <ReportsTab customers={customers} />
               </TabsContent>
+
+              <TabsContent value="gis" className="space-y-6">
+                <GISProvider>
+                  <AnalyticsMap />
+                </GISProvider>
+              </TabsContent>
             </Tabs>
           </div>
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

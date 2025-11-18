@@ -20,13 +20,16 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { POSProvider, usePOS } from "@/contexts/pos-context";
+import { ProtectedRoute } from "@/contexts/auth-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function POSPage() {
   return (
-    <POSProvider>
-      <POSContent />
-    </POSProvider>
+    <ProtectedRoute permission="pos.use">
+      <POSProvider>
+        <POSContent />
+      </POSProvider>
+    </ProtectedRoute>
   );
 }
 

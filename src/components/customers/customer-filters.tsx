@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,6 +25,16 @@ interface CustomerFiltersProps {
 
 export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const handleResize = () => setIsDesktop(window.innerWidth >= 640);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const clearFilters = () => {
     setFilters({
@@ -73,8 +83,7 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
 
       {/* Filters Content - Collapsible on mobile, always visible on desktop */}
       <AnimatePresence>
-        {(isExpanded ||
-          (typeof window !== "undefined" && window.innerWidth >= 640)) && (
+        {mounted && (isExpanded || isDesktop) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}

@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import { StockAlert, api, Product } from "@/lib/api";
+import type { UserRole } from "@/contexts/auth-context";
 
 interface AlertContextType {
   alerts: StockAlert[];
@@ -20,6 +21,7 @@ interface AlertContextType {
   clearNewAlertsFlag: () => void;
   resolvedAlerts: Set<string>;
   checkAndCreateAlerts: (products: Product[]) => void;
+  getAlertsForRole: (role: UserRole) => StockAlert[];
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
@@ -112,6 +114,47 @@ export function AlertProvider({ children }: AlertProviderProps) {
         clearNewAlertsFlag,
         resolvedAlerts,
         checkAndCreateAlerts,
+        getAlertsForRole: (role: UserRole) => {
+          const maxVisible = 7;
+          const urgencyRank: Record<string, number> = {
+            critical: 4,
+            high: 3,
+            medium: 2,
+            low: 1,
+          };
+
+          const base = alerts.filter((a) => !resolvedAlerts.has(a.id));
+
+          const isCriticalOrHigh = (u: StockAlert["urgency"]) =>
+            (["critical", "high"] as StockAlert["urgency"][]).includes(u);
+
+          const filtered = base.filter((a) => {
+            if (a.urgency === "critical") return true;
+            if (a.currentStock === 0) return true;
+            if (role === "cashier") {
+              if (isCriticalOrHigh(a.urgency)) return true;
+              if (a.currentStock <= a.minStock) return true;
+              return false;
+            }
+            if (role === "technician") {
+              if (isCriticalOrHigh(a.urgency)) return true;
+              if (a.urgency === "medium" && a.trend === "worsening") return true;
+              if (a.currentStock === 0) return true;
+              return false;
+            }
+            return true;
+          });
+
+          const sorted = filtered.sort((x, y) => {
+            const ur = urgencyRank[y.urgency] - urgencyRank[x.urgency];
+            if (ur !== 0) return ur;
+            if (x.currentStock !== y.currentStock) return x.currentStock - y.currentStock;
+            if (x.trend !== y.trend) return (y.trend === "worsening" ? 1 : 0) - (x.trend === "worsening" ? 1 : 0);
+            return 0;
+          });
+
+          return sorted.slice(0, maxVisible);
+        },
       }}
     >
       {children}

@@ -35,6 +35,7 @@ import { ExportModal } from "@/components/inventory/export-modal";
 import { AnalyticsModal } from "@/components/inventory/analytics-modal";
 import { useAlerts } from "@/contexts/alerts-context";
 import { toast } from "sonner";
+import { ProtectedRoute } from "@/contexts/auth-context";
 
 export default function InventoryPage() {
   const router = useRouter();
@@ -170,6 +171,7 @@ export default function InventoryPage() {
   );
 
   return (
+    <ProtectedRoute permission="inventory.view">
     <div className="max-w-7xl mx-auto space-y-4 p-3 sm:p-4 md:p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -324,5 +326,6 @@ export default function InventoryPage() {
         </>
       )}
     </div>
+    </ProtectedRoute>
   );
 }

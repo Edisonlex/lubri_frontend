@@ -44,5 +44,5 @@ export function middleware(request: NextRequest) {
 
 // Configurar el middleware para que se ejecute solo en las rutas especificadas
 export const config = {
-  matcher: [...protectedRoutes, ...publicRoutes],
+  matcher: ['/dashboard/:path*', '/pos/:path*', '/inventory/:path*', '/customers/:path*', '/analytics/:path*', '/profile/:path*', '/settings/:path*', '/login/:path*'],
 };

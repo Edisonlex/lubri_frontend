@@ -8,6 +8,7 @@ import { StockMovement } from "@/lib/api";
 declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
+    lastAutoTable?: { finalY: number };
   }
 }
 
@@ -52,7 +53,7 @@ export const exportMovementsToPDF = ({
   // Logo o nombre de la empresa
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.text(companyInfo?.name || "LUBRICENTRO PROFESIONAL", pageWidth / 2, 15, {
     align: "center",
   });
@@ -67,7 +68,7 @@ export const exportMovementsToPDF = ({
   // Título del reporte
   doc.setFontSize(14);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.text("REPORTE DE MOVIMIENTOS DE INVENTARIO", pageWidth / 2, 40, {
     align: "center",
   });
@@ -75,7 +76,7 @@ export const exportMovementsToPDF = ({
   // Información del reporte
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
 
   let infoY = 50;
   doc.text(`Generado el: ${currentDate}`, margin, infoY);
@@ -177,12 +178,12 @@ export const exportMovementsToPDF = ({
   if (finalY < doc.internal.pageSize.height - 50) {
     doc.setFontSize(11);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.text("RESUMEN DE MOVIMIENTOS", margin, finalY);
 
     doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
 
     // Calcular resúmenes
     const entradas = movements.filter((m) => m.type === "entrada").length;
