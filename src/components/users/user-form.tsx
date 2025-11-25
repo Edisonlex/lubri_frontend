@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UserFormData, roles, statuses } from "./types";
+import { userFormSchema } from "@/lib/validation";
 
 interface UserFormProps {
   isOpen: boolean;
@@ -45,10 +46,24 @@ export function UserForm({
   isLoading = false,
 }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    const result = userFormSchema({ requirePassword: !editingUser }).safeParse(
+      formData
+    );
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
+    await onSubmit(result.data);
   };
 
   const handleClose = () => {
@@ -82,6 +97,9 @@ export function UserForm({
                 placeholder="Ingresa el nombre completo"
                 required
               />
+              {errors.name && (
+                <p className="text-destructive text-sm">{errors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -95,6 +113,9 @@ export function UserForm({
                 placeholder="usuario@ejemplo.com"
                 required
               />
+              {errors.email && (
+                <p className="text-destructive text-sm">{errors.email}</p>
+              )}
             </div>
             {!editingUser && (
               <div className="space-y-2">
@@ -109,6 +130,11 @@ export function UserForm({
                   placeholder="Contraseña temporal"
                   required
                 />
+                {errors.password && (
+                  <p className="text-destructive text-sm">
+                    {errors.password}
+                  </p>
+                )}
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
@@ -131,6 +157,9 @@ export function UserForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.role && (
+                  <p className="text-destructive text-sm">{errors.role}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
@@ -151,6 +180,9 @@ export function UserForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.status && (
+                  <p className="text-destructive text-sm">{errors.status}</p>
+                )}
               </div>
             </div>
           </div>

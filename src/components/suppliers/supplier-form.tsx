@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { supplierFormSchema } from "@/lib/validation";
 import {
   SupplierFormData,
   supplierCategories,
@@ -66,6 +67,7 @@ export function SupplierForm({
   isLoading = false,
 }: SupplierFormProps) {
   const [formData, setFormData] = useState<SupplierFormData>(initialData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Actualizar los datos del formulario cuando cambie initialData o se abra el diálogo
   useEffect(() => {
@@ -75,26 +77,18 @@ export function SupplierForm({
   }, [initialData, isOpen]);
 
   const validateForm = (): boolean => {
-    if (!formData.name.trim()) {
-      toast.error("El nombre del proveedor es requerido");
+    const result = supplierFormSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+      toast.error("Revisa los campos marcados en rojo");
       return false;
     }
-    if (!formData.contactPerson.trim()) {
-      toast.error("La persona de contacto es requerida");
-      return false;
-    }
-    if (!formData.email.trim()) {
-      toast.error("El email es requerido");
-      return false;
-    }
-    if (!formData.phone.trim()) {
-      toast.error("El teléfono es requerido");
-      return false;
-    }
-    if (!formData.category) {
-      toast.error("La categoría es requerida");
-      return false;
-    }
+    setErrors({});
     return true;
   };
 
@@ -133,11 +127,14 @@ export function SupplierForm({
                   id="name"
                   value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                    setFormData({ ...formData, name: e.target.value.trim() })
                   }
                   placeholder="Nombre del proveedor"
                   required
                 />
+                {errors.name && (
+                  <p className="text-destructive text-sm">{errors.name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Persona de contacto *</Label>
@@ -147,12 +144,15 @@ export function SupplierForm({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      contactPerson: e.target.value,
+                      contactPerson: e.target.value.trim(),
                     })
                   }
                   placeholder="Nombre del contacto principal"
                   required
                 />
+                {errors.contactPerson && (
+                  <p className="text-destructive text-sm">{errors.contactPerson}</p>
+                )}
               </div>
             </div>
 
@@ -164,11 +164,14 @@ export function SupplierForm({
                   type="email"
                   value={formData.email}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    setFormData({ ...formData, email: e.target.value.trim() })
                   }
                   placeholder="proveedor@ejemplo.com"
                   required
                 />
+                {errors.email && (
+                  <p className="text-destructive text-sm">{errors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono *</Label>
@@ -176,11 +179,17 @@ export function SupplierForm({
                   id="phone"
                   value={formData.phone}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({
+                      ...formData,
+                      phone: e.target.value.replace(/\D/g, ""),
+                    })
                   }
                   placeholder="0987654321"
                   required
                 />
+                {errors.phone && (
+                  <p className="text-destructive text-sm">{errors.phone}</p>
+                )}
               </div>
             </div>
 
@@ -198,6 +207,9 @@ export function SupplierForm({
                   }
                   placeholder="Razón social de la empresa"
                 />
+                {errors.businessName && (
+                  <p className="text-destructive text-sm">{errors.businessName}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="taxId">RUC</Label>
@@ -205,10 +217,13 @@ export function SupplierForm({
                   id="taxId"
                   value={formData.taxId}
                   onChange={(e) =>
-                    setFormData({ ...formData, taxId: e.target.value })
+                    setFormData({ ...formData, taxId: e.target.value.trim() })
                   }
                   placeholder="1234567890001"
                 />
+                {errors.taxId && (
+                  <p className="text-destructive text-sm">{errors.taxId}</p>
+                )}
               </div>
             </div>
 
@@ -232,6 +247,9 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.city && (
+                  <p className="text-destructive text-sm">{errors.city}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
@@ -253,20 +271,26 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.category && (
+                  <p className="text-destructive text-sm">{errors.category}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Dirección</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                placeholder="Dirección completa del proveedor"
-                rows={2}
-              />
+                <Label htmlFor="address">Dirección</Label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                  placeholder="Dirección completa del proveedor"
+                  rows={2}
+                />
+                {errors.address && (
+                  <p className="text-destructive text-sm">{errors.address}</p>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -280,11 +304,14 @@ export function SupplierForm({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      contactPhone: e.target.value,
+                      contactPhone: e.target.value.replace(/\D/g, ""),
                     })
                   }
                   placeholder="0987654321"
                 />
+                {errors.contactPhone && (
+                  <p className="text-destructive text-sm">{errors.contactPhone}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="website">Sitio web</Label>
@@ -292,10 +319,13 @@ export function SupplierForm({
                   id="website"
                   value={formData.website}
                   onChange={(e) =>
-                    setFormData({ ...formData, website: e.target.value })
+                    setFormData({ ...formData, website: e.target.value.trim() })
                   }
                   placeholder="https://www.ejemplo.com"
                 />
+                {errors.website && (
+                  <p className="text-destructive text-sm">{errors.website}</p>
+                )}
               </div>
             </div>
 
@@ -319,6 +349,9 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.paymentTerms && (
+                  <p className="text-destructive text-sm">{errors.paymentTerms}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deliveryTime">Tiempo de entrega</Label>
@@ -328,11 +361,14 @@ export function SupplierForm({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      deliveryTime: e.target.value,
+                      deliveryTime: e.target.value.trim(),
                     })
                   }
                   placeholder="ej: 3-5 días"
                 />
+                {errors.deliveryTime && (
+                  <p className="text-destructive text-sm">{errors.deliveryTime}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="minimumOrder">Pedido mínimo ($)</Label>
@@ -350,6 +386,9 @@ export function SupplierForm({
                   }
                   placeholder="0.00"
                 />
+                {errors.minimumOrder && (
+                  <p className="text-destructive text-sm">{errors.minimumOrder}</p>
+                )}
               </div>
             </div>
 
@@ -373,6 +412,9 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.rating && (
+                  <p className="text-destructive text-sm">{errors.rating}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
@@ -390,6 +432,9 @@ export function SupplierForm({
                     <SelectItem value="inactive">Inactivo</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.status && (
+                  <p className="text-destructive text-sm">{errors.status}</p>
+                )}
               </div>
             </div>
 
@@ -404,6 +449,9 @@ export function SupplierForm({
                 placeholder="Información adicional sobre el proveedor"
                 rows={3}
               />
+              {errors.notes && (
+                <p className="text-destructive text-sm">{errors.notes}</p>
+              )}
             </div>
           </div>
           <DialogFooter>

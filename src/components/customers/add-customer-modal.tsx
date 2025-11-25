@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Customer, Vehicle } from "@/lib/api";
 import { usePOS } from "@/contexts/pos-context";
+import { customerFormSchema, plateRegex } from "@/lib/validation";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -60,6 +61,7 @@ export function AddCustomerModal({
 
   const [vehicles, setVehicles] = useState<Omit<Vehicle, "id">[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (customer) {
@@ -102,6 +104,33 @@ export function AddCustomerModal({
     setIsLoading(true);
 
     try {
+      const result = customerFormSchema.safeParse({
+        ...customerData,
+        vehicles: vehicles.map((v) => ({
+          brand: v.brand,
+          model: v.model,
+          year: v.year,
+          plate: v.plate,
+          engine: v.engine || "",
+          mileage: v.mileage || 0,
+          lastService: v.lastService || "",
+          nextService: v.nextService || "",
+          oilType: v.oilType || "",
+          filterType: v.filterType || "",
+          color: v.color || "",
+        })),
+      });
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          const key = String(err.path.join(".") || "general");
+          fieldErrors[key] = err.message;
+        });
+        setErrors(fieldErrors);
+        toast.error("Revisa los campos marcados y corrige los datos");
+        return;
+      }
+      setErrors({});
       if (customer) {
         // Actualización de cliente existente
         const updatedVehicles = vehicles.map((vehicle, index) => ({
@@ -119,7 +148,7 @@ export function AddCustomerModal({
       } else {
         // Creación de nuevo cliente
         const newCustomer = {
-          ...customerData,
+          ...result.data,
           vehicles: vehicles.map((vehicle, index) => ({
             id: `vehicle-${Date.now()}-${index}`,
             ...vehicle,
@@ -282,6 +311,9 @@ export function AddCustomerModal({
                       required
                       className="h-9 sm:h-10 text-sm"
                     />
+                    {errors.name && (
+                      <p className="text-destructive text-sm">{errors.name}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="idNumber" className="text-xs sm:text-sm">
@@ -307,6 +339,9 @@ export function AddCustomerModal({
                       required
                       className="h-9 sm:h-10 text-sm"
                     />
+                    {errors.idNumber && (
+                      <p className="text-destructive text-sm">{errors.idNumber}</p>
+                    )}
                   </div>
                   {customerData.customerType === "business" && (
                     <>
@@ -334,9 +369,9 @@ export function AddCustomerModal({
                         <Label htmlFor="ruc" className="text-xs sm:text-sm">
                           RUC
                         </Label>
-                        <Input
-                          id="ruc"
-                          value={customerData.ruc}
+                      <Input
+                        id="ruc"
+                        value={customerData.ruc}
                           onChange={(e) =>
                             setCustomerData({
                               ...customerData,
@@ -344,8 +379,11 @@ export function AddCustomerModal({
                             })
                           }
                           placeholder="1792345678001"
-                          className="h-9 sm:h-10 text-sm"
-                        />
+                        className="h-9 sm:h-10 text-sm"
+                      />
+                      {errors.ruc && (
+                        <p className="text-destructive text-sm">{errors.ruc}</p>
+                      )}
                       </div>
                     </>
                   )}
@@ -370,13 +408,16 @@ export function AddCustomerModal({
                       onChange={(e) =>
                         setCustomerData({
                           ...customerData,
-                          phone: e.target.value,
+                          phone: e.target.value.replace(/\D/g, ""),
                         })
                       }
                       placeholder="+593 99 123 4567"
                       required
                       className="h-9 sm:h-10 text-sm"
                     />
+                    {errors.phone && (
+                      <p className="text-destructive text-sm">{errors.phone}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs sm:text-sm">
@@ -389,13 +430,16 @@ export function AddCustomerModal({
                       onChange={(e) =>
                         setCustomerData({
                           ...customerData,
-                          email: e.target.value,
+                          email: e.target.value.trim(),
                         })
                       }
                       placeholder="cliente@email.com"
                       required
                       className="h-9 sm:h-10 text-sm"
                     />
+                    {errors.email && (
+                      <p className="text-destructive text-sm">{errors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-xs sm:text-sm">
@@ -414,27 +458,33 @@ export function AddCustomerModal({
                       required
                       className="h-9 sm:h-10 text-sm"
                     />
+                    {errors.address && (
+                      <p className="text-destructive text-sm">{errors.address}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-xs sm:text-sm">
                       Ciudad *
                     </Label>
-                    <Select
-                      value={customerData.city}
-                      onValueChange={(value) =>
-                        setCustomerData({ ...customerData, city: value })
-                      }
-                    >
-                      <SelectTrigger className="h-9 sm:h-10 text-sm">
-                        <SelectValue placeholder="Seleccionar ciudad" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="quito">Quito</SelectItem>
-                        <SelectItem value="guayaquil">Guayaquil</SelectItem>
-                        <SelectItem value="cuenca">Cuenca</SelectItem>
-                        <SelectItem value="ambato">Ambato</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={customerData.city}
+                        onValueChange={(value) =>
+                          setCustomerData({ ...customerData, city: value })
+                        }
+                      >
+                        <SelectTrigger className="h-9 sm:h-10 text-sm">
+                          <SelectValue placeholder="Seleccionar ciudad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="quito">Quito</SelectItem>
+                          <SelectItem value="guayaquil">Guayaquil</SelectItem>
+                          <SelectItem value="cuenca">Cuenca</SelectItem>
+                          <SelectItem value="ambato">Ambato</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.city && (
+                        <p className="text-destructive text-sm">{errors.city}</p>
+                      )}
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
@@ -568,6 +618,9 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
+                              {errors[`vehicles.${index}.brand`] && (
+                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.brand`]}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs sm:text-sm">
@@ -582,6 +635,9 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
+                              {errors[`vehicles.${index}.model`] && (
+                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.model`]}</p>
+                              )}
                             </div>
                           </div>
 
@@ -605,6 +661,9 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
+                              {errors[`vehicles.${index}.year`] && (
+                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.year`]}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs sm:text-sm">
@@ -613,12 +672,19 @@ export function AddCustomerModal({
                               <Input
                                 value={vehicle.plate}
                                 onChange={(e) =>
-                                  updateVehicle(index, "plate", e.target.value)
+                                  updateVehicle(
+                                    index,
+                                    "plate",
+                                    e.target.value.toUpperCase().trim()
+                                  )
                                 }
                                 placeholder="ABC-1234"
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
+                              {errors[`vehicles.${index}.plate`] && (
+                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.plate`]}</p>
+                              )}
                             </div>
                           </div>
 

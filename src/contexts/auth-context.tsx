@@ -70,6 +70,7 @@ const rolePermissions: Record<UserRole, string[]> = {
     "dashboard.view",
     "pos.use",
     "inventory.manage",
+    "inventory.view",
     "customers.manage",
     "customers.view",
     "analytics.view",

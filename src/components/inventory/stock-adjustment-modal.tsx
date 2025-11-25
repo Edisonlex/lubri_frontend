@@ -29,6 +29,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useStockManagement } from "@/hooks/use-stock-management";
 import { Product } from "@/lib/api";
+import { stockAdjustmentSchema } from "@/lib/validation";
 
 interface StockAdjustmentModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export function StockAdjustmentModal({
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { updateProductStock, registerStockMovement } = useStockManagement();
 
@@ -65,10 +67,22 @@ export function StockAdjustmentModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quantity || Number.parseInt(quantity) <= 0) {
-      toast.error("Ingrese una cantidad válida");
+    const result = stockAdjustmentSchema.safeParse({
+      adjustmentType,
+      quantity,
+      reason,
+      notes,
+    });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
 
     if (
       adjustmentType === "subtract" &&
@@ -237,6 +251,9 @@ export function StockAdjustmentModal({
                 required
                 className="h-10 text-sm"
               />
+              {errors.quantity && (
+                <p className="text-destructive text-sm">{errors.quantity}</p>
+              )}
             </div>
 
             {/* Preview */}
@@ -292,6 +309,9 @@ export function StockAdjustmentModal({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.reason && (
+                <p className="text-destructive text-sm">{errors.reason}</p>
+              )}
             </div>
 
             {/* Notes */}

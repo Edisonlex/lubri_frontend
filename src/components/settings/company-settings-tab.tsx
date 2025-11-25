@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { api, CompanySettings, Branch } from "@/lib/api";
+import { companySettingsSchema } from "@/lib/validation";
+import { useState } from "react";
 
 interface CompanySettingsTabProps {
   companyData: CompanySettings;
@@ -27,9 +29,21 @@ export function CompanySettingsTab({
   branches,
   setBranches,
 }: CompanySettingsTabProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const handleSaveCompany = async () => {
     try {
-      await api.updateCompanySettings(companyData);
+      const result = companySettingsSchema.safeParse(companyData);
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          const key = String(err.path[0] ?? "general");
+          fieldErrors[key] = err.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+      setErrors({});
+      await api.updateCompanySettings(result.data);
       toast.success("Información de empresa actualizada correctamente");
     } catch (error) {
       console.error("Error saving company:", error);
@@ -78,6 +92,9 @@ export function CompanySettingsTab({
                   setCompanyData({ ...companyData, name: e.target.value })
                 }
               />
+              {errors.name && (
+                <p className="text-destructive text-sm">{errors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="company-ruc">RUC</Label>
@@ -88,6 +105,9 @@ export function CompanySettingsTab({
                   setCompanyData({ ...companyData, ruc: e.target.value })
                 }
               />
+              {errors.ruc && (
+                <p className="text-destructive text-sm">{errors.ruc}</p>
+              )}
             </div>
           </div>
 
@@ -100,6 +120,9 @@ export function CompanySettingsTab({
                 setCompanyData({ ...companyData, address: e.target.value })
               }
             />
+            {errors.address && (
+              <p className="text-destructive text-sm">{errors.address}</p>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -112,6 +135,9 @@ export function CompanySettingsTab({
                   setCompanyData({ ...companyData, phone: e.target.value })
                 }
               />
+              {errors.phone && (
+                <p className="text-destructive text-sm">{errors.phone}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="company-email">Email</Label>
@@ -123,6 +149,9 @@ export function CompanySettingsTab({
                   setCompanyData({ ...companyData, email: e.target.value })
                 }
               />
+              {errors.email && (
+                <p className="text-destructive text-sm">{errors.email}</p>
+              )}
             </div>
           </div>
 

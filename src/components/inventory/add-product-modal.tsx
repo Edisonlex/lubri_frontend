@@ -26,6 +26,7 @@ import { motion } from "framer-motion";
 
 import { toast } from "sonner";
 import { Product } from "@/lib/api";
+import { productSchema } from "@/lib/validation";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -57,6 +58,7 @@ export function AddProductModal({
     status: "active",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (product) {
@@ -99,8 +101,21 @@ export function AddProductModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    const result = productSchema.safeParse({
+      ...formData,
+    });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+      setIsLoading(false);
+      return;
+    }
+    setErrors({});
 
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       toast.success(
@@ -108,14 +123,9 @@ export function AddProductModal({
           ? "Producto actualizado exitosamente"
           : "Producto creado exitosamente"
       );
-
-      // Llama a onProductSaved si está definida
-      if (onProductSaved) {
-        onProductSaved();
-      }
-
+      if (onProductSaved) onProductSaved();
       onClose();
-    }, 1500);
+    }, 800);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -151,6 +161,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.name && (
+                  <p className="text-destructive text-sm">{errors.name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="brand" className="text-sm font-medium">
@@ -164,6 +177,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.brand && (
+                  <p className="text-destructive text-sm">{errors.brand}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-sm font-medium">
@@ -193,6 +209,9 @@ export function AddProductModal({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.category && (
+                  <p className="text-destructive text-sm">{errors.category}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status" className="text-sm font-medium">
@@ -217,6 +236,9 @@ export function AddProductModal({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.status && (
+                  <p className="text-destructive text-sm">{errors.status}</p>
+                )}
               </div>
             </div>
           </div>
@@ -243,6 +265,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.cost && (
+                  <p className="text-destructive text-sm">{errors.cost}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price" className="text-sm font-medium">
@@ -258,6 +283,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.price && (
+                  <p className="text-destructive text-sm">{errors.price}</p>
+                )}
               </div>
             </div>
           </div>
@@ -283,6 +311,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.stock && (
+                  <p className="text-destructive text-sm">{errors.stock}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="minStock" className="text-sm font-medium">
@@ -299,6 +330,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.minStock && (
+                  <p className="text-destructive text-sm">{errors.minStock}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="maxStock" className="text-sm font-medium">
@@ -315,6 +349,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.maxStock && (
+                  <p className="text-destructive text-sm">{errors.maxStock}</p>
+                )}
               </div>
             </div>
           </div>
@@ -339,6 +376,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.sku && (
+                  <p className="text-destructive text-sm">{errors.sku}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="barcode" className="text-sm font-medium">
@@ -366,6 +406,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.supplier && (
+                  <p className="text-destructive text-sm">{errors.supplier}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location" className="text-sm font-medium">
@@ -381,6 +424,9 @@ export function AddProductModal({
                   required
                   className="h-10 text-sm"
                 />
+                {errors.location && (
+                  <p className="text-destructive text-sm">{errors.location}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">

@@ -19,6 +19,8 @@ import {
 import { FileText, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { api, SRISettings } from "@/lib/api";
+import { sriSettingsSchema } from "@/lib/validation";
+import { useState } from "react";
 
 interface SriSettingsTabProps {
   sriSettings: SRISettings;
@@ -29,9 +31,21 @@ export function SriSettingsTab({
   sriSettings,
   setSriSettings,
 }: SriSettingsTabProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const handleSaveSriSettings = async () => {
     try {
-      await api.updateSriSettings(sriSettings);
+      const result = sriSettingsSchema.safeParse(sriSettings);
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          const key = String(err.path[0] ?? "general");
+          fieldErrors[key] = err.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+      setErrors({});
+      await api.updateSriSettings(result.data);
       toast.success("Configuración SRI guardada correctamente");
     } catch (error) {
       console.error("Error saving SRI settings:", error);
@@ -123,19 +137,24 @@ export function SriSettingsTab({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="sri-certificate">Certificado Digital</Label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Seleccionar archivo .p12"
-              value={sriSettings.certificateFile}
-              readOnly
-            />
-            <Button variant="outline" asChild>
-              <Label htmlFor="certificate-upload" className="cursor-pointer">
-                <Upload className="h-4 w-4" />
-                <input
-                  id="certificate-upload"
+          <div className="space-y-2">
+            <Label htmlFor="sri-certificate">Certificado Digital</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Seleccionar archivo .p12"
+                value={sriSettings.certificateFile}
+                readOnly
+              />
+              {errors.certificateFile && (
+                <p className="text-destructive text-sm">
+                  {errors.certificateFile}
+                </p>
+              )}
+              <Button variant="outline" asChild>
+                <Label htmlFor="certificate-upload" className="cursor-pointer">
+                  <Upload className="h-4 w-4" />
+                  <input
+                    id="certificate-upload"
                   type="file"
                   accept=".p12,.pfx"
                   className="hidden"
@@ -146,20 +165,25 @@ export function SriSettingsTab({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="sri-password">Contraseña del Certificado</Label>
-          <Input
-            id="sri-password"
-            type="password"
-            value={sriSettings.certificatePassword}
-            onChange={(e) =>
-              setSriSettings({
-                ...sriSettings,
-                certificatePassword: e.target.value,
-              })
-            }
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="sri-password">Contraseña del Certificado</Label>
+            <Input
+              id="sri-password"
+              type="password"
+              value={sriSettings.certificatePassword}
+              onChange={(e) =>
+                setSriSettings({
+                  ...sriSettings,
+                  certificatePassword: e.target.value,
+                })
+              }
+            />
+            {errors.certificatePassword && (
+              <p className="text-destructive text-sm">
+                {errors.certificatePassword}
+              </p>
+            )}
+          </div>
 
         <div className="flex items-center space-x-2">
           <Switch

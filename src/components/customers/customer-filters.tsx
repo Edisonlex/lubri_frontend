@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { customerFiltersSchema } from "@/lib/validation";
 
 interface CustomerFiltersProps {
   filters: {
@@ -27,6 +28,7 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -100,11 +102,28 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
                     type="search"
                     placeholder="Buscar clientes..."
                     value={filters.search}
-                    onChange={(e) =>
-                      setFilters({ ...filters, search: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const next = { ...filters, search: e.target.value.trim() };
+                      const result = customerFiltersSchema.safeParse(next);
+                      if (!result.success) {
+                        const fieldErrors: Record<string, string> = {};
+                        result.error.errors.forEach((err) => {
+                          const key = String(err.path[0] ?? "general");
+                          fieldErrors[key] = err.message;
+                        });
+                        setErrors(fieldErrors);
+                        return;
+                      }
+                      setErrors({});
+                      setFilters(result.data);
+                    }}
                     className="w-full pl-7 sm:pl-8 text-xs sm:text-sm bg-background h-8 sm:h-10"
                   />
+                  {errors.search && (
+                    <p className="text-destructive text-xs mt-1">
+                      {errors.search}
+                    </p>
+                  )}
                 </div>
 
                 {/* Customer Type Filter */}

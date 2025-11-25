@@ -21,6 +21,7 @@ import {
 import { Product } from "@/lib/api";
 import { api } from "@/lib/api"; // Cambiado a importar api en lugar de createStockMovement
 import { toast } from "sonner";
+import { stockMovementSchema } from "@/lib/validation";
 
 interface StockMovementModalProps {
   isOpen: boolean;
@@ -37,11 +38,26 @@ export function StockMovementModal({
   const [type, setType] = useState("entry");
   const [reason, setReason] = useState(""); // Cambiado de notes a reason
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product) return;
-
+    const parseResult = stockMovementSchema.safeParse({
+      type,
+      quantity,
+      reason,
+    });
+    if (!parseResult.success) {
+      const fieldErrors: Record<string, string> = {};
+      parseResult.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
     setIsSubmitting(true);
     try {
       // Convertir a número y validar
@@ -118,6 +134,9 @@ export function StockMovementModal({
                 <SelectItem value="return">Devolución</SelectItem>
               </SelectContent>
             </Select>
+            {errors.type && (
+              <p className="text-destructive text-sm">{errors.type}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -130,6 +149,9 @@ export function StockMovementModal({
               min="1"
               required
             />
+            {errors.quantity && (
+              <p className="text-destructive text-sm">{errors.quantity}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -142,6 +164,9 @@ export function StockMovementModal({
               rows={3}
               required
             />
+            {errors.reason && (
+              <p className="text-destructive text-sm">{errors.reason}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

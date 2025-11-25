@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Search, Filter, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { inventoryFiltersSchema } from "@/lib/validation";
 
 interface InventoryFiltersProps {
   filters: {
@@ -29,6 +31,7 @@ export function InventoryFilters({
   setFilters,
 }: InventoryFiltersProps) {
   const isMobile = useIsMobile();
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const clearFilters = () => {
     setFilters({
@@ -87,9 +90,26 @@ export function InventoryFilters({
           <Input
             placeholder="Buscar productos..."
             value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            onChange={(e) => {
+              const next = { ...filters, search: e.target.value.trim() };
+              const result = inventoryFiltersSchema.safeParse(next);
+              if (!result.success) {
+                const fieldErrors: Record<string, string> = {};
+                result.error.errors.forEach((err) => {
+                  const key = String(err.path[0] ?? "general");
+                  fieldErrors[key] = err.message;
+                });
+                setErrors(fieldErrors);
+                return;
+              }
+              setErrors({});
+              setFilters(result.data);
+            }}
             className={isMobile ? "pl-8 h-7 text-xs" : "pl-10 h-10 text-sm"}
           />
+          {errors.search && (
+            <p className="text-destructive text-xs mt-1">{errors.search}</p>
+          )}
         </div>
 
         {/* Category Filter */}
