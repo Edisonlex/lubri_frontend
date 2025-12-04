@@ -69,15 +69,19 @@ export function DashboardMetrics() {
     }
 
     // Ventas de hoy
-    const today = new Date().toISOString().split("T")[0];
-    const todaySales = sales.filter((sale) => sale.date === today);
+    const todayDate = new Date();
+    const todaySales = sales.filter((sale) => {
+      const d = new Date(sale.date);
+      return d.toDateString() === todayDate.toDateString();
+    });
     const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.total, 0);
 
     // Ventas de ayer (para comparación)
-    const yesterday = new Date(Date.now() - 86400000)
-      .toISOString()
-      .split("T")[0];
-    const yesterdaySales = sales.filter((sale) => sale.date === yesterday);
+    const yesterdayDate = new Date(Date.now() - 86400000);
+    const yesterdaySales = sales.filter((sale) => {
+      const d = new Date(sale.date);
+      return d.toDateString() === yesterdayDate.toDateString();
+    });
     const yesterdayRevenue = yesterdaySales.reduce(
       (sum, sale) => sum + sale.total,
       0

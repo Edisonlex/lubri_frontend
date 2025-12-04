@@ -15,7 +15,7 @@ import {
   Package,
   RefreshCw,
 } from "lucide-react";
-import { Product } from "@/app/inventory/page";
+import { type Product } from "@/contexts/pos-context";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 

@@ -16,7 +16,7 @@ import {
   exportToExcel,
   prepareInventoryData,
 } from "@/lib/export-utils";
-import { Product } from "@/app/inventory/page";
+import { type Product } from "@/contexts/pos-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ExportModalProps {

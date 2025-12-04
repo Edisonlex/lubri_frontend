@@ -189,6 +189,9 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
                     <SelectItem value="all" className="text-xs sm:text-sm">
                       Todas las ciudades
                     </SelectItem>
+                    <SelectItem value="La Maná" className="text-xs sm:text-sm">
+                      La Maná
+                    </SelectItem>
                     <SelectItem value="quito" className="text-xs sm:text-sm">
                       Quito
                     </SelectItem>

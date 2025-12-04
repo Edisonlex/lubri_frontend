@@ -17,18 +17,33 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
+import { usePOS } from "@/contexts/pos-context";
+import { useMemo } from "react";
 
-const salesData = [
-  { name: "Lun", ventas: 1200, meta: 1500 },
-  { name: "Mar", ventas: 1800, meta: 1500 },
-  { name: "Mié", ventas: 1600, meta: 1500 },
-  { name: "Jue", ventas: 2200, meta: 1500 },
-  { name: "Vie", ventas: 2800, meta: 1500 },
-  { name: "Sáb", ventas: 3200, meta: 1500 },
-  { name: "Dom", ventas: 2450, meta: 1500 },
-];
+function getWeekdayShort(date: Date) {
+  const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  return days[date.getDay()];
+}
 
 export function SalesChart() {
+  const { sales } = usePOS();
+
+  const salesData = useMemo(() => {
+    const today = new Date();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const days = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(today.getTime() - (6 - i) * dayMs);
+      const label = getWeekdayShort(d);
+      const dayTotal = sales
+        .filter((s) => {
+          const sd = new Date(s.date);
+          return sd.toDateString() === d.toDateString();
+        })
+        .reduce((sum, s) => sum + s.total, 0);
+      return { name: label, ventas: Number(dayTotal.toFixed(2)), meta: 1500 };
+    });
+    return days;
+  }, [sales]);
 
   return (
     <motion.div

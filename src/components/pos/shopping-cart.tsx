@@ -17,6 +17,7 @@ import {
   Package,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 import { usePOS } from "@/contexts/pos-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -202,11 +203,11 @@ export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
             </div>
           </ScrollArea>
 
-          {/* Footer */}
-          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm">
-            <div className="p-6 space-y-6">
-              {/* Summary */}
-              <div className="space-y-4">
+      {/* Footer */}
+      <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm">
+        <div className="p-6 space-y-6">
+          {/* Summary */}
+          <div className="space-y-4">
                 <div className="flex justify-between text-base">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-semibold text-foreground">
@@ -220,32 +221,54 @@ export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
                   </span>
                 </div>
                 <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-lg text-foreground">
-                    Total
-                  </span>
-                  <span className="font-bold text-2xl text-primary">
-                    ${(cartTotal * 1.12).toFixed(2)}
-                  </span>
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-lg text-foreground">
+                Total
+              </span>
+              <span className="font-bold text-2xl text-primary">
+                ${(cartTotal * 1.12).toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className={"rounded-lg border p-3 flex items-center gap-2 " + (selectedCustomer ? "bg-green-50 dark:bg-green-950/20" : "bg-amber-50 dark:bg-amber-950/20")}> 
+              <User className={"h-4 w-4 " + (selectedCustomer ? "text-green-700 dark:text-green-300" : "text-amber-600 dark:text-amber-400")} />
+              <div className="text-xs">
+                <p className="font-semibold">Cliente</p>
+                <p className="text-muted-foreground">{selectedCustomer ? "Seleccionado" : "Falta seleccionar"}</p>
+              </div>
+            </div>
+            <div className="rounded-lg border p-3 flex items-center gap-2 bg-muted/30">
+              <CartIcon className="h-4 w-4 text-muted-foreground" />
+              <div className="text-xs">
+                <p className="font-semibold">Items</p>
+                <p className="text-muted-foreground">{itemCount} {itemCount === 1 ? "item" : "items"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Preparación de pago</p>
+            <Progress value={selectedCustomer ? 100 : 50} />
+          </div>
+
+          {/* Warnings */}
+          {!selectedCustomer && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
+                    Cliente requerido
+                  </p>
+                  <p className="text-amber-600 dark:text-amber-400 text-xs">
+                    Selecciona un cliente para continuar con la venta
+                  </p>
                 </div>
               </div>
-
-              {/* Warnings */}
-              {!selectedCustomer && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <div>
-                      <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
-                        Cliente requerido
-                      </p>
-                      <p className="text-amber-600 dark:text-amber-400 text-xs">
-                        Selecciona un cliente para continuar con la venta
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+            </div>
+          )}
 
               {/* Actions */}
               <div className="grid gap-3">

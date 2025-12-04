@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
+import { type VariantProps } from "class-variance-authority"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -39,7 +40,7 @@ interface SupplierFormData {
   phone: string
   address: string
   category: string
-  status: string
+  status: "active" | "inactive"
   contactPerson: string
   notes?: string
 }
@@ -50,7 +51,7 @@ const initialFormData: SupplierFormData = {
   phone: "",
   address: "",
   category: "Lubricantes",
-  status: "Activo",
+  status: "active",
   contactPerson: "",
   notes: ""
 }
@@ -65,8 +66,8 @@ const categories = [
 ]
 
 const statuses = [
-  { value: "Activo", label: "Activo" },
-  { value: "Inactivo", label: "Inactivo" }
+  { value: "active", label: "Activo" },
+  { value: "inactive", label: "Inactivo" }
 ]
 
 export function SupplierManagement() {
@@ -146,7 +147,9 @@ export function SupplierManagement() {
     }
   }
 
-  const getCategoryBadgeVariant = (category: string) => {
+  const getCategoryBadgeVariant = (
+    category: string
+  ): VariantProps<typeof badgeVariants>["variant"] => {
     switch (category) {
       case "Lubricantes":
         return "default"
@@ -260,7 +263,7 @@ export function SupplierManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
-                    <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                    <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as "active" | "inactive" })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -392,11 +395,11 @@ export function SupplierManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Badge variant={getCategoryBadgeVariant(supplier.category)}>
+                    <Badge variant={getCategoryBadgeVariant(supplier.category || "")}> 
                       {supplier.category}
                     </Badge>
-                    <Badge variant={supplier.status === "Activo" ? "default" : "secondary"}>
-                      {supplier.status}
+                    <Badge variant={supplier.status === "active" ? "default" : "secondary"}>
+                      {supplier.status === "active" ? "Activo" : "Inactivo"}
                     </Badge>
                   </div>
                 </CardHeader>

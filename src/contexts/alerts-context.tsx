@@ -115,7 +115,6 @@ export function AlertProvider({ children }: AlertProviderProps) {
         resolvedAlerts,
         checkAndCreateAlerts,
         getAlertsForRole: (role: UserRole) => {
-          const maxVisible = 7;
           const urgencyRank: Record<string, number> = {
             critical: 4,
             high: 3,
@@ -153,7 +152,7 @@ export function AlertProvider({ children }: AlertProviderProps) {
             return 0;
           });
 
-          return sorted.slice(0, maxVisible);
+          return sorted;
         },
       }}
     >

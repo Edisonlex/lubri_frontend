@@ -4,76 +4,75 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.98 0.01 250);
-  --foreground: oklch(0.12 0.03 260); /* Más oscuro para mejor contraste */
+  --background: oklch(0.98 0.01 220);
+  --foreground: oklch(0.15 0.04 220);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.03 260); /* Más contraste */
+  --card-foreground: oklch(0.15 0.04 220);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.03 260);
-  --primary: oklch(0.55 0.18 255);
-  --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.96 0.01 250); /* Más claro para mejor contraste */
-  --secondary-foreground: oklch(0.12 0.03 260); /* Más oscuro */
-  --muted: oklch(0.95 0.01 250);
-  --muted-foreground: oklch(0.45 0.02 256); /* Más oscuro para mejor lectura */
-  --accent: oklch(0.7 0.16 40);
-  --accent-foreground: oklch(0.12 0.03 260); /* Texto oscuro sobre acento */
-  --destructive: oklch(0.6 0.23 25);
-  --destructive-foreground: oklch(0.98 0.01 250);
-  --border: oklch(0.85 0.02 250); /* Bordes más visibles */
+  --popover-foreground: oklch(0.15 0.04 220);
+  --primary: oklch(0.52 0.16 240);
+  --primary-foreground: oklch(0.98 0.01 220);
+  --secondary: oklch(0.96 0.02 220);
+  --secondary-foreground: oklch(0.15 0.04 220);
+  --muted: oklch(0.94 0.02 220);
+  --muted-foreground: oklch(0.46 0.03 220);
+  --accent: oklch(0.6 0.12 180);
+  --accent-foreground: oklch(0.15 0.04 220);
+  --destructive: oklch(0.57 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 220);
+  --border: oklch(0.86 0.03 220);
   --input: oklch(1 0 0);
-  --ring: oklch(0.55 0.18 255);
-  --chart-1: oklch(0.55 0.18 255);
-  --chart-2: oklch(0.7 0.16 40);
-  --chart-3: oklch(0.5 0.12 160);
-  --chart-4: oklch(0.65 0.1 310);
-  --chart-5: oklch(0.45 0.1 230);
+  --ring: oklch(0.52 0.16 240);
+  --chart-1: oklch(0.52 0.16 240);
+  --chart-2: oklch(0.6 0.12 180);
+  --chart-3: oklch(0.48 0.11 140);
+  --chart-4: oklch(0.65 0.09 280);
+  --chart-5: oklch(0.55 0.08 320);
   --radius: 0.5rem;
-  --sidebar: oklch(0.97 0.01 250);
-  --sidebar-foreground: oklch(0.12 0.03 260); /* Más contraste */
-  --sidebar-primary: oklch(0.55 0.18 255);
-  --sidebar-primary-foreground: oklch(0.98 0.01 250);
-  --sidebar-accent: oklch(0.7 0.16 40);
-  --sidebar-accent-foreground: oklch(0.12 0.03 260); /* Texto oscuro sobre acento */
-  --sidebar-border: oklch(0.85 0.02 250);
-  --sidebar-ring: oklch(0.55 0.18 255);
+  --sidebar: oklch(0.97 0.01 220);
+  --sidebar-foreground: oklch(0.15 0.04 220);
+  --sidebar-primary: oklch(0.52 0.16 240);
+  --sidebar-primary-foreground: oklch(0.98 0.01 220);
+  --sidebar-accent: oklch(0.6 0.12 180);
+  --sidebar-accent-foreground: oklch(0.15 0.04 220);
+  --sidebar-border: oklch(0.86 0.03 220);
+  --sidebar-ring: oklch(0.52 0.16 240);
 }
 
 .dark {
-  --background: oklch(0.12 0.03 260);
-  --foreground: oklch(0.98 0.01 250); /* Texto más claro para mejor contraste */
-  --card: oklch(0.16 0.04 260);
-  --card-foreground: oklch(0.98 0.01 250); /* Texto muy claro */
-  --popover: oklch(0.16 0.04 260);
-  --popover-foreground: oklch(0.98 0.01 250);
-  --primary: oklch(0.65 0.2 255); /* Primario más claro */
-  --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.2 0.03 260); /* Secondary más claro */
-  --secondary-foreground: oklch(0.98 0.01 250); /* Texto claro */
-  --muted: oklch(0.18 0.03 260);
-  --muted-foreground: oklch(0.85 0.02 260); /* Texto muted más visible */
-  --accent: oklch(0.75 0.15 40);
-  --accent-foreground: oklch(0.98 0.01 250); /* Texto claro sobre acento */
-  --destructive: oklch(0.7 0.22 25); /* Destructive más claro */
-  --destructive-foreground: oklch(0.98 0.01 250);
-  --border: oklch(0.3 0.04 260); /* Bordes mucho más visibles */
-  --input: oklch(0.2 0.03 260);
-  --ring: oklch(0.65 0.2 255);
-  --chart-1: oklch(0.65 0.2 255);
-  --chart-2: oklch(0.75 0.15 40);
-  --chart-3: oklch(0.7 0.13 160);
-  --chart-4: oklch(0.75 0.1 310);
-  --chart-5: oklch(0.6 0.12 230);
-  --sidebar: oklch(0.16 0.04 260);
-  --sidebar-foreground: oklch(0.98 0.01 250); /* Texto sidebar claro */
-  --sidebar-primary: oklch(0.65 0.2 255);
-  --sidebar-primary-foreground: oklch(0.98 0.01 250);
-  --sidebar-accent: oklch(0.75 0.15 40);
-  --sidebar-accent-foreground: oklch(0.98 0.01 250); /* Texto claro sobre acento */
-  --sidebar-border: oklch(0.3 0.04 260);
-  --sidebar-ring: oklch(0.65 0.2 255);
+  --background: oklch(0.12 0.03 220);
+  --foreground: oklch(0.98 0.01 220);
+  --card: oklch(0.16 0.04 220);
+  --card-foreground: oklch(0.98 0.01 220);
+  --popover: oklch(0.16 0.04 220);
+  --popover-foreground: oklch(0.98 0.01 220);
+  --primary: oklch(0.62 0.18 240);
+  --primary-foreground: oklch(0.98 0.01 220);
+  --secondary: oklch(0.22 0.04 220);
+  --secondary-foreground: oklch(0.98 0.01 220);
+  --muted: oklch(0.18 0.03 220);
+  --muted-foreground: oklch(0.82 0.02 220);
+  --accent: oklch(0.68 0.14 180);
+  --accent-foreground: oklch(0.98 0.01 220);
+  --destructive: oklch(0.65 0.24 25);
+  --destructive-foreground: oklch(0.98 0.01 220);
+  --border: oklch(0.32 0.05 220);
+  --input: oklch(0.22 0.04 220);
+  --ring: oklch(0.62 0.18 240);
+  --chart-1: oklch(0.62 0.18 240);
+  --chart-2: oklch(0.68 0.14 180);
+  --chart-3: oklch(0.58 0.13 140);
+  --chart-4: oklch(0.72 0.11 280);
+  --chart-5: oklch(0.63 0.1 320);
+  --sidebar: oklch(0.16 0.04 220);
+  --sidebar-foreground: oklch(0.98 0.01 220);
+  --sidebar-primary: oklch(0.62 0.18 240);
+  --sidebar-primary-foreground: oklch(0.98 0.01 220);
+  --sidebar-accent: oklch(0.68 0.14 180);
+  --sidebar-accent-foreground: oklch(0.98 0.01 220);
+  --sidebar-border: oklch(0.32 0.05 220);
+  --sidebar-ring: oklch(0.62 0.18 240);
 }
-
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
@@ -124,7 +123,7 @@
     @apply bg-background text-foreground;
   }
   
-  /* Mejoras específicas para gráficos en modo oscuro - Reglas más específicas */
+  /* Mejoras para gráficos en modo oscuro */
   .dark .recharts-text {
     fill: hsl(var(--foreground)) !important;
   }
@@ -217,7 +216,7 @@
     color: hsl(var(--foreground));
   }
   
-  /* Específico para elementos de gráficos - Reglas más agresivas */
+  /* Específico para elementos de gráficos */
   .dark svg text {
     fill: hsl(var(--foreground)) !important;
   }
@@ -249,7 +248,7 @@
   }
 }
 
-/* Efectos metálicos para la industria automotriz */
+/* Efectos especiales para sistema de lubricantes */
 @layer utilities {
   .shimmer-effect {
     background: linear-gradient(
@@ -267,12 +266,21 @@
     100% { background-position: 200% 0; }
   }
   
+  .oil-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.52 0.16 240) 0%,
+      oklch(0.6 0.12 180) 50%,
+      oklch(0.48 0.11 140) 100%
+    );
+  }
+  
   .metal-border {
     border-image: linear-gradient(
       135deg,
-      oklch(0.8 0.05 250) 0%,
-      oklch(0.9 0.02 250) 50%,
-      oklch(0.8 0.05 250) 100%
+      oklch(0.8 0.05 220) 0%,
+      oklch(0.9 0.02 220) 50%,
+      oklch(0.8 0.05 220) 100%
     ) 1;
   }
   
@@ -287,5 +295,19 @@
   .chart-text-fix {
     fill: hsl(var(--foreground)) !important;
     color: hsl(var(--foreground)) !important;
+  }
+  
+  /* Efectos específicos para industria automotriz */
+  .industrial-shadow {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .gear-animation {
+    animation: rotate 20s linear infinite;
+  }
+  
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 }

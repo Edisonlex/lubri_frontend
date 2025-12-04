@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { usePOS } from "@/contexts/pos-context";
 import { Sale } from "@/contexts/pos-context";
+import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { generateInvoicePDF } from "@/components/pos/invoice-generator";
@@ -51,7 +52,7 @@ import { SaleDetails } from "@/components/sales/sale-details";
 import { Customer } from "@/lib/api";
 
 export default function VentasPage() {
-  const { sales, refreshSales } = usePOS();
+  const { sales, refreshSales, loadingSales } = usePOS();
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -64,6 +65,24 @@ export default function VentasPage() {
   useEffect(() => {
     refreshSales();
   }, [refreshSales]);
+
+  const LoadingContent = (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-40" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+      </div>
+      <Skeleton className="h-12 w-full" />
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     let filtered = sales;
@@ -237,7 +256,9 @@ export default function VentasPage() {
     return saleDate.toDateString() === new Date().toDateString();
   }).length;
 
-  return (
+  return loadingSales ? (
+    LoadingContent
+  ) : (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

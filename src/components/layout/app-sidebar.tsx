@@ -17,10 +17,13 @@ import {
   User,
   Truck,
   IdCard,
+  Receipt,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
@@ -31,6 +34,7 @@ function getNavigation(role: "admin" | "cashier" | "technician") {
   const admin = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
+    { name: "Ventas", href: "/ventas", icon: Receipt },
     { name: "Inventario", href: "/inventory", icon: Package },
     { name: "Clientes", href: "/customers", icon: IdCard },
     { name: "Proveedores", href: "/suppliers", icon: Truck },
@@ -42,6 +46,7 @@ function getNavigation(role: "admin" | "cashier" | "technician") {
   const cashier = [
     { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
     { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Ventas", href: "/ventas", icon: Receipt },
     { name: "Clientes", href: "/customers", icon: IdCard },
     { name: "Inventario", href: "/inventory", icon: Package },
     { name: "Mi Perfil", href: "/profile", icon: User },
@@ -124,7 +129,7 @@ function MobileSidebar({ navigation }: { navigation: { name: string; href: strin
   )
 }
 
-function DesktopSidebar({ className, navigation }: { className?: string; navigation: { name: string; href: string; icon: any }[] }) {
+function DesktopSidebar({ className, navigation, role }: { className?: string; navigation: { name: string; href: string; icon: any }[]; role: "admin" | "cashier" | "technician" }) {
   const [collapsed, setCollapsed] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -169,6 +174,11 @@ function DesktopSidebar({ className, navigation }: { className?: string; navigat
                 <div>
                   <h2 className="text-xs sm:text-sm md:text-base font-bold text-sidebar-foreground">LubriSmart</h2>
                   <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground">v1.0</p>
+                  <div className="mt-1">
+                    <Badge variant="outline" className="text-[10px] py-0 px-1">
+                      {role === "admin" ? "Administrador" : role === "cashier" ? "Cajero" : "Técnico"}
+                    </Badge>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -189,18 +199,38 @@ function DesktopSidebar({ className, navigation }: { className?: string; navigat
         <ul className="space-y-2 sm:space-y-1.5 md:space-y-2">
           {navigation.map((item) => (
             <li key={item.name}>
-              <Button
-                variant="ghost"
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  "w-full justify-start h-10 sm:h-10 md:h-12 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
-                  collapsed ? "px-2 sm:px-2 md:px-3" : "px-3 sm:px-3 md:px-4",
-                  pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className={cn("h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5", collapsed ? "" : "mr-3 sm:mr-2 md:mr-3")} />
-                <AnimatePresence mode="wait">
-                  {!collapsed && (
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleNavigation(item.href)}
+                      className={cn(
+                        "relative w-full justify-start h-10 sm:h-10 md:h-12 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors px-2 sm:px-2 md:px-3",
+                        pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground",
+                      )}
+                    >
+                      {pathname === item.href && <span className="absolute left-0 top-0 h-full w-1 bg-primary rounded-r-md" />}
+                      <item.icon className="h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    {item.name}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="ghost"
+                  onClick={() => handleNavigation(item.href)}
+                  className={cn(
+                    "relative w-full justify-start h-10 sm:h-10 md:h-12 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                    "px-3 sm:px-3 md:px-4",
+                    pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground",
+                  )}
+                >
+                  {pathname === item.href && <span className="absolute left-0 top-0 h-full w-1 bg-primary rounded-r-md" />}
+                  <item.icon className="h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-3 sm:mr-2 md:mr-3" />
+                  <AnimatePresence mode="wait">
                     <motion.span
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -210,9 +240,9 @@ function DesktopSidebar({ className, navigation }: { className?: string; navigat
                     >
                       {item.name}
                     </motion.span>
-                  )}
-                </AnimatePresence>
-              </Button>
+                  </AnimatePresence>
+                </Button>
+              )}
             </li>
           ))}
         </ul>
@@ -231,5 +261,5 @@ export function AppSidebar({ className }: AppSidebarProps) {
     return <MobileSidebar navigation={navigation} />
   }
 
-  return <DesktopSidebar className={className} navigation={navigation} />
+  return <DesktopSidebar className={className} navigation={navigation} role={role} />
 }

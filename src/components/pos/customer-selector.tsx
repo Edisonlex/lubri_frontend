@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ export function CustomerSelector() {
     setSelectedCustomer,
     addCustomer,
     refreshCustomers,
+    loadingCustomers,
   } = usePOS();
   const isMobile = useIsMobile();
 
@@ -42,12 +44,14 @@ export function CustomerSelector() {
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone?.includes(searchQuery) ||
-      customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCustomers = customers
+    .filter((c) => (c.city || '').toLowerCase() === 'la maná')
+    .filter(
+      (customer) =>
+        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.phone?.includes(searchQuery) ||
+        customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleSaveCustomer = async (customerData: Omit<Customer, "id">) => {
     try {
@@ -86,7 +90,16 @@ export function CustomerSelector() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {selectedCustomer ? (
+        {loadingCustomers && (
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full" />
+            <div className={`grid gap-3 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}>
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </div>
+        )}
+        {!loadingCustomers && selectedCustomer ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -130,7 +143,7 @@ export function CustomerSelector() {
               <X className="h-4 w-4" />
             </Button>
           </motion.div>
-        ) : (
+        ) : !loadingCustomers ? (
           <div
             className={`grid gap-3 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}
           >
@@ -238,7 +251,7 @@ export function CustomerSelector() {
               Nuevo
             </Button>
           </div>
-        )}
+        ) : null}
 
         {/* Modal de Agregar Cliente - Reutilizado */}
         <AddCustomerModal

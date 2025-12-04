@@ -36,6 +36,8 @@ export function NotificationsDropdown() {
   } = useAlerts();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const roleAlerts = getAlertsForRole(user?.role || "admin");
+  const visibleAlerts = roleAlerts.slice(0, 7);
 
   const handleDropdownOpen = (open: boolean) => {
     setIsOpen(open);
@@ -116,12 +118,12 @@ export function NotificationsDropdown() {
           className="relative h-8 w-8 sm:h-10 sm:w-10 p-0"
         >
           <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-          {getAlertsForRole(user?.role || "admin").length > 0 && (
+          {roleAlerts.length > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs"
             >
-              {getAlertsForRole(user?.role || "admin").length}
+              {roleAlerts.length}
             </Badge>
           )}
           {hasNewAlerts && alerts.length === 0 && (
@@ -133,9 +135,9 @@ export function NotificationsDropdown() {
       <DropdownMenuContent className="w-80 sm:w-96" align="end" forceMount>
         <DropdownMenuLabel className="flex items-center justify-between p-3 sm:p-4">
           <span className="text-sm font-semibold">Alertas de Stock</span>
-          {getAlertsForRole(user?.role || "admin").length > 0 && (
+          {roleAlerts.length > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {getAlertsForRole(user?.role || "admin").length} activas
+              {roleAlerts.length} activas
             </Badge>
           )}
         </DropdownMenuLabel>
@@ -143,7 +145,7 @@ export function NotificationsDropdown() {
         <DropdownMenuSeparator />
 
         <div className="max-h-80 overflow-y-auto">
-          {getAlertsForRole(user?.role || "admin").length === 0 ? (
+          {roleAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-6 text-center">
               <Package className="h-12 w-12 text-muted-foreground mb-2" />
               <p className="text-sm font-medium text-muted-foreground">
@@ -154,7 +156,7 @@ export function NotificationsDropdown() {
               </p>
             </div>
           ) : (
-            getAlertsForRole(user?.role || "admin").map((alert) => (
+            visibleAlerts.map((alert) => (
               <DropdownMenuItem
                 key={alert.id}
                 className={`p-3 sm:p-4 border-l-4 ${getUrgencyStyles(
@@ -244,7 +246,7 @@ export function NotificationsDropdown() {
                   className="flex-1 text-xs"
                   onClick={() => {
                     // Marcar todas como resueltas
-                    getAlertsForRole(user?.role || "admin").forEach((alert) => markAlertAsResolved(alert.id));
+                    roleAlerts.forEach((alert) => markAlertAsResolved(alert.id));
                   }}
                 >
                   <CheckCircle className="h-3 w-3 mr-1" />

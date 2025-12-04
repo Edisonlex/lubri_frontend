@@ -6,12 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePOS, type Product } from "@/contexts/pos-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function ProductGrid() {
-  const { products, addToCart, searchQuery, selectedCategory } = usePOS();
+  const { products, addToCart, searchQuery, selectedCategory, loadingProducts } = usePOS();
   const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,9 +44,13 @@ export function ProductGrid() {
   }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
+    if (loadingProducts) {
+      setIsLoading(true);
+      return;
+    }
+    const timer = setTimeout(() => setIsLoading(false), 300);
     return () => clearTimeout(timer);
-  }, []);
+  }, [loadingProducts]);
 
   if (isLoading) {
     return (
@@ -111,7 +116,7 @@ export function ProductGrid() {
               transition={{ duration: 0.2, delay: index * 0.05 }}
               layout
             >
-              <Card className="h-full border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+              <Card className="relative h-full border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardContent className="p-6 h-full flex flex-col">
                   {/* Header con Categoría y Stock */}
                   <div className="flex items-start justify-between mb-4">
@@ -132,10 +137,25 @@ export function ProductGrid() {
                     )}
                   </div>
 
-                  {/* Product Image/Icon Area - Más grande */}
                   <div className="relative mb-4">
                     <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                       <Package className="h-16 w-16 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => addToCart(product)}
+                            disabled={product.stock === 0}
+                            className="h-8"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Agregar</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
 
@@ -170,7 +190,6 @@ export function ProductGrid() {
                     </div>
                   </div>
 
-                  {/* Add to Cart Button - Más grande */}
                   <Button
                     onClick={() => addToCart(product)}
                     disabled={product.stock === 0}

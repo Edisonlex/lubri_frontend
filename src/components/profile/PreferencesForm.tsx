@@ -25,6 +25,20 @@ interface Preferences {
   notifications: boolean;
   emailAlerts: boolean;
   language: string;
+  roleNotifications: {
+    admin: {
+      inventoryAlerts: boolean;
+      userManagementAlerts: boolean;
+    };
+    cashier: {
+      salesAlerts: boolean;
+      customerAlerts: boolean;
+    };
+    technician: {
+      maintenanceAlerts: boolean;
+      stockAlerts: boolean;
+    };
+  };
 }
 
 interface PreferencesFormProps {
@@ -32,6 +46,7 @@ interface PreferencesFormProps {
   onPreferencesChange: (preferences: Preferences) => void;
   onSave: () => void;
   isSaving: boolean;
+  role: "admin" | "cashier" | "technician";
 }
 
 export function PreferencesForm({
@@ -39,6 +54,7 @@ export function PreferencesForm({
   onPreferencesChange,
   onSave,
   isSaving,
+  role,
 }: PreferencesFormProps) {
   const { setTheme } = useTheme();
 
@@ -50,6 +66,20 @@ export function PreferencesForm({
 
   const handleSwitchChange = (field: keyof Preferences, checked: boolean) => {
     onPreferencesChange({ ...preferences, [field]: checked });
+  };
+
+  const handleRoleSwitchChange = (field: string, checked: boolean) => {
+    const updatedRolePrefs = {
+      ...preferences.roleNotifications[role],
+      [field]: checked,
+    };
+    onPreferencesChange({
+      ...preferences,
+      roleNotifications: {
+        ...preferences.roleNotifications,
+        [role]: updatedRolePrefs,
+      },
+    });
   };
 
   return (
@@ -113,6 +143,96 @@ export function PreferencesForm({
               }
             />
           </div>
+          {role === "admin" && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="admin-inventory">Alertas de inventario</Label>
+                  <p className="text-sm text-muted-foreground">Notificaciones sobre stock y movimientos</p>
+                </div>
+                <Switch
+                  id="admin-inventory"
+                  checked={preferences.roleNotifications.admin.inventoryAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("inventoryAlerts", checked)
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="admin-users">Alertas de gestión de usuarios</Label>
+                  <p className="text-sm text-muted-foreground">Cambios y solicitudes de usuarios</p>
+                </div>
+                <Switch
+                  id="admin-users"
+                  checked={preferences.roleNotifications.admin.userManagementAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("userManagementAlerts", checked)
+                  }
+                />
+              </div>
+            </>
+          )}
+          {role === "cashier" && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="cashier-sales">Alertas de ventas</Label>
+                  <p className="text-sm text-muted-foreground">Estado y anomalías de ventas</p>
+                </div>
+                <Switch
+                  id="cashier-sales"
+                  checked={preferences.roleNotifications.cashier.salesAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("salesAlerts", checked)
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="cashier-customers">Alertas de clientes</Label>
+                  <p className="text-sm text-muted-foreground">Clientes nuevos y seguimiento</p>
+                </div>
+                <Switch
+                  id="cashier-customers"
+                  checked={preferences.roleNotifications.cashier.customerAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("customerAlerts", checked)
+                  }
+                />
+              </div>
+            </>
+          )}
+          {role === "technician" && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="technician-maintenance">Alertas de mantenimiento</Label>
+                  <p className="text-sm text-muted-foreground">Servicios y recordatorios técnicos</p>
+                </div>
+                <Switch
+                  id="technician-maintenance"
+                  checked={preferences.roleNotifications.technician.maintenanceAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("maintenanceAlerts", checked)
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="technician-stock">Alertas de stock</Label>
+                  <p className="text-sm text-muted-foreground">Disponibilidad de repuestos</p>
+                </div>
+                <Switch
+                  id="technician-stock"
+                  checked={preferences.roleNotifications.technician.stockAlerts}
+                  onCheckedChange={(checked) =>
+                    handleRoleSwitchChange("stockAlerts", checked)
+                  }
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <Button onClick={onSave} className="w-full" disabled={isSaving}>

@@ -18,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent } from "@/components/ui/card";
 import { MovementsExportModal } from "@/components/inventory/export/movements-export-modal";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedRoute } from "@/contexts/auth-context";
 
 export default function MovementsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +95,7 @@ export default function MovementsPage() {
   const hasActiveFilters = movementType !== "all" || dateRange;
 
   return (
+    <ProtectedRoute permission="inventory.view">
     <div className="max-w-7xl mx-auto space-y-3 p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -379,5 +381,6 @@ export default function MovementsPage() {
         isLoading={isLoading}
       />
     </div>
+    </ProtectedRoute>
   );
 }

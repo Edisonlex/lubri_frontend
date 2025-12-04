@@ -35,30 +35,25 @@ export function RecentSales() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const [viewMode, setViewMode] = useState<"today" | "recent">("recent");
 
   // Función para convertir ventas al formato de RecentSale
   const convertSalesToRecentSales = useCallback(() => {
-    console.log("Ventas en contexto:", sales);
+    const ordered = [...sales].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
-    // Obtener solo las ventas de hoy y ordenarlas por fecha (más recientes primero)
-    const today = new Date();
-    const todaySales = sales
-      .filter((sale) => {
-        try {
-          const saleDate = new Date(sale.date);
-          const isToday = saleDate.toDateString() === today.toDateString();
-          return isToday;
-        } catch (error) {
-          console.error("Error parsing sale date:", error, sale);
-          return false;
-        }
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const filtered = (() => {
+      if (viewMode === "today") {
+        const today = new Date();
+        return ordered.filter(
+          (s) => new Date(s.date).toDateString() === today.toDateString()
+        );
+      }
+      return ordered;
+    })();
 
-    console.log("Ventas de hoy filtradas:", todaySales);
-
-    // Convertir al formato de RecentSale
-    const convertedSales: RecentSale[] = todaySales.map((sale) => {
+    const convertedSales: RecentSale[] = filtered.map((sale) => {
       // Calcular el tiempo transcurrido
       const saleTime = new Date(sale.date);
       const now = new Date();
@@ -98,7 +93,7 @@ export function RecentSales() {
 
     setRecentSales(convertedSales);
     setIsLoading(false);
-  }, [sales]);
+  }, [sales, viewMode]);
 
   // Actualizar las ventas recientes cuando cambien las ventas
   useEffect(() => {
@@ -162,20 +157,42 @@ export function RecentSales() {
                 Ventas Recientes
               </CardTitle>
               <CardDescription>
-                Últimas transacciones realizadas hoy ({recentSales.length})
+                {viewMode === "today" ? "Ventas de hoy" : "Últimas transacciones recientes"} ({recentSales.length})
               </CardDescription>
             </div>
-            {recentSales.length > 0 && (
+            <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant={viewMode === "today" ? "default" : "outline"}
                 size="sm"
-                onClick={handleViewAllSales}
-                className="flex items-center gap-1 text-xs"
+                onClick={() => {
+                  setViewMode("today");
+                  setPage(1);
+                }}
               >
-                Ver todas
-                <ArrowRight className="h-3 w-3" />
+                Solo hoy
               </Button>
-            )}
+              <Button
+                variant={viewMode === "recent" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setViewMode("recent");
+                  setPage(1);
+                }}
+              >
+                Recientes
+              </Button>
+              {recentSales.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleViewAllSales}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  Ver todas
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

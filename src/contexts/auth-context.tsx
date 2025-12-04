@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 
@@ -69,31 +70,36 @@ const rolePermissions: Record<UserRole, string[]> = {
   admin: [
     "dashboard.view",
     "pos.use",
-    "inventory.manage",
     "inventory.view",
-    "customers.manage",
+    "inventory.manage",
     "customers.view",
+    "customers.manage",
+    "suppliers.view",
+    "suppliers.manage",
     "analytics.view",
     "settings.manage",
     "profile.edit",
     "sri.invoice",
     "users.manage",
     "backup.manage",
+    "services.use",
   ],
   cashier: [
     "dashboard.view",
     "pos.use",
     "inventory.view",
-    "customers.create",
+    "customers.view",
     "profile.edit",
     "sri.invoice",
+    "suppliers.view",
   ],
   technician: [
     "dashboard.view",
     "inventory.view",
-    "services.use",
     "customers.view",
     "profile.edit",
+    "services.use",
+    "suppliers.view",
   ],
 }
 
@@ -242,7 +248,42 @@ export function ProtectedRoute({
   }, [isAuthenticated, isLoading, permission, hasPermission, router])
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Cargando...</div>
+    return (
+      <div className="flex h-screen">
+        <div className="hidden md:block">
+          <div className="bg-sidebar border-r border-sidebar-border h-full w-[280px] p-4">
+            <Skeleton className="h-8 w-32 mb-4" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b p-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-10 w-1/3" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            </div>
+          </div>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <Skeleton className="h-12 w-1/2" />
+              <Skeleton className="h-64 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    )
   }
 
   if (!isAuthenticated) {

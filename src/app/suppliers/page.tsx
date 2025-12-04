@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/contexts/auth-context"
 
 export default function SuppliersPage() {
   return (
-    <ProtectedRoute permission="inventory.manage">
+    <ProtectedRoute permission="suppliers.view">
       <POSProvider>
         <GISProvider>
           <div className="container mx-auto p-6">

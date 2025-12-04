@@ -15,14 +15,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Download, FileText, Table as TableIcon, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePOS } from "@/contexts/pos-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function CustomerManagement() {
-  const { customers: posCustomers } = usePOS();
+  const { customers: posCustomers, loadingCustomers } = usePOS();
   const [customers, setCustomers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     customerType: "all",
     status: "all",
-    city: "all",
+    city: "La Maná",
     search: "",
   });
 
@@ -36,7 +37,10 @@ export function CustomerManagement() {
   // Sync POS customers with local state
   useEffect(() => {
     if (posCustomers && posCustomers.length > 0) {
-      setCustomers(posCustomers);
+      const onlyLaMana = posCustomers.filter(
+        (c) => (c.city || '').toLowerCase() === 'la maná'
+      );
+      setCustomers(onlyLaMana);
     }
   }, [posCustomers]);
 
@@ -172,25 +176,40 @@ export function CustomerManagement() {
         </TabsList>
 
         <TabsContent value="table" className="space-y-6">
+          {loadingCustomers && (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          )}
           {/* Filtros */}
-          <CustomerFilters filters={filters} setFilters={setFilters} />
+          {!loadingCustomers && (
+            <CustomerFilters filters={filters} setFilters={setFilters} />
+          )}
 
           {/* Tabla */}
-          <CustomersTable
-            customers={customers}
-            filters={filters}
-            onViewCustomer={handleViewCustomer}
-            onEditCustomer={handleEditCustomer}
-            onMaintenanceReminder={(customer) => {
-              setSelectedCustomer(customer);
-              setIsReminderOpen(true);
-            }}
-          />
+          {!loadingCustomers && (
+            <CustomersTable
+              customers={customers}
+              filters={filters}
+              onViewCustomer={handleViewCustomer}
+              onEditCustomer={handleEditCustomer}
+              onMaintenanceReminder={(customer) => {
+                setSelectedCustomer(customer);
+                setIsReminderOpen(true);
+              }}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="map" className="space-y-6">
           {/* Mapa de clientes con GIS */}
-          <CustomerMap onViewEntity={handleViewCustomerFromMap} />
+          {!loadingCustomers ? (
+            <CustomerMap onViewEntity={handleViewCustomerFromMap} />
+          ) : (
+            <Skeleton className="h-[400px] w-full" />
+          )}
         </TabsContent>
       </Tabs>
 

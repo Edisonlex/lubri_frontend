@@ -30,6 +30,20 @@ interface Preferences {
   notifications: boolean;
   emailAlerts: boolean;
   language: string;
+  roleNotifications: {
+    admin: {
+      inventoryAlerts: boolean;
+      userManagementAlerts: boolean;
+    };
+    cashier: {
+      salesAlerts: boolean;
+      customerAlerts: boolean;
+    };
+    technician: {
+      maintenanceAlerts: boolean;
+      stockAlerts: boolean;
+    };
+  };
 }
 
 interface PasswordData {
@@ -64,6 +78,20 @@ export default function ProfilePage() {
     notifications: true,
     emailAlerts: true,
     language: "es",
+    roleNotifications: {
+      admin: {
+        inventoryAlerts: true,
+        userManagementAlerts: false,
+      },
+      cashier: {
+        salesAlerts: true,
+        customerAlerts: true,
+      },
+      technician: {
+        maintenanceAlerts: true,
+        stockAlerts: true,
+      },
+    },
   });
   const [passwordData, setPasswordData] = useState<PasswordData>({
     currentPassword: "",
@@ -356,6 +384,7 @@ export default function ProfilePage() {
                       onPreferencesChange={setPreferences}
                       onSave={handleSavePreferences}
                       isSaving={isSaving}
+                      role={user?.role || "cashier"}
                     />
                   </TabsContent>
                 </Tabs>

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertTriangle,
   Package,
@@ -16,14 +17,11 @@ import {
   TrendingDown,
   Minus,
   Filter,
-  Eye,
-  Plus,
-  Download,
-  Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAlerts } from "@/contexts/alerts-context";
-import { useState, useMemo } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { useState, useMemo, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,47 +29,91 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function StockAlerts() {
-  const router = useRouter();
-  const { alerts, loading } = useAlerts();
+  const { getAlertsForRole, loading } = useAlerts();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<string>("all");
-  const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = isMobile ? 4 : 6;
+
+  const roleAlerts = useMemo(() => getAlertsForRole(user?.role || "admin"), [getAlertsForRole, user]);
 
   const filteredAlerts = useMemo(() => {
-    if (filter === "all") return alerts;
-    return alerts.filter((alert) => alert.urgency === filter);
-  }, [filter, alerts]);
+    if (filter === "all") return roleAlerts;
+    return roleAlerts.filter((alert) => alert.urgency === filter);
+  }, [filter, roleAlerts]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, roleAlerts]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedAlerts = filteredAlerts.slice(startIndex, endIndex);
 
   const alertCounts = useMemo(
     () => ({
-      total: alerts.length,
-      critical: alerts.filter((a) => a.urgency === "critical").length,
-      high: alerts.filter((a) => a.urgency === "high").length,
-      medium: alerts.filter((a) => a.urgency === "medium").length,
-      low: alerts.filter((a) => a.urgency === "low").length,
+      total: roleAlerts.length,
+      critical: roleAlerts.filter((a) => a.urgency === "critical").length,
+      high: roleAlerts.filter((a) => a.urgency === "high").length,
+      medium: roleAlerts.filter((a) => a.urgency === "medium").length,
+      low: roleAlerts.filter((a) => a.urgency === "low").length,
     }),
-    [alerts]
+    [roleAlerts]
   );
 
   const getUrgencyConfig = (urgency: string) => {
     const config = {
       critical: {
-        color: "text-red-600 bg-red-50 border-red-200",
+        color: "text-red-700 bg-red-50 border-red-200",
         label: "Crítico",
       },
       high: {
-        color: "text-orange-600 bg-orange-50 border-orange-200",
+        color: "text-orange-700 bg-orange-50 border-orange-200",
         label: "Alto",
       },
       medium: {
-        color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+        color: "text-yellow-700 bg-yellow-50 border-yellow-200",
         label: "Medio",
       },
-      low: { color: "text-blue-600 bg-blue-50 border-blue-200", label: "Bajo" },
+      low: { color: "text-blue-700 bg-blue-50 border-blue-200", label: "Bajo" },
     };
     return config[urgency as keyof typeof config] || config.low;
+  };
+
+  const getSeverityStyles = (urgency: string) => {
+    const styles = {
+      critical: {
+        iconBg: "bg-red-100",
+        leftBorder: "border-l-4 border-red-500",
+        trackBg: "bg-red-100",
+        percentText: "text-red-700",
+      },
+      high: {
+        iconBg: "bg-orange-100",
+        leftBorder: "border-l-4 border-orange-500",
+        trackBg: "bg-orange-100",
+        percentText: "text-orange-700",
+      },
+      medium: {
+        iconBg: "bg-yellow-100",
+        leftBorder: "border-l-4 border-yellow-500",
+        trackBg: "bg-yellow-100",
+        percentText: "text-yellow-700",
+      },
+      low: {
+        iconBg: "bg-blue-100",
+        leftBorder: "border-l-4 border-blue-500",
+        trackBg: "bg-blue-100",
+        percentText: "text-blue-700",
+      },
+    } as const;
+    return styles[(urgency as keyof typeof styles) || "low"];
   };
 
   const getTrendIcon = (trend: string) => {
@@ -115,8 +157,8 @@ export function StockAlerts() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="p-2 bg-red-100 rounded-md">
+                <AlertTriangle className="h-5 w-5 text-red-700" />
               </div>
               Alertas de Stock
             </CardTitle>
@@ -164,19 +206,19 @@ export function StockAlerts() {
           </div>
         )}
         <AnimatePresence>
-          {filteredAlerts.map((alert) => (
+          {paginatedAlerts.map((alert) => (
             <motion.div
               key={alert.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="border border-border rounded-lg p-4 hover:border-gray-300 transition-colors"
+              className={`border border-border rounded-lg p-4 hover:bg-muted/40 transition-colors ${getSeverityStyles(alert.urgency).leftBorder}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-blue-50 rounded-lg mt-0.5">
-                    <Package className="h-4 w-4 text-blue-600" />
+                  <div className={`p-2 ${getSeverityStyles(alert.urgency).iconBg} rounded-md mt-0.5`}>
+                    <Package className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm text-foreground truncate">
@@ -202,36 +244,28 @@ export function StockAlerts() {
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-muted-foreground">
-                      Stock actual
-                    </span>
-                    <span className="text-sm font-medium text-red-600">
-                      {alert.currentStock}
-                    </span>
+                    <span className="text-xs text-muted-foreground">Stock actual</span>
+                    <span className="text-sm font-medium text-red-700">{alert.currentStock}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div
-                      className="bg-red-500 h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${getStockPercentage(
-                          alert.currentStock,
-                          alert.minStock
-                        )}%`,
-                      }}
-                    />
+                  <div className={`rounded-md p-2 ${getSeverityStyles(alert.urgency).trackBg}`}>
+                    <Progress value={getStockPercentage(alert.currentStock, alert.minStock)} />
+                    <div className={`mt-1 text-[11px] ${getSeverityStyles(alert.urgency).percentText}`}>
+                      {Math.round(getStockPercentage(alert.currentStock, alert.minStock))}% del mínimo
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className="text-xs text-muted-foreground">
-                    Mínimo requerido
-                  </div>
+                  <div className="text-xs text-muted-foreground">Mínimo requerido</div>
                   <div className="text-sm font-medium">{alert.minStock}</div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Proveedor: {alert.supplier}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="px-2 py-0 text-[11px]">Proveedor: {alert.supplier}</Badge>
+                  <Badge variant="outline" className="px-2 py-0 text-[11px]">SKU: {alert.sku}</Badge>
+                </div>
                 <span>Actualizado: {formatDate(alert.lastUpdated)}</span>
               </div>
 
@@ -253,8 +287,37 @@ export function StockAlerts() {
           </motion.div>
         )}
 
-        <div className="flex gap-2 pt-2">
-          {/* Acciones adicionales futuras */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-xs text-muted-foreground">
+            Mostrando {filteredAlerts.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredAlerts.length)} de {filteredAlerts.length} alertas
+          </div>
+          {filteredAlerts.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size={isMobile ? "sm" : "default"}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={isMobile ? "h-8" : "h-9"}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size={isMobile ? "sm" : "default"}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className={isMobile ? "h-8" : "h-9"}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
