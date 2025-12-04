@@ -157,7 +157,10 @@ export function RecentSales() {
                 Ventas Recientes
               </CardTitle>
               <CardDescription>
-                {viewMode === "today" ? "Ventas de hoy" : "Últimas transacciones recientes"} ({recentSales.length})
+                {viewMode === "today"
+                  ? "Ventas de hoy"
+                  : "Últimas transacciones recientes"}{" "}
+                ({recentSales.length})
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -201,50 +204,50 @@ export function RecentSales() {
               recentSales
                 .slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize)
                 .map((sale, index) => (
-                <motion.div
-                  key={sale.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={handleViewAllSales}
-                >
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {sale.cliente
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm line-clamp-1">
-                        {sale.cliente}
-                      </p>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {sale.producto} x{sale.cantidad}
-                      </p>
+                  <motion.div
+                    key={sale.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={handleViewAllSales}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {sale.cliente
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm line-clamp-1">
+                          {sale.cliente}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {sale.producto} x{sale.cantidad}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">
-                      ${sale.total.toFixed(2)}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge
-                        variant="outline"
-                        className="text-xs px-2 py-0 capitalize"
-                      >
-                        {sale.metodo}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        hace {sale.tiempo}
-                      </span>
+                    <div className="text-right">
+                      <p className="font-bold text-sm">
+                        ${sale.total.toFixed(2)}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0 capitalize"
+                        >
+                          {sale.metodo}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          hace {sale.tiempo}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                ))
             ) : (
               <div className="text-center py-6">
                 <Receipt className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
@@ -264,27 +267,69 @@ export function RecentSales() {
             )}
           </div>
           {recentSales.length > 0 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm">Mostrar</span>
+                <span className="text-sm text-foreground dark:text-gray-300">
+                  Mostrar
+                </span>
                 <select
-                  className="border rounded px-2 py-1 text-sm"
+                  className="border rounded px-2 py-1 text-sm bg-background dark:bg-gray-900 
+                 border-input dark:border-gray-700 text-foreground dark:text-gray-300
+                 focus:ring-2 focus:ring-primary dark:focus:ring-primary/50
+                 focus:border-primary dark:focus:border-primary
+                 cursor-pointer hover:border-gray-400 dark:hover:border-gray-600
+                 transition-colors"
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
                 >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
+                  <option
+                    value={5}
+                    className="bg-background dark:bg-gray-900 dark:text-gray-300"
+                  >
+                    5
+                  </option>
+                  <option
+                    value={10}
+                    className="bg-background dark:bg-gray-900 dark:text-gray-300"
+                  >
+                    10
+                  </option>
                 </select>
-                <span className="text-sm">por página</span>
+                <span className="text-sm text-foreground dark:text-gray-300">
+                  por página
+                </span>
               </div>
+
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
                   Anterior
                 </Button>
-                <span className="text-sm">
-                  {page} / {Math.max(1, Math.ceil(recentSales.length / pageSize))}
+
+                <span className="text-sm text-foreground dark:text-gray-300 min-w-[60px] text-center">
+                  {page} /{" "}
+                  {Math.max(1, Math.ceil(recentSales.length / pageSize))}
                 </span>
-                <Button variant="outline" size="sm" onClick={() => setPage(Math.min(Math.max(1, Math.ceil(recentSales.length / pageSize)), page + 1))} disabled={page >= Math.ceil(recentSales.length / pageSize)}>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPage(
+                      Math.min(
+                        Math.max(1, Math.ceil(recentSales.length / pageSize)),
+                        page + 1
+                      )
+                    )
+                  }
+                  disabled={page >= Math.ceil(recentSales.length / pageSize)}
+                  className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
                   Siguiente
                 </Button>
               </div>
