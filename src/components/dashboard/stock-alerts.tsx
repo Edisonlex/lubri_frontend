@@ -17,6 +17,8 @@ import {
   TrendingDown,
   Minus,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAlerts } from "@/contexts/alerts-context";
@@ -30,7 +32,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function StockAlerts() {
   const { getAlertsForRole, loading } = useAlerts();
@@ -40,7 +41,10 @@ export function StockAlerts() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = isMobile ? 4 : 6;
 
-  const roleAlerts = useMemo(() => getAlertsForRole(user?.role || "admin"), [getAlertsForRole, user]);
+  const roleAlerts = useMemo(
+    () => getAlertsForRole(user?.role || "admin"),
+    [getAlertsForRole, user]
+  );
 
   const filteredAlerts = useMemo(() => {
     if (filter === "all") return roleAlerts;
@@ -51,7 +55,10 @@ export function StockAlerts() {
     setCurrentPage(1);
   }, [filter, roleAlerts]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAlerts.length / itemsPerPage)
+  );
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedAlerts = filteredAlerts.slice(startIndex, endIndex);
@@ -144,13 +151,6 @@ export function StockAlerts() {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-EC", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
   return (
     <Card className="border-border bg-background shadow-sm">
       <CardHeader className="pb-4">
@@ -205,6 +205,7 @@ export function StockAlerts() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         )}
+
         <AnimatePresence>
           {paginatedAlerts.map((alert) => (
             <motion.div
@@ -213,27 +214,35 @@ export function StockAlerts() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`border border-border rounded-lg p-4 hover:bg-muted/40 transition-colors ${getSeverityStyles(alert.urgency).leftBorder}`}
+              className={`border border-border rounded-lg p-3 sm:p-4 hover:bg-muted/40 transition-colors ${
+                getSeverityStyles(alert.urgency).leftBorder
+              }`}
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className={`p-2 ${getSeverityStyles(alert.urgency).iconBg} rounded-md mt-0.5`}>
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div
+                    className={`p-2 ${
+                      getSeverityStyles(alert.urgency).iconBg
+                    } rounded-md mt-0.5 flex-shrink-0`}
+                  >
                     <Package className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm text-foreground truncate">
                       {alert.productName}
                     </h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {alert.category} • {alert.sku}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                   <Badge
                     variant="outline"
-                    className={getUrgencyConfig(alert.urgency).color}
+                    className={`${
+                      getUrgencyConfig(alert.urgency).color
+                    } text-xs`}
                   >
                     {getUrgencyConfig(alert.urgency).label}
                   </Badge>
@@ -241,35 +250,67 @@ export function StockAlerts() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-3">
-                <div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3">
+                <div className="min-w-0">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-muted-foreground">Stock actual</span>
-                    <span className="text-sm font-medium text-red-700">{alert.currentStock}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Stock actual
+                    </span>
+                    <span className="text-sm font-medium text-red-700">
+                      {alert.currentStock}
+                    </span>
                   </div>
-                  <div className={`rounded-md p-2 ${getSeverityStyles(alert.urgency).trackBg}`}>
-                    <Progress value={getStockPercentage(alert.currentStock, alert.minStock)} />
-                    <div className={`mt-1 text-[11px] ${getSeverityStyles(alert.urgency).percentText}`}>
-                      {Math.round(getStockPercentage(alert.currentStock, alert.minStock))}% del mínimo
+                  <div
+                    className={`rounded-md p-2 ${
+                      getSeverityStyles(alert.urgency).trackBg
+                    }`}
+                  >
+                    <Progress
+                      value={getStockPercentage(
+                        alert.currentStock,
+                        alert.minStock
+                      )}
+                    />
+                    <div
+                      className={`mt-1 text-[11px] sm:text-xs ${
+                        getSeverityStyles(alert.urgency).percentText
+                      }`}
+                    >
+                      {Math.round(
+                        getStockPercentage(alert.currentStock, alert.minStock)
+                      )}
+                      % del mínimo
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Mínimo requerido</div>
+                <div className="text-right min-w-0">
+                  <div className="text-xs text-muted-foreground">
+                    Mínimo requerido
+                  </div>
                   <div className="text-sm font-medium">{alert.minStock}</div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="px-2 py-0 text-[11px]">Proveedor: {alert.supplier}</Badge>
-                  <Badge variant="outline" className="px-2 py-0 text-[11px]">SKU: {alert.sku}</Badge>
+              <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant="outline"
+                    className="px-2 py-0 text-[11px] truncate max-w-[120px]"
+                  >
+                    Proveedor: {alert.supplier}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="px-2 py-0 text-[11px] truncate max-w-[100px]"
+                  >
+                    SKU: {alert.sku}
+                  </Badge>
                 </div>
-                <span>Actualizado: {formatDate(alert.lastUpdated)}</span>
+                <span className="text-[11px] sm:text-xs whitespace-nowrap">
+                  Actualizado: {formatDate(alert.lastUpdated)}
+                </span>
               </div>
-
-              
             </motion.div>
           ))}
         </AnimatePresence>
@@ -287,35 +328,45 @@ export function StockAlerts() {
           </motion.div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <div className="text-xs text-muted-foreground">
-            Mostrando {filteredAlerts.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredAlerts.length)} de {filteredAlerts.length} alertas
+        {/* Sección de paginación corregida - RESPONSIVE */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+          <div className="text-xs text-muted-foreground text-center sm:text-left w-full sm:w-auto">
+            Mostrando {filteredAlerts.length === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, filteredAlerts.length)} de{" "}
+            {filteredAlerts.length} alertas
           </div>
+
           {filteredAlerts.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size={isMobile ? "sm" : "default"}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={isMobile ? "h-8" : "h-9"}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Anterior
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size={isMobile ? "sm" : "default"}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className={isMobile ? "h-8" : "h-9"}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+            <div className="flex flex-col xs:flex-row items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center justify-center sm:justify-normal gap-2 order-2 xs:order-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 px-2 sm:px-3 flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Anterior</span>
+                </Button>
+
+                <span className="text-xs text-muted-foreground min-w-[80px] text-center">
+                  Página {currentPage} de {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-2 sm:px-3 flex items-center gap-1"
+                >
+                  <span className="hidden xs:inline">Siguiente</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
