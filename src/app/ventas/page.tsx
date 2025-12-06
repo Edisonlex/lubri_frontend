@@ -50,9 +50,11 @@ import { es } from "date-fns/locale";
 import { generateInvoicePDF } from "@/components/pos/invoice-generator";
 import { SaleDetails } from "@/components/sales/sale-details";
 import { Customer } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function VentasPage() {
-  const { sales, refreshSales, loadingSales } = usePOS();
+  const { sales, refreshSales, loadingSales, customers } = usePOS();
+  const router = useRouter();
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -190,13 +192,7 @@ export default function VentasPage() {
   };
 
   const handleDownloadInvoice = (sale: Sale) => {
-    // Buscar el cliente completo en la base de datos
-    const { customers } = usePOS(); // Necesitarás acceder a los clientes
-
-    // Encontrar el cliente completo basado en el customerId de la venta
     const customer = customers.find((c) => c.id === sale.customerId);
-
-    // Si no encontramos el cliente, crear uno básico
     const invoiceCustomer: Customer = customer || {
       id: sale.customerId || "",
       name: sale.customerName || "Cliente no especificado",
@@ -215,7 +211,6 @@ export default function VentasPage() {
       preferredContact: "phone",
     };
 
-    // Convertir la venta al formato de factura
     const invoiceData = {
       invoiceNumber: sale.invoiceNumber,
       date: format(
@@ -229,7 +224,7 @@ export default function VentasPage() {
         name: item.productName,
         price: item.unitPrice,
         quantity: item.quantity,
-        category: "", // Estos campos podrían buscarse en products si están disponibles
+        category: "",
         stock: 0,
         brand: "",
       })),
@@ -243,7 +238,57 @@ export default function VentasPage() {
       change: undefined,
     };
 
-    generateInvoicePDF(invoiceData);
+    generateInvoicePDF(invoiceData, { action: "save" });
+  };
+
+  const handlePrintInvoice = (sale: Sale) => {
+    const customer = customers.find((c) => c.id === sale.customerId);
+    const invoiceCustomer: Customer = customer || {
+      id: sale.customerId || "",
+      name: sale.customerName || "Cliente no especificado",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      idNumber: "",
+      customerType: "individual",
+      vehicles: [],
+      totalPurchases: 0,
+      lastPurchase: "",
+      registrationDate: "",
+      status: "active",
+      notes: "",
+      preferredContact: "phone",
+    };
+
+    const invoiceData = {
+      invoiceNumber: sale.invoiceNumber,
+      date: format(
+        parseISO(sale.date),
+        "dd 'de' MMMM 'de' yyyy 'a las' HH:mm",
+        { locale: es }
+      ),
+      customer: invoiceCustomer,
+      items: sale.items.map((item) => ({
+        id: item.productId,
+        name: item.productName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        category: "",
+        stock: 0,
+        brand: "",
+      })),
+      subtotal: sale.subtotal,
+      tax: sale.tax,
+      total: sale.total,
+      paymentMethod:
+        sale.paymentMethod.charAt(0).toUpperCase() +
+        sale.paymentMethod.slice(1),
+      cashReceived: undefined,
+      change: undefined,
+    };
+
+    generateInvoicePDF(invoiceData, { action: "print" });
   };
 
 
@@ -271,7 +316,7 @@ export default function VentasPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => window.open("/pos", "_blank")}>
+          <Button onClick={() => router.push("/pos")}>
             <Plus className="h-4 w-4 mr-2" />
             Nueva Venta
           </Button>
@@ -556,6 +601,7 @@ export default function VentasPage() {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         onDownloadInvoice={handleDownloadInvoice}
+        onPrintInvoice={handlePrintInvoice}
       />
     </div>
   );

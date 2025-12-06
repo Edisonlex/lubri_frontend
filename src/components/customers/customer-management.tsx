@@ -18,12 +18,12 @@ import { usePOS } from "@/contexts/pos-context";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function CustomerManagement() {
-  const { customers: posCustomers, loadingCustomers } = usePOS();
+  const { customers: posCustomers, loadingCustomers, refreshCustomers } = usePOS();
   const [customers, setCustomers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     customerType: "all",
     status: "all",
-    city: "La Maná",
+    city: "all",
     search: "",
   });
 
@@ -34,15 +34,14 @@ export function CustomerManagement() {
     null
   );
 
-  // Sync POS customers with local state
+  // Cargar clientes desde el contexto y sincronizar estado local
   useEffect(() => {
-    if (posCustomers && posCustomers.length > 0) {
-      const onlyLaMana = posCustomers.filter(
-        (c) => (c.city || '').toLowerCase() === 'la maná'
-      );
-      setCustomers(onlyLaMana);
-    }
+    setCustomers(posCustomers);
   }, [posCustomers]);
+
+  useEffect(() => {
+    refreshCustomers();
+  }, [refreshCustomers]);
 
   const handleViewCustomerFromMap = (entity: GeographicEntity) => {
     const mappedCustomer: Customer = {

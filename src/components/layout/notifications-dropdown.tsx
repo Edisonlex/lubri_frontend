@@ -37,7 +37,6 @@ export function NotificationsDropdown() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const roleAlerts = getAlertsForRole(user?.role || "admin");
-  const visibleAlerts = roleAlerts.slice(0, 7);
 
   const handleDropdownOpen = (open: boolean) => {
     setIsOpen(open);
@@ -92,9 +91,9 @@ export function NotificationsDropdown() {
   };
 
   const handleAlertClick = (alert: any) => {
-    // Marcar como vista y navegar
     markAlertAsViewed(alert.id);
-    router.push(`/inventory?alert=${alert.id}&product=${alert.sku}`);
+    const q = encodeURIComponent(alert.sku || alert.productName);
+    router.push(`/inventory?search=${q}`);
     setIsOpen(false);
   };
 
@@ -156,7 +155,7 @@ export function NotificationsDropdown() {
               </p>
             </div>
           ) : (
-            visibleAlerts.map((alert) => (
+            roleAlerts.map((alert) => (
               <DropdownMenuItem
                 key={alert.id}
                 className={`p-3 sm:p-4 border-l-4 ${getUrgencyStyles(

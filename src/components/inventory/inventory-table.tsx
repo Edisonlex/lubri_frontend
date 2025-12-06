@@ -126,7 +126,6 @@ interface InventoryTableProps {
   };
   onEditProduct: (product: Product) => void;
   onAdjustStock: (product: Product) => void;
-  onRegisterMovement?: (product: Product) => void;
   isLoading?: boolean;
   products?: Product[];
 }
@@ -135,7 +134,6 @@ export function InventoryTable({
   filters,
   onEditProduct,
   onAdjustStock,
-  onRegisterMovement,
   isLoading = false,
   products = mockProducts,
 }: InventoryTableProps) {
@@ -282,15 +280,7 @@ export function InventoryTable({
                 <Settings className="h-3 w-3 mr-2" />
                 Ajustar Stock
               </DropdownMenuItem>
-              {onRegisterMovement && (
-                <DropdownMenuItem
-                  onClick={() => onRegisterMovement(product)}
-                  className="text-xs"
-                >
-                  <Package className="h-3 w-3 mr-2" />
-                  Registrar Movimiento
-                </DropdownMenuItem>
-              )}
+              
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -553,28 +543,21 @@ export function InventoryTable({
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={() => onEditProduct(product)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => onAdjustStock(product)}
-                              >
-                                <Settings className="h-4 w-4 mr-2" />
-                                Ajustar Stock
-                              </DropdownMenuItem>
-                              {onRegisterMovement && (
-                                <DropdownMenuItem
-                                  onClick={() => onRegisterMovement(product)}
-                                >
-                                  <Package className="h-4 w-4 mr-2" />
-                                  Registrar Movimiento
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={() => onEditProduct(product)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onAdjustStock(product)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Ajustar Stock
+            </DropdownMenuItem>
+            
+          </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
                       </motion.tr>

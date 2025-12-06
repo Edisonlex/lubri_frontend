@@ -25,7 +25,7 @@ import { Package, Save } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { toast } from "sonner";
-import { Product } from "@/lib/api";
+import { api, Product } from "@/lib/api";
 import { productSchema } from "@/lib/validation";
 
 interface AddProductModalProps {
@@ -59,6 +59,8 @@ export function AddProductModal({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -98,6 +100,21 @@ export function AddProductModal({
     }
   }, [product]);
 
+  useEffect(() => {
+    const loadSuppliers = async () => {
+      try {
+        setLoadingSuppliers(true);
+        const data = await api.getSuppliers();
+        setSuppliers(data);
+      } catch (error) {
+        console.error("Error cargando proveedores:", error);
+      } finally {
+        setLoadingSuppliers(false);
+      }
+    };
+    loadSuppliers();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -129,7 +146,27 @@ export function AddProductModal({
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "name") {
+        const shouldSetSku = !next.sku;
+        const shouldSetBarcode = !next.barcode;
+        if (shouldSetSku) {
+          const words = value.trim().split(/\s+/);
+          const brandCode = (words[0] || "").substring(0, 3).toUpperCase();
+          const match = value.toUpperCase().match(/(\d{1,2}W)[ -]?(\d{1,2})/);
+          const gradeCode = match ? `${match[1]}${match[2]}` : "GEN";
+          const suffix = String(Math.floor(100 + Math.random() * 900));
+          next.sku = `${brandCode}-${gradeCode}-${suffix}`;
+        }
+        if (shouldSetBarcode) {
+          const base = Date.now().toString();
+          const random = String(Math.floor(1000000000000 + Math.random() * 899999999999));
+          next.barcode = (base + random).slice(0, 13);
+        }
+      }
+      return next;
+    });
   };
 
   return (
@@ -396,16 +433,21 @@ export function AddProductModal({
                 <Label htmlFor="supplier" className="text-sm font-medium">
                   Proveedor *
                 </Label>
-                <Input
-                  id="supplier"
+                <Select
                   value={formData.supplier}
-                  onChange={(e) =>
-                    handleInputChange("supplier", e.target.value)
-                  }
-                  placeholder="Ej: Distribuidora Central"
-                  required
-                  className="h-10 text-sm"
-                />
+                  onValueChange={(value) => handleInputChange("supplier", value)}
+                >
+                  <SelectTrigger id="supplier" className="h-10 text-sm">
+                    <SelectValue placeholder={loadingSuppliers ? "Cargando..." : "Seleccionar proveedor"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.name} className="text-sm">
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {errors.supplier && (
                   <p className="text-destructive text-sm">{errors.supplier}</p>
                 )}

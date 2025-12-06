@@ -14,7 +14,6 @@ import {
 } from "@/lib/api";
 import { LoadingState } from "@/components/settings/loading-state";
 import { CompanySettingsTab } from "@/components/settings/company-settings-tab";
-import { SriSettingsTab } from "@/components/settings/sri-settings-tab";
 import { BackupSettingsTab } from "@/components/settings/backup-settings-tab";
 import { AuditLogsTab } from "@/components/settings/audit-logs-tab";
 import { ProtectedRoute } from "@/contexts/auth-context";
@@ -105,9 +104,8 @@ export default function SettingsPage() {
             </motion.div>
 
             <Tabs defaultValue="company" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="company">Empresa</TabsTrigger>
-                <TabsTrigger value="sri">SRI</TabsTrigger>
                 <TabsTrigger value="backup">Respaldos</TabsTrigger>
                 <TabsTrigger value="audit">Auditoría</TabsTrigger>
               </TabsList>
@@ -121,12 +119,6 @@ export default function SettingsPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="sri" className="space-y-6">
-                <SriSettingsTab
-                  sriSettings={sriSettings}
-                  setSriSettings={setSriSettings}
-                />
-              </TabsContent>
 
               <TabsContent value="backup" className="space-y-6">
                 <BackupSettingsTab

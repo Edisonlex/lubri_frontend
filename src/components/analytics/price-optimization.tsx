@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
+import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import { toast } from "sonner";
 
 interface PriceRecommendation {
@@ -38,6 +39,7 @@ export function PriceOptimization() {
   const [data, setData] = useState<PriceOptimizationData | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isApplying, setIsApplying] = useState(false);
 
   const loadData = async () => {
     try {
@@ -75,6 +77,47 @@ export function PriceOptimization() {
       (total, rec) => total + rec.potentialRevenue,
       0
     );
+  };
+
+  const handleExport = () => {
+    if (!data) return;
+    const headers = [
+      "Producto",
+      "Precio Actual",
+      "Recomendado",
+      "Cambio %",
+      "Potencial ($/mes)",
+    ];
+    const rows = data.recommendations.map((rec) => {
+      const change = (((rec.recommendedPrice - rec.currentPrice) / rec.currentPrice) * 100).toFixed(1);
+      return [
+        getProductName(rec.productId),
+        `$${rec.currentPrice.toFixed(2)}`,
+        `$${rec.recommendedPrice.toFixed(2)}`,
+        `${change}%`,
+        `$${rec.potentialRevenue.toFixed(2)}`,
+      ];
+    });
+    exportToPDF({ headers, data: rows, fileName: "Recomendaciones_Precios" });
+  };
+
+  const handleApplyRecommendations = async () => {
+    if (!data) return;
+    try {
+      setIsApplying(true);
+      await Promise.all(
+        data.recommendations.map((rec) =>
+          api.updateProduct(rec.productId, { price: rec.recommendedPrice })
+        )
+      );
+      toast.success("Recomendaciones aplicadas: precios actualizados");
+      await loadData();
+    } catch (error) {
+      console.error("Error aplicando recomendaciones:", error);
+      toast.error("No se pudieron aplicar las recomendaciones");
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   if (isLoading) {
@@ -266,13 +309,13 @@ export function PriceOptimization() {
 
               {/* Action Buttons */}
               <div className="mt-6 flex gap-2 justify-end">
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleExport}>
                   <FileText className="h-4 w-4 mr-2" />
                   Exportar Reporte
                 </Button>
-                <Button>
+                <Button onClick={handleApplyRecommendations} disabled={isApplying}>
                   <Target className="h-4 w-4 mr-2" />
-                  Aplicar Recomendaciones
+                  {isApplying ? "Aplicando..." : "Aplicar Recomendaciones"}
                 </Button>
               </div>
             </>

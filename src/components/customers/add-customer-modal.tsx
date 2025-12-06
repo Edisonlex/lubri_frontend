@@ -328,7 +328,7 @@ export function AddCustomerModal({
                       onChange={(e) =>
                         setCustomerData({
                           ...customerData,
-                          idNumber: e.target.value,
+                          idNumber: e.target.value.replace(/\D/g, ""),
                         })
                       }
                       placeholder={
@@ -375,7 +375,7 @@ export function AddCustomerModal({
                           onChange={(e) =>
                             setCustomerData({
                               ...customerData,
-                              ruc: e.target.value,
+                              ruc: e.target.value.replace(/\D/g, ""),
                             })
                           }
                           placeholder="1792345678001"
@@ -466,25 +466,23 @@ export function AddCustomerModal({
                     <Label htmlFor="city" className="text-xs sm:text-sm">
                       Ciudad *
                     </Label>
-                      <Select
-                        value={customerData.city}
-                        onValueChange={(value) =>
-                          setCustomerData({ ...customerData, city: value })
-                        }
-                      >
-                        <SelectTrigger className="h-9 sm:h-10 text-sm">
-                          <SelectValue placeholder="Seleccionar ciudad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="quito">Quito</SelectItem>
-                          <SelectItem value="guayaquil">Guayaquil</SelectItem>
-                          <SelectItem value="cuenca">Cuenca</SelectItem>
-                          <SelectItem value="ambato">Ambato</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.city && (
-                        <p className="text-destructive text-sm">{errors.city}</p>
-                      )}
+                    <Input
+                      id="city"
+                      value={customerData.city}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const value = raw
+                          ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+                          : "";
+                        setCustomerData({ ...customerData, city: value });
+                      }}
+                      placeholder="La Maná"
+                      required
+                      className="h-9 sm:h-10 text-sm"
+                    />
+                    {errors.city && (
+                      <p className="text-destructive text-sm">{errors.city}</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">

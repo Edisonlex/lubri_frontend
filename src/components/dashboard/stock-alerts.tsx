@@ -32,10 +32,12 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRouter } from "next/navigation";
 
 export function StockAlerts() {
   const { getAlertsForRole, loading } = useAlerts();
   const { user } = useAuth();
+  const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = useState(1);
@@ -260,7 +262,11 @@ export function StockAlerts() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className={`border border-border dark:border-gray-800 rounded-lg p-3 sm:p-4 hover:bg-muted/40 dark:hover:bg-gray-800/50 transition-colors ${styles.leftBorder}`}
+                className={`border border-border dark:border-gray-800 rounded-lg p-3 sm:p-4 hover:bg-muted/40 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${styles.leftBorder}`}
+                onClick={() => {
+                  const q = encodeURIComponent(alert.sku || alert.productName);
+                  router.push(`/inventory?search=${q}`);
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">

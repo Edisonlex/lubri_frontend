@@ -12,6 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { usePOS } from "@/contexts/pos-context";
+import { Sale } from "@/contexts/pos-context";
+import { SaleDetails } from "@/components/sales/sale-details";
+import { generateInvoicePDF } from "@/components/pos/invoice-generator";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { useEffect, useState, useCallback } from "react";
 import { ArrowRight, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -29,13 +34,15 @@ interface RecentSale {
 }
 
 export function RecentSales() {
-  const { sales, refreshSales } = usePOS();
+  const { sales, refreshSales, customers } = usePOS();
   const router = useRouter();
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [viewMode, setViewMode] = useState<"today" | "recent">("recent");
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Función para convertir ventas al formato de RecentSale
   const convertSalesToRecentSales = useCallback(() => {
@@ -54,20 +61,35 @@ export function RecentSales() {
     })();
 
     const convertedSales: RecentSale[] = filtered.map((sale) => {
-      // Calcular el tiempo transcurrido
       const saleTime = new Date(sale.date);
       const now = new Date();
       const diffMs = now.getTime() - saleTime.getTime();
       const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
 
       let tiempo = "";
-      if (diffMins < 1) {
-        tiempo = "ahora";
+      if (diffMs < 60000) {
+        tiempo = "un momento";
       } else if (diffMins < 60) {
         tiempo = `${diffMins} min`;
-      } else {
-        const diffHours = Math.floor(diffMins / 60);
+      } else if (diffHours < 24) {
         tiempo = `${diffHours} h`;
+      } else if (diffDays < 7) {
+        tiempo = diffDays === 1 ? "1 día" : `${diffDays} días`;
+      } else {
+        const diffWeeks = Math.floor(diffDays / 7);
+        if (diffWeeks < 5) {
+          tiempo = diffWeeks === 1 ? "1 semana" : `${diffWeeks} semanas`;
+        } else {
+          const diffMonths = Math.floor(diffDays / 30);
+          if (diffMonths < 12) {
+            tiempo = diffMonths === 1 ? "1 mes" : `${diffMonths} meses`;
+          } else {
+            const diffYears = Math.floor(diffDays / 365);
+            tiempo = diffYears === 1 ? "1 año" : `${diffYears} años`;
+          }
+        }
       }
 
       // Obtener el primer producto para mostrar
@@ -111,6 +133,102 @@ export function RecentSales() {
 
   const handleViewAllSales = () => {
     router.push("/ventas");
+  };
+
+  const handleOpenSaleDetails = (saleId: string) => {
+    const found = sales.find((s) => s.id === saleId) || null;
+    setSelectedSale(found);
+    setIsDetailsOpen(!!found);
+  };
+
+  const handleDownloadInvoice = (sale: Sale) => {
+    const customer = customers.find((c) => c.id === sale.customerId);
+    const invoiceCustomer = customer || {
+      id: sale.customerId || "",
+      name: sale.customerName || "Cliente no especificado",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      idNumber: "",
+      customerType: "individual",
+      vehicles: [],
+      totalPurchases: 0,
+      lastPurchase: "",
+      registrationDate: "",
+      status: "active",
+      notes: "",
+      preferredContact: "phone",
+    };
+
+    const invoiceData = {
+      invoiceNumber: sale.invoiceNumber,
+      date: format(parseISO(sale.date), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es }),
+      customer: invoiceCustomer,
+      items: sale.items.map((item) => ({
+        id: item.productId,
+        name: item.productName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        category: "",
+        stock: 0,
+        brand: "",
+      })),
+      subtotal: sale.subtotal,
+      tax: sale.tax,
+      total: sale.total,
+      paymentMethod:
+        sale.paymentMethod.charAt(0).toUpperCase() + sale.paymentMethod.slice(1),
+      cashReceived: undefined,
+      change: undefined,
+    };
+
+    generateInvoicePDF(invoiceData, { action: "save" });
+  };
+
+  const handlePrintInvoice = (sale: Sale) => {
+    const customer = customers.find((c) => c.id === sale.customerId);
+    const invoiceCustomer = customer || {
+      id: sale.customerId || "",
+      name: sale.customerName || "Cliente no especificado",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      idNumber: "",
+      customerType: "individual",
+      vehicles: [],
+      totalPurchases: 0,
+      lastPurchase: "",
+      registrationDate: "",
+      status: "active",
+      notes: "",
+      preferredContact: "phone",
+    };
+
+    const invoiceData = {
+      invoiceNumber: sale.invoiceNumber,
+      date: format(parseISO(sale.date), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es }),
+      customer: invoiceCustomer,
+      items: sale.items.map((item) => ({
+        id: item.productId,
+        name: item.productName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        category: "",
+        stock: 0,
+        brand: "",
+      })),
+      subtotal: sale.subtotal,
+      tax: sale.tax,
+      total: sale.total,
+      paymentMethod:
+        sale.paymentMethod.charAt(0).toUpperCase() + sale.paymentMethod.slice(1),
+      cashReceived: undefined,
+      change: undefined,
+    };
+
+    generateInvoicePDF(invoiceData, { action: "print" });
   };
 
   if (isLoading) {
@@ -210,7 +328,7 @@ export function RecentSales() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={handleViewAllSales}
+                    onClick={() => handleOpenSaleDetails(sale.id)}
                   >
                     <div className="flex items-center gap-4">
                       <Avatar className="h-10 w-10">
@@ -336,6 +454,13 @@ export function RecentSales() {
             </div>
           )}
         </CardContent>
+        <SaleDetails
+          sale={selectedSale}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          onDownloadInvoice={handleDownloadInvoice}
+          onPrintInvoice={handlePrintInvoice}
+        />
       </Card>
     </motion.div>
   );

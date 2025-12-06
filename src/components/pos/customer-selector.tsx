@@ -44,14 +44,12 @@ export function CustomerSelector() {
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-  const filteredCustomers = customers
-    .filter((c) => (c.city || '').toLowerCase() === 'la maná')
-    .filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.phone?.includes(searchQuery) ||
-        customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery) ||
+      customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleSaveCustomer = async (customerData: Omit<Customer, "id">) => {
     try {

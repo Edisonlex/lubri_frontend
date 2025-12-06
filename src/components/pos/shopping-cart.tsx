@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { usePOS } from "@/contexts/pos-context";
+import { generateInvoicePDF, generateInvoiceNumber } from "./invoice-generator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ShoppingCartProps {
@@ -276,7 +277,27 @@ export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
                   variant="outline"
                   className="w-full h-12 font-semibold"
                   onClick={() => {
-                    /* Generate invoice preview */
+                    if (!selectedCustomer) return;
+                    const subtotal = cartTotal;
+                    const tax = subtotal * 0.12;
+                    const total = subtotal + tax;
+                    const invoiceData = {
+                      invoiceNumber: generateInvoiceNumber(),
+                      date: new Date().toLocaleString("es-EC", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }),
+                      customer: selectedCustomer,
+                      items: cartItems,
+                      subtotal,
+                      tax,
+                      total,
+                      paymentMethod: "Por definir",
+                    };
+                    generateInvoicePDF(invoiceData, { action: "print" });
                   }}
                   disabled={!canCheckout}
                 >

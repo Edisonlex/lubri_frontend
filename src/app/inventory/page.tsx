@@ -6,7 +6,6 @@ import { InventoryTable } from "@/components/inventory/inventory-table";
 import { InventoryFilters } from "@/components/inventory/inventory-filters";
 import { AddProductModal } from "@/components/inventory/add-product-modal";
 import { StockAdjustmentModal } from "@/components/inventory/stock-adjustment-modal";
-import { StockMovementModal } from "@/components/inventory/stock-movement-modal";
 import { RealTimeInventory } from "@/components/inventory/real-time-inventory";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +21,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api, Product } from "@/lib/api";
 import {
   DropdownMenu,
@@ -36,6 +35,9 @@ import { AnalyticsModal } from "@/components/inventory/analytics-modal";
 import { useAlerts } from "@/contexts/alerts-context";
 import { toast } from "sonner";
 import { ProtectedRoute } from "@/contexts/auth-context";
+import { StockMovementHistory } from "@/components/inventory/stock-movement-history";
+import { MovementsExportModal } from "@/components/inventory/export/movements-export-modal";
+import type { StockMovement } from "@/lib/api";
 
 export default function InventoryPage() {
   const router = useRouter();
@@ -44,16 +46,18 @@ export default function InventoryPage() {
 
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showStockAdjustment, setShowStockAdjustment] = useState(false);
-  const [showStockMovement, setShowStockMovement] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [adjustments, setAdjustments] = useState<StockMovement[]>([]);
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
   const [filters, setFilters] = useState({
     category: "all",
     brand: "all",
     status: "all",
     stockLevel: "all",
-    search: "",
+    search: initialSearch,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,6 +79,15 @@ export default function InventoryPage() {
     }
   };
 
+  const loadAdjustments = async () => {
+    try {
+      const movements = await api.getStockMovements();
+      setAdjustments(movements.filter((m) => m.type === "ajuste"));
+    } catch (error) {
+      console.error("Error cargando ajustes:", error);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadProducts();
@@ -84,6 +97,7 @@ export default function InventoryPage() {
 
   useEffect(() => {
     loadProducts();
+    loadAdjustments();
   }, []);
 
   const handleProductSaved = () => {
@@ -92,6 +106,7 @@ export default function InventoryPage() {
 
   const handleStockUpdated = () => {
     loadProducts(); // Recargar productos después de ajustar stock
+    loadAdjustments(); // Actualizar historial de ajustes
   };
 
   // Botones para móvil en dropdown
@@ -115,10 +130,7 @@ export default function InventoryPage() {
           <BarChart2 className="h-4 w-4 mr-2" />
           Análisis
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/inventory/movements")}>
-          <History className="h-4 w-4 mr-2" />
-          Movimientos
-        </DropdownMenuItem>
+        
         <DropdownMenuItem onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Actualizar
@@ -158,15 +170,7 @@ export default function InventoryPage() {
 
       <AnalyticsModal products={products} />
 
-      <Button
-        variant="outline"
-        className="bg-transparent h-8 sm:h-10 text-xs sm:text-sm px-2 sm:px-4"
-        size="sm"
-        onClick={() => router.push("/inventory/movements")}
-      >
-        <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-        Movimientos
-      </Button>
+      
     </div>
   );
 
@@ -199,12 +203,15 @@ export default function InventoryPage() {
       </motion.div>
 
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mb-4 h-10">
+        <TabsList className="w-full grid grid-cols-3 mb-4 h-10">
           <TabsTrigger value="inventory" className="text-xs sm:text-sm">
             Inventario
           </TabsTrigger>
           <TabsTrigger value="realtime" className="text-xs sm:text-sm">
             Tiempo Real
+          </TabsTrigger>
+          <TabsTrigger value="adjustments" className="text-xs sm:text-sm">
+            Ajustes
           </TabsTrigger>
         </TabsList>
 
@@ -265,10 +272,7 @@ export default function InventoryPage() {
                 setSelectedProduct(product);
                 setShowStockAdjustment(true);
               }}
-              onRegisterMovement={(product) => {
-                setSelectedProduct(product);
-                setShowStockMovement(true);
-              }}
+              
             />
           </div>
         </TabsContent>
@@ -277,6 +281,18 @@ export default function InventoryPage() {
           <div className="overflow-hidden">
             <RealTimeInventory />
           </div>
+        </TabsContent>
+
+        <TabsContent value="adjustments" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Historial de Ajustes</h3>
+            <MovementsExportModal
+              movements={adjustments}
+              movementType="adjustment"
+              disabled={adjustments.length === 0}
+            />
+          </div>
+          <StockMovementHistory movements={adjustments} isLoading={false} />
         </TabsContent>
       </Tabs>
 
@@ -300,14 +316,7 @@ export default function InventoryPage() {
         onStockUpdated={handleStockUpdated}
       />
 
-      <StockMovementModal
-        isOpen={showStockMovement}
-        onClose={() => {
-          setShowStockMovement(false);
-          setSelectedProduct(null);
-        }}
-        product={selectedProduct}
-      />
+      
 
       {/* Modales para móvil - controlados por estado */}
       {isMobile && (

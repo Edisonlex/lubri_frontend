@@ -17,7 +17,10 @@ export interface InvoiceData {
   change?: number;
 }
 
-export const generateInvoicePDF = (invoiceData: InvoiceData): boolean => {
+export const generateInvoicePDF = (
+  invoiceData: InvoiceData,
+  options?: { action?: "save" | "print" }
+): boolean => {
   try {
     // Crear un nuevo documento PDF
     const doc = new jsPDF();
@@ -210,10 +213,37 @@ export const generateInvoicePDF = (invoiceData: InvoiceData): boolean => {
       { align: "center" }
     );
 
-    // Guardar el PDF
-    doc.save(`factura-${invoiceData.invoiceNumber}.pdf`);
-
-    return true;
+    const action = options?.action || "save";
+    if (action === "print") {
+      try {
+        (doc as any).autoPrint?.();
+        const blobUrl = (doc as any).output?.("bloburl");
+        if (blobUrl) {
+          window.open(blobUrl);
+          return true;
+        }
+        const dataUrl = (doc as any).output?.("dataurlstring");
+        if (dataUrl) {
+          const win = window.open();
+          if (win) {
+            win.document.write(
+              `<!DOCTYPE html><html><head><title>Imprimir Factura</title></head><body onload="window.print();window.close()"><embed src="${dataUrl}" type="application/pdf" style="width:100%;height:100%"/></body></html>`
+            );
+            return true;
+          }
+        }
+        // Si no se pudo abrir, hacer fallback a guardar
+        doc.save(`factura-${invoiceData.invoiceNumber}.pdf`);
+        return true;
+      } catch (e) {
+        console.error("Error al imprimir la factura:", e);
+        doc.save(`factura-${invoiceData.invoiceNumber}.pdf`);
+        return true;
+      }
+    } else {
+      doc.save(`factura-${invoiceData.invoiceNumber}.pdf`);
+      return true;
+    }
   } catch (error) {
     console.error("Error generando PDF:", error);
     return false;

@@ -4,7 +4,7 @@ import { api, Product } from "@/lib/api";
 import { toast } from "sonner";
 
 export function useStockManagement() {
-  const { refreshAlerts, markAlertAsResolved } = useAlerts();
+  const { refreshAlerts } = useAlerts();
 
   const updateProductStock = async (
     productId: string,
@@ -14,19 +14,6 @@ export function useStockManagement() {
     try {
       // Actualizar el producto en la API
       await api.updateProduct(productId, { stock: newStock });
-
-      // Si el stock ahora es mayor al mínimo, buscar y resolver alertas de este producto
-      if (newStock >= minStock) {
-        const alerts = await api.getStockAlerts();
-        const productAlerts = alerts.filter(
-          (alert) => alert.sku === productId || alert.id === productId
-        );
-
-        // Resolver alertas de este producto
-        productAlerts.forEach((alert) => {
-          markAlertAsResolved(alert.id);
-        });
-      }
 
       // Refrescar las alertas para reflejar los cambios
       await refreshAlerts();
@@ -57,18 +44,6 @@ export function useStockManagement() {
         userId: "current-user-id",
         documentRef: `MOV-${Date.now()}`,
       });
-
-      // Si es una entrada y el stock ahora es suficiente, resolver alertas
-      if (type === "entrada" && newStock >= minStock) {
-        const alerts = await api.getStockAlerts();
-        const productAlerts = alerts.filter(
-          (alert) => alert.sku === productId || alert.id === productId
-        );
-
-        productAlerts.forEach((alert) => {
-          markAlertAsResolved(alert.id);
-        });
-      }
 
       // Refrescar alertas
       await refreshAlerts();
@@ -104,24 +79,6 @@ export function useStockManagement() {
   ) => {
     try {
       const updatedProduct = await api.updateProduct(productId, productData);
-
-      // Verificar si los cambios afectan las alertas
-      if (
-        productData.stock !== undefined &&
-        productData.minStock !== undefined
-      ) {
-        if (productData.stock >= productData.minStock) {
-          // Resolver alertas si el stock ahora es suficiente
-          const alerts = await api.getStockAlerts();
-          const productAlerts = alerts.filter(
-            (alert) => alert.sku === productId || alert.id === productId
-          );
-
-          productAlerts.forEach((alert) => {
-            markAlertAsResolved(alert.id);
-          });
-        }
-      }
 
       await refreshAlerts();
       return updatedProduct;

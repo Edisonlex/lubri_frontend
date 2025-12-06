@@ -298,6 +298,6 @@ export const inventoryFiltersSchema = z.object({
 export const customerFiltersSchema = z.object({
   customerType: z.enum(["all", "individual", "business"]),
   status: z.enum(["all", "active", "inactive"]),
-  city: z.enum(["all", "quito", "guayaquil", "cuenca", "ambato"]),
+  city: z.string().max(100).optional().default("all"),
   search: z.string().max(100).optional().default(""),
 });

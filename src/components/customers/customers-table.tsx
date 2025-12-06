@@ -76,7 +76,9 @@ export function CustomersTable({
     const matchesStatus =
       filters.status === "all" || customer.status === filters.status;
     const matchesCity =
-      filters.city === "all" || customer.city === filters.city;
+      filters.city === "all" ||
+      (customer.city && filters.city &&
+        customer.city.toLowerCase() === String(filters.city).toLowerCase());
     const matchesSearch =
       customer.name.toLowerCase().includes(filters.search.toLowerCase()) ||
       customer.email.toLowerCase().includes(filters.search.toLowerCase()) ||

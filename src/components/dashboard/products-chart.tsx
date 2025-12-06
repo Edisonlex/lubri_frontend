@@ -17,15 +17,38 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
-
-const productsData = [
-  { categoria: "Aceites Motor", vendidos: 45, ingresos: 1350 },
-  { categoria: "Filtros", vendidos: 32, ingresos: 960 },
-  { categoria: "Lubricantes", vendidos: 28, ingresos: 840 },
-  { categoria: "Aditivos", vendidos: 22, ingresos: 660 },
-];
+import { useMemo } from "react";
+import { usePOS } from "@/contexts/pos-context";
 
 export function ProductsChart() {
+  const { sales, products } = usePOS();
+
+  const productsData = useMemo(() => {
+    const idToCategory = new Map(products.map((p) => [p.id, p.category]));
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+
+    const agg: Record<string, { vendidos: number; ingresos: number }> = {};
+    for (const sale of sales) {
+      const saleDate = new Date(sale.date);
+      if (saleDate < weekAgo) continue;
+      for (const item of sale.items) {
+        const category = idToCategory.get(item.productId) || "otros";
+        if (!agg[category]) agg[category] = { vendidos: 0, ingresos: 0 };
+        agg[category].vendidos += item.quantity;
+        agg[category].ingresos += item.subtotal;
+      }
+    }
+    const rows = Object.entries(agg)
+      .map(([categoria, v]) => ({ categoria, vendidos: v.vendidos, ingresos: Number(v.ingresos.toFixed(2)) }))
+      .sort((a, b) => b.vendidos - a.vendidos)
+      .slice(0, 8);
+    return rows.length > 0
+      ? rows
+      : [{ categoria: "Sin datos", vendidos: 0, ingresos: 0 }];
+  }, [sales, products]);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}

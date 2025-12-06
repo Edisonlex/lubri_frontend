@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 
 import { toast } from "sonner";
 import { useStockManagement } from "@/hooks/use-stock-management";
+import { api } from "@/lib/api";
 import { Product } from "@/lib/api";
 import { stockAdjustmentSchema } from "@/lib/validation";
 
@@ -53,7 +54,7 @@ export function StockAdjustmentModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { updateProductStock, registerStockMovement } = useStockManagement();
+  const { updateProductStock } = useStockManagement();
 
   if (!product) return null;
 
@@ -103,23 +104,19 @@ export function StockAdjustmentModal({
       );
 
       if (success) {
-        // Registrar el movimiento de stock
-        const movementType =
-          adjustmentType === "add"
-            ? "entrada"
-            : adjustmentType === "subtract"
-            ? "salida"
-            : "ajuste";
-
-        await registerStockMovement(
-          product.id,
-          movementType,
-          Number.parseInt(quantity),
-          reason || "Ajuste manual",
-          product.minStock,
-          newStock
-        );
-
+        try {
+          await api.createStockMovement({
+            productId: product.id,
+            type: "ajuste",
+            quantity: Number.parseInt(quantity),
+            reason: reason || "Ajuste manual",
+            date: new Date().toISOString(),
+            userId: "current-user-id",
+            documentRef: `ADJ-${Date.now()}`,
+          });
+        } catch (err) {
+          console.error("Error registrando ajuste:", err);
+        }
         toast.success("Ajuste de stock realizado exitosamente");
         onClose();
         setQuantity("");

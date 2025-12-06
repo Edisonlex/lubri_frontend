@@ -29,6 +29,7 @@ interface SaleDetailsProps {
   isOpen: boolean;
   onClose: () => void;
   onDownloadInvoice: (sale: Sale) => void;
+  onPrintInvoice: (sale: Sale) => void;
 }
 
 export function SaleDetails({
@@ -36,6 +37,7 @@ export function SaleDetails({
   isOpen,
   onClose,
   onDownloadInvoice,
+  onPrintInvoice,
 }: SaleDetailsProps) {
   if (!sale) return null;
 
@@ -196,7 +198,7 @@ export function SaleDetails({
               Descargar Factura
             </Button>
             <Button
-              onClick={() => onDownloadInvoice(sale)}
+              onClick={() => onPrintInvoice(sale)}
               variant="secondary"
               className="flex-1"
             >

@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import { api } from "@/lib/api";
+import { generateInvoiceNumber } from "@/components/pos/invoice-generator";
 import type { Supplier } from "@/lib/api";
 
 // Tipos de datos - Simplificados para que coincidan con la API
@@ -286,6 +287,8 @@ const convertContextSaleToApiSale = (
     status: contextSale.status,
     userId: contextSale.userId,
     notes: contextSale.notes,
+    date: new Date().toISOString(),
+    invoiceNumber: generateInvoiceNumber(),
   };
 };
 

@@ -176,39 +176,32 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
                 </Select>
 
                 {/* City Filter */}
-                <Select
-                  value={filters.city}
-                  onValueChange={(value) =>
-                    setFilters({ ...filters, city: value })
-                  }
-                >
-                  <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
-                    <SelectValue placeholder="Ciudad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-xs sm:text-sm">
-                      Todas las ciudades
-                    </SelectItem>
-                    <SelectItem value="La Maná" className="text-xs sm:text-sm">
-                      La Maná
-                    </SelectItem>
-                    <SelectItem value="quito" className="text-xs sm:text-sm">
-                      Quito
-                    </SelectItem>
-                    <SelectItem
-                      value="guayaquil"
-                      className="text-xs sm:text-sm"
-                    >
-                      Guayaquil
-                    </SelectItem>
-                    <SelectItem value="cuenca" className="text-xs sm:text-sm">
-                      Cuenca
-                    </SelectItem>
-                    <SelectItem value="ambato" className="text-xs sm:text-sm">
-                      Ambato
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Input
+                    placeholder="Ciudad (escribe para filtrar)"
+                    value={filters.city === "all" ? "" : filters.city}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      const value = raw
+                        ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+                        : "all";
+                      const next = { ...filters, city: value };
+                      const result = customerFiltersSchema.safeParse(next);
+                      if (!result.success) {
+                        const fieldErrors: Record<string, string> = {};
+                        result.error.errors.forEach((err) => {
+                          const key = String(err.path[0] ?? "general");
+                          fieldErrors[key] = err.message;
+                        });
+                        setErrors(fieldErrors);
+                        return;
+                      }
+                      setErrors({});
+                      setFilters(result.data);
+                    }}
+                    className="w-full text-xs sm:text-sm h-8 sm:h-10"
+                  />
+                </div>
               </div>
             </div>
           </motion.div>
