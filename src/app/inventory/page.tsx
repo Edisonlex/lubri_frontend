@@ -1,7 +1,7 @@
 // app/inventory/page.tsx (versión conectada)
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { InventoryTable } from "@/components/inventory/inventory-table";
 import { InventoryFilters } from "@/components/inventory/inventory-filters";
 import { AddProductModal } from "@/components/inventory/add-product-modal";
@@ -39,7 +39,7 @@ import { StockMovementHistory } from "@/components/inventory/stock-movement-hist
 import { MovementsExportModal } from "@/components/inventory/export/movements-export-modal";
 import type { StockMovement } from "@/lib/api";
 
-export default function InventoryPage() {
+function InventoryContent() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { refreshAlerts } = useAlerts();
@@ -336,5 +336,13 @@ export default function InventoryPage() {
       )}
     </div>
     </ProtectedRoute>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm">Cargando inventario...</div>}>
+      <InventoryContent />
+    </Suspense>
   );
 }

@@ -304,7 +304,7 @@ export default function VentasPage() {
   return loadingSales ? (
     LoadingContent
   ) : (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 px-3 sm:px-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -474,10 +474,11 @@ export default function VentasPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
+                <TableHead className="min-w-[140px]">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort("date")}
@@ -487,9 +488,9 @@ export default function VentasPage() {
                     <ArrowUpDown className="h-4 w-4" />
                   </Button>
                 </TableHead>
-                <TableHead>Factura</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Productos</TableHead>
+                <TableHead className="min-w-[120px]">Factura</TableHead>
+                <TableHead className="min-w-[160px]">Cliente</TableHead>
+                <TableHead className="min-w-[220px]">Productos</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -500,9 +501,9 @@ export default function VentasPage() {
                     <ArrowUpDown className="h-4 w-4" />
                   </Button>
                 </TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="min-w-[140px]">Método</TableHead>
+                <TableHead className="min-w-[120px]">Estado</TableHead>
+                <TableHead className="text-right min-w-[120px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -580,6 +581,11 @@ export default function VentasPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="sm:hidden text-center text-xs text-muted-foreground mt-3 p-2 bg-muted/20 rounded">
+            ← Desliza horizontalmente para ver más columnas →
+          </div>
 
           {filteredSales.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
