@@ -31,6 +31,7 @@ export interface Product {
   status: "active" | "inactive" | "discontinued";
   rotationRate?: number;
   profitMargin?: number;
+  imageUrl?: string;
 }
 
 export interface CartItem {

@@ -5,14 +5,17 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { api, User as UserType, Sale, AuditLog } from "@/lib/api";
-import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "next-themes";
 import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { PreferencesForm } from "@/components/profile/PreferencesForm";
+import { usePreferences } from "@/contexts/preferences-context";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { SecurityForm } from "@/components/profile/SecurityForm";
-import { ProtectedRoute } from "@/contexts/auth-context";
+import { useScrollIndicator } from "@/hooks/use-scroll-indicator";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // Importar componentes
 
@@ -25,26 +28,6 @@ interface ProfileData {
   avatar?: string;
 }
 
-interface Preferences {
-  theme: string;
-  notifications: boolean;
-  emailAlerts: boolean;
-  language: string;
-  roleNotifications: {
-    admin: {
-      inventoryAlerts: boolean;
-      userManagementAlerts: boolean;
-    };
-    cashier: {
-      salesAlerts: boolean;
-      customerAlerts: boolean;
-    };
-    technician: {
-      maintenanceAlerts: boolean;
-      stockAlerts: boolean;
-    };
-  };
-}
 
 interface PasswordData {
   currentPassword: string;
@@ -64,34 +47,17 @@ interface UserStats {
 
 export default function ProfilePage() {
   const { theme } = useTheme();
+  const { preferences, setPreferences, savePreferences } = usePreferences();
   const [mounted, setMounted] = useState(false);
-  const { user } = useAuth();
+  const { scrollRef, canScroll, isScrolledLeft, scrollToActiveTab } = useScrollIndicator();
+  const [activeTab, setActiveTab] = useState("profile");
+  const isMobile = useIsMobile();
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [profile, setProfile] = useState<ProfileData>({
     name: "",
     email: "",
     phone: "",
     role: "",
-  });
-  const [preferences, setPreferences] = useState<Preferences>({
-    theme: "system",
-    notifications: true,
-    emailAlerts: true,
-    language: "es",
-    roleNotifications: {
-      admin: {
-        inventoryAlerts: true,
-        userManagementAlerts: false,
-      },
-      cashier: {
-        salesAlerts: true,
-        customerAlerts: true,
-      },
-      technician: {
-        maintenanceAlerts: true,
-        stockAlerts: true,
-      },
-    },
   });
   const [passwordData, setPasswordData] = useState<PasswordData>({
     currentPassword: "",
@@ -124,43 +90,46 @@ export default function ProfilePage() {
 
   // Cargar datos del usuario actual
   useEffect(() => {
-    if (mounted && user) {
-      setCurrentUser({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: "active",
-      } as any);
+    if (mounted) {
+      loadUserData();
+    }
+  }, [mounted]);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      const users = await api.getUsers();
+      const currentUser = users[0];
+      setCurrentUser(currentUser);
 
       setProfile({
-        name: user.name,
-        email: user.email,
-        phone: "",
+        name: currentUser.name,
+        email: currentUser.email,
+        phone: "0987654321",
         role:
-          user.role === "admin"
+          currentUser.role === "admin"
             ? "Administrador"
-            : user.role === "cashier"
-            ? "Cajero"
-            : "Técnico",
+            : currentUser.role === "manager"
+            ? "Gerente"
+            : "Cajero",
       });
 
-      (async () => {
-        await loadUserStats(user.id, user.email);
-        setIsLoading(false);
-      })();
+      await loadUserStats(currentUser.id);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      toast.error("Error al cargar los datos del usuario");
+    } finally {
+      setIsLoading(false);
     }
-  }, [mounted, user]);
+  };
 
-  const loadUserData = async () => {};
-
-  const loadUserStats = async (userId: string, userEmail?: string) => {
+  const loadUserStats = async (userId: string) => {
     try {
       const sales = await api.getSales();
       const userSales = sales.filter((sale) => sale.userId === userId);
       const auditLogs = await api.getAuditLogs();
       const userLogs = auditLogs.filter(
-        (log) => log.user === (userEmail ?? currentUser?.email)
+        (log) => log.user === currentUser?.email
       );
 
       const totalSales = userSales.length;
@@ -214,6 +183,7 @@ export default function ProfilePage() {
     try {
       setIsSaving(true);
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      savePreferences();
 
       await api.createAuditLog({
         action: "Actualización de preferencias de usuario",
@@ -312,11 +282,17 @@ export default function ProfilePage() {
   }
 
   return (
-    <ProtectedRoute>
     <div className="flex bg-background">
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
           <div className="flex-1 space-y-6 p-6">
+            <ProfileHeader
+              name={profile.name}
+              email={profile.email}
+              role={profile.role}
+              avatar={profile.avatar}
+              onAvatarUpload={handleAvatarUpload}
+            />
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -335,7 +311,7 @@ export default function ProfilePage() {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="lg:col-span-1"
+                className="hidden lg:block lg:col-span-1"
               >
                 <ProfileSidebar
                   profile={profile}
@@ -349,51 +325,110 @@ export default function ProfilePage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="lg:col-span-3"
               >
-                <Tabs defaultValue="profile" className="space-y-6">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="profile">Perfil</TabsTrigger>
-                    <TabsTrigger value="security">Seguridad</TabsTrigger>
-                    <TabsTrigger value="preferences">Preferencias</TabsTrigger>
-                  </TabsList>
+                {isMobile ? (
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="profile">
+                      <AccordionTrigger>Perfil</AccordionTrigger>
+                      <AccordionContent>
+                        <ProfileForm
+                          profile={profile}
+                          onProfileChange={setProfile}
+                          onSave={handleSaveProfile}
+                          isSaving={isSaving}
+                        />
+                        <ProfileStats userStats={userStats} />
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="security">
+                      <AccordionTrigger>Seguridad</AccordionTrigger>
+                      <AccordionContent>
+                        <SecurityForm
+                          passwordData={passwordData}
+                          onPasswordChange={setPasswordData}
+                          onChangePassword={handleChangePassword}
+                          isSaving={isSaving}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="preferences">
+                      <AccordionTrigger>Preferencias</AccordionTrigger>
+                      <AccordionContent>
+                      <PreferencesForm
+                          preferences={preferences}
+                          onPreferencesChange={setPreferences}
+                          onSave={handleSavePreferences}
+                          isSaving={isSaving}
+                          role={
+                            currentUser?.role === "admin"
+                              ? "admin"
+                              : currentUser?.role === "cashier"
+                              ? "cashier"
+                              : "technician"
+                          }
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                ) : (
+                  <Tabs 
+                    defaultValue="profile" 
+                    value={activeTab}
+                    onValueChange={(value) => {
+                      setActiveTab(value);
+                      scrollToActiveTab(value);
+                    }}
+                    className="space-y-6"
+                  >
+                    <TabsList 
+                      ref={scrollRef}
+                      className={`w-full overflow-x-auto flex gap-2 min-w-max sm:grid sm:grid-cols-3 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
+                    >
+                      <TabsTrigger value="profile">Perfil</TabsTrigger>
+                      <TabsTrigger value="security">Seguridad</TabsTrigger>
+                      <TabsTrigger value="preferences">Preferencias</TabsTrigger>
+                    </TabsList>
 
-                  {/* Pestaña de Perfil */}
-                  <TabsContent value="profile" className="space-y-6">
-                    <ProfileForm
-                      profile={profile}
-                      onProfileChange={setProfile}
-                      onSave={handleSaveProfile}
-                      isSaving={isSaving}
-                    />
-                    <ProfileStats userStats={userStats} />
-                  </TabsContent>
+                    <TabsContent value="profile" className="space-y-6">
+                      <ProfileForm
+                        profile={profile}
+                        onProfileChange={setProfile}
+                        onSave={handleSaveProfile}
+                        isSaving={isSaving}
+                      />
+                      <ProfileStats userStats={userStats} />
+                    </TabsContent>
 
-                  {/* Pestaña de Seguridad */}
-                  <TabsContent value="security" className="space-y-6">
-                    <SecurityForm
-                      passwordData={passwordData}
-                      onPasswordChange={setPasswordData}
-                      onChangePassword={handleChangePassword}
-                      isSaving={isSaving}
-                    />
-                  </TabsContent>
+                    <TabsContent value="security" className="space-y-6">
+                      <SecurityForm
+                        passwordData={passwordData}
+                        onPasswordChange={setPasswordData}
+                        onChangePassword={handleChangePassword}
+                        isSaving={isSaving}
+                      />
+                    </TabsContent>
 
-                  {/* Pestaña de Preferencias */}
-                  <TabsContent value="preferences" className="space-y-6">
-                    <PreferencesForm
-                      preferences={preferences}
-                      onPreferencesChange={setPreferences}
-                      onSave={handleSavePreferences}
-                      isSaving={isSaving}
-                      role={user?.role || "cashier"}
-                    />
-                  </TabsContent>
-                </Tabs>
+                    <TabsContent value="preferences" className="space-y-6">
+                      <PreferencesForm
+                        preferences={preferences}
+                        onPreferencesChange={setPreferences}
+                        onSave={handleSavePreferences}
+                        isSaving={isSaving}
+                        role={
+                          currentUser?.role === "admin"
+                            ? "admin"
+                            : currentUser?.role === "cashier"
+                            ? "cashier"
+                            : "technician"
+                        }
+                      />
+                    </TabsContent>
+                  </Tabs>
+                )}
               </motion.div>
             </div>
           </div>
         </main>
       </div>
     </div>
-    </ProtectedRoute>
   );
 }

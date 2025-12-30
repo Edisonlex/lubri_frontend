@@ -19,6 +19,7 @@ export interface Product {
   status: "active" | "inactive" | "discontinued";
   rotationRate?: number;
   profitMargin?: number;
+  imageUrl?: string;
 }
 
 export interface StockMovement {
@@ -143,13 +144,6 @@ export interface InventoryAnalytics {
   inventoryValue: { name: string; value: number }[];
 }
 
-import {
-  mockCustomers as mdCustomers,
-  mockSuppliers as mdSuppliers,
-  inventoryAnalyticsData as mdInventoryAnalyticsData,
-  stockAlerts as mdStockAlerts,
-} from "./mock-data";
-
 // ===== INTERFACES DE CONFIGURACIÓN =====
 export interface CompanySettings {
   name: string
@@ -212,6 +206,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.85,
     profitMargin: 0.42,
+    imageUrl: "https://images.unsplash.com/photo-1583511655857-d6d4b6114ea3?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "2",
@@ -230,6 +225,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.75,
     profitMargin: 0.39,
+    imageUrl: "https://images.unsplash.com/photo-1605647533473-ef3e11f3f5f3?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "3",
@@ -248,6 +244,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.65,
     profitMargin: 0.37,
+    imageUrl: "https://images.unsplash.com/photo-1615392937212-1fdddb8b27c2?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "4",
@@ -266,6 +263,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.45,
     profitMargin: 0.54,
+    imageUrl: "https://images.unsplash.com/photo-1620912187035-9e8b4f0a9392?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "5",
@@ -284,186 +282,140 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.72,
     profitMargin: 0.4,
+    imageUrl: "https://images.unsplash.com/photo-1560807707-8cc77767d783?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "6",
-    name: "Refrigerante Prestone 50/50",
-    brand: "Prestone",
-    category: "refrigerantes",
-    price: 21.9,
-    cost: 14.0,
-    stock: 18,
+    name: "Filtro de Cabina Bosch",
+    brand: "Bosch",
+    category: "filtros",
+    price: 22.5,
+    cost: 16.0,
+    stock: 28,
     minStock: 12,
-    maxStock: 60,
-    sku: "PRE-5050-001",
-    supplier: "Prestone Ecuador",
-    location: "F1-G2",
-    lastUpdated: "2024-02-01",
+    maxStock: 70,
+    sku: "BOS-CAB-001",
+    supplier: "Distribuidora Central",
+    location: "F2-G1",
+    lastUpdated: "2024-01-10",
     status: "active",
-    rotationRate: 0.58,
-    profitMargin: 0.36,
+    rotationRate: 0.68,
+    profitMargin: 0.3,
+    imageUrl: "https://images.unsplash.com/photo-1627589824099-08983e04ecda?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "7",
-    name: "Filtro de Aire Mann C27005",
-    brand: "Mann",
-    category: "filtros",
-    price: 29.5,
-    cost: 20.5,
-    stock: 22,
-    minStock: 15,
-    maxStock: 80,
-    sku: "MAN-AIR-27005",
-    supplier: "Mann Ecuador",
-    location: "G1-H1",
-    lastUpdated: "2024-02-03",
+    name: "Grasa Multiuso Valvoline",
+    brand: "Valvoline",
+    category: "lubricantes",
+    price: 15.9,
+    cost: 9.8,
+    stock: 60,
+    minStock: 20,
+    maxStock: 120,
+    sku: "VAL-GRA-001",
+    supplier: "Valvoline Ecuador",
+    location: "G1-H2",
+    lastUpdated: "2024-01-09",
     status: "active",
-    rotationRate: 0.62,
-    profitMargin: 0.44,
+    rotationRate: 0.81,
+    profitMargin: 0.38,
+    imageUrl: "https://images.unsplash.com/photo-1572986336681-2b0b59f7a5fd?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "8",
-    name: "Aceite Valvoline MaxLife 10W-40",
-    brand: "Valvoline",
-    category: "aceites",
-    price: 36.9,
-    cost: 25.0,
-    stock: 12,
-    minStock: 20,
-    maxStock: 80,
-    sku: "VAL-ML-1040",
-    supplier: "Distribuidora Central",
+    name: "Aditivo Antihumo Wynn's",
+    brand: "Wynn's",
+    category: "aditivos",
+    price: 13.2,
+    cost: 8.9,
+    stock: 18,
+    minStock: 25,
+    maxStock: 90,
+    sku: "WYN-ANT-001",
+    supplier: "Químicos del Sur",
     location: "H2-I1",
-    lastUpdated: "2024-02-05",
+    lastUpdated: "2024-01-08",
     status: "active",
-    rotationRate: 0.51,
-    profitMargin: 0.48,
+    rotationRate: 0.33,
+    profitMargin: 0.32,
+    imageUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4f33c4?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "9",
-    name: "Lubricante Chevron Delo 400",
-    brand: "Chevron",
-    category: "lubricantes",
-    price: 55.0,
-    cost: 39.5,
-    stock: 30,
-    minStock: 20,
-    maxStock: 100,
-    sku: "CHV-DELO-400",
-    supplier: "Chevron Ecuador",
+    name: "Aceite Motul 8100 0W-20",
+    brand: "Motul",
+    category: "aceites",
+    price: 49.0,
+    cost: 35.0,
+    stock: 22,
+    minStock: 18,
+    maxStock: 60,
+    sku: "MOT-0W20-001",
+    supplier: "Distribuidora Central",
     location: "I1-J1",
-    lastUpdated: "2024-02-07",
+    lastUpdated: "2024-01-07",
     status: "active",
-    rotationRate: 0.67,
-    profitMargin: 0.39,
+    rotationRate: 0.74,
+    profitMargin: 0.4,
+    imageUrl: "https://images.unsplash.com/photo-1551836022-4d3c9ff0e023?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "10",
-    name: "Aditivo Liqui Moly Limpiador de Inyectores",
-    brand: "Liqui Moly",
-    category: "aditivos",
-    price: 24.75,
-    cost: 16.8,
-    stock: 40,
-    minStock: 25,
-    maxStock: 120,
-    sku: "LM-INJ-001",
-    supplier: "Químicos del Sur",
-    location: "J2-K1",
-    lastUpdated: "2024-02-08",
+    name: "Filtro de Combustible Fram",
+    brand: "Fram",
+    category: "filtros",
+    price: 27.9,
+    cost: 19.5,
+    stock: 12,
+    minStock: 15,
+    maxStock: 80,
+    sku: "FRM-COM-001",
+    supplier: "Repuestos Toyota",
+    location: "J1-K2",
+    lastUpdated: "2024-01-06",
     status: "active",
-    rotationRate: 0.73,
-    profitMargin: 0.47,
+    rotationRate: 0.52,
+    profitMargin: 0.43,
+    imageUrl: "https://images.unsplash.com/photo-1584714267221-980b7bba260b?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "11",
-    name: "Filtro de Aceite Bosch 0986AF022",
-    brand: "Bosch",
-    category: "filtros",
-    price: 23.9,
-    cost: 15.5,
-    stock: 55,
+    name: "Aceite Valvoline MaxLife 10W-40",
+    brand: "Valvoline",
+    category: "aceites",
+    price: 39.9,
+    cost: 28.0,
+    stock: 34,
     minStock: 20,
-    maxStock: 120,
-    sku: "BOS-FIL-022",
-    supplier: "Bosch Repuestos",
-    location: "K1-L1",
-    lastUpdated: "2024-02-10",
+    maxStock: 70,
+    sku: "VAL-10W40-001",
+    supplier: "Valvoline Ecuador",
+    location: "K2-L1",
+    lastUpdated: "2024-01-05",
     status: "active",
-    rotationRate: 0.68,
-    profitMargin: 0.54,
+    rotationRate: 0.79,
+    profitMargin: 0.42,
+    imageUrl: "https://images.unsplash.com/photo-1583512603871-3f9c9ed7d6f4?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "12",
-    name: "Aceite Total Quartz 9000 5W-40",
-    brand: "Total",
-    category: "aceites",
-    price: 39.9,
-    cost: 27.0,
-    stock: 28,
-    minStock: 18,
-    maxStock: 90,
-    sku: "TTL-Q9000-540",
-    supplier: "Total Ecuador",
-    location: "L2-M1",
-    lastUpdated: "2024-02-12",
-    status: "active",
-    rotationRate: 0.57,
-    profitMargin: 0.48,
-  },
-  {
-    id: "13",
-    name: "Aceite Motul 8100 X-cess 5W-40",
-    brand: "Motul",
-    category: "aceites",
-    price: 49.9,
-    cost: 34.0,
-    stock: 9,
-    minStock: 20,
-    maxStock: 70,
-    sku: "MTL-8100-540",
-    supplier: "Distribuidora Central",
-    location: "M2-N1",
-    lastUpdated: "2024-02-14",
-    status: "active",
-    rotationRate: 0.46,
-    profitMargin: 0.47,
-  },
-  {
-    id: "14",
-    name: "Filtro de Combustible Wix 33312",
-    brand: "Wix",
-    category: "filtros",
-    price: 27.5,
-    cost: 18.0,
-    stock: 14,
-    minStock: 15,
-    maxStock: 80,
-    sku: "WIX-FUEL-33312",
-    supplier: "Wix Ecuador",
-    location: "N2-O1",
-    lastUpdated: "2024-02-16",
-    status: "active",
-    rotationRate: 0.52,
-    profitMargin: 0.53,
-  },
-  {
-    id: "15",
-    name: "Lubricante Castrol EDGE 0W-20",
-    brand: "Castrol",
+    name: "Lubricante Shell Gadus",
+    brand: "Shell",
     category: "lubricantes",
-    price: 58.9,
+    price: 57.0,
     cost: 41.0,
-    stock: 6,
-    minStock: 15,
+    stock: 8,
+    minStock: 10,
     maxStock: 50,
-    sku: "CAS-EDGE-020",
-    supplier: "Castrol Ecuador",
-    location: "O2-P1",
-    lastUpdated: "2024-02-18",
+    sku: "SHL-GAD-001",
+    supplier: "Shell Ecuador",
+    location: "L1-M1",
+    lastUpdated: "2024-01-04",
     status: "active",
-    rotationRate: 0.41,
-    profitMargin: 0.44,
+    rotationRate: 0.28,
+    profitMargin: 0.39,
+    imageUrl: "https://images.unsplash.com/photo-1606904397922-ef02a2f4c8ad?q=80&w=800&auto=format&fit=crop",
   },
 ];
 
@@ -497,65 +449,144 @@ const mockStockMovements: StockMovement[] = [
     reason: "Inventario físico",
     userId: "1",
   },
+];
+
+const mockCustomers: Customer[] = [
+  {
+    id: "1",
+    name: "Juan Pérez",
+    email: "juan@example.com",
+    phone: "555-1234",
+    address: "Calle Principal 123",
+    city: "Caracas",
+    idNumber: "V-12345678",
+    customerType: "individual",
+    vehicles: [
+      {
+        id: "v1",
+        plate: "ABC123",
+        brand: "Toyota",
+        model: "Corolla",
+        year: 2018,
+        engine: "1.8L",
+        mileage: 45000,
+        lastService: "2024-01-10",
+        nextService: "2024-07-10",
+        oilType: "5W-30",
+        filterType: "OF-123",
+        color: "Blanco",
+      },
+    ],
+    totalPurchases: 1500,
+    lastPurchase: "2024-01-15",
+    registrationDate: "2023-05-10",
+    status: "active",
+    notes: "Cliente frecuente",
+    preferredContact: "whatsapp",
+  },
+  {
+    id: "2",
+    name: "María González",
+    email: "maria@example.com",
+    phone: "555-5678",
+    address: "Avenida Central 456",
+    city: "Valencia",
+    idNumber: "V-87654321",
+    customerType: "individual",
+    vehicles: [
+      {
+        id: "v2",
+        plate: "XYZ789",
+        brand: "Honda",
+        model: "Civic",
+        year: 2020,
+        engine: "2.0L",
+        mileage: 25000,
+        lastService: "2024-01-05",
+        nextService: "2024-07-05",
+        oilType: "0W-20",
+        filterType: "OF-456",
+        color: "Gris",
+      },
+    ],
+    totalPurchases: 850,
+    lastPurchase: "2024-01-18",
+    registrationDate: "2023-08-15",
+    status: "active",
+    notes: "",
+    preferredContact: "email",
+  },
+  {
+    id: "3",
+    name: "Automotriz Rodríguez C.A.",
+    email: "info@rodriguez.com",
+    phone: "555-9012",
+    address: "Zona Industrial, Galpón 7",
+    city: "Maracaibo",
+    idNumber: "J-123456789",
+    customerType: "business",
+    businessName: "Automotriz Rodríguez C.A.",
+    ruc: "J-12345678-9",
+    vehicles: [],
+    totalPurchases: 5000,
+    lastPurchase: "2024-01-12",
+    registrationDate: "2023-01-20",
+    status: "active",
+    notes: "Empresa cliente mayorista",
+    preferredContact: "phone",
+  },
   {
     id: "4",
-    productId: "7",
-    type: "entrada",
-    quantity: 30,
-    date: "2024-02-03",
-    reason: "Compra a proveedor",
-    userId: "1",
-    documentRef: "FAC-004-005-006",
+    name: "Taller Los Andes",
+    email: "contacto@losandes.com",
+    phone: "555-4321",
+    address: "Av. América 456",
+    city: "Quito",
+    idNumber: "J-24681012",
+    customerType: "business",
+    businessName: "Taller Los Andes",
+    ruc: "J-24681012-3",
+    vehicles: [],
+    totalPurchases: 3250,
+    lastPurchase: "2025-01-21",
+    registrationDate: "2023-03-12",
+    status: "active",
+    notes: "Compra aceites y filtros al por mayor",
+    preferredContact: "email",
   },
   {
     id: "5",
-    productId: "8",
-    type: "salida",
-    quantity: 4,
-    date: "2024-02-06",
-    reason: "Venta",
-    userId: "2",
-  },
-  {
-    id: "6",
-    productId: "10",
-    type: "entrada",
-    quantity: 50,
-    date: "2024-02-08",
-    reason: "Compra a proveedor",
-    userId: "1",
-    documentRef: "FAC-010-011-012",
-  },
-  {
-    id: "7",
-    productId: "11",
-    type: "ajuste",
-    quantity: -3,
-    date: "2024-02-10",
-    reason: "Inventario físico",
-    userId: "1",
+    name: "Luis Herrera",
+    email: "luis.herrera@example.com",
+    phone: "555-7777",
+    address: "Calle 10 #23-45",
+    city: "Guayaquil",
+    idNumber: "V-13579135",
+    customerType: "individual",
+    vehicles: [
+      {
+        id: "v5",
+        plate: "PQR456",
+        brand: "Chevrolet",
+        model: "Onix",
+        year: 2022,
+        engine: "1.0L Turbo",
+        mileage: 18000,
+        lastService: "2024-12-01",
+        nextService: "2025-06-01",
+        oilType: "5W-30",
+        filterType: "OF-789",
+        color: "Azul",
+      },
+    ],
+    totalPurchases: 420,
+    lastPurchase: "2025-01-23",
+    registrationDate: "2024-02-14",
+    status: "active",
+    notes: "Prefiere atención por WhatsApp",
+    preferredContact: "whatsapp",
   },
 ];
-
-const mockCustomers: Customer[] = mdCustomers.map((c: any) => ({
-  id: c.id,
-  name: c.name,
-  email: c.email,
-  phone: c.phone,
-  address: c.address,
-  city: c.city,
-  idNumber: c.idNumber,
-  customerType: c.customerType,
-  businessName: c.businessName,
-  ruc: c.ruc,
-  vehicles: c.vehicles || [],
-  totalPurchases: c.totalPurchases || 0,
-  lastPurchase: c.lastPurchase || "",
-  registrationDate: c.registrationDate || "",
-  status: c.status,
-  notes: c.notes || "",
-  preferredContact: c.preferredContact || "phone",
-}));
 
 const mockSales: Sale[] = [
   {
@@ -660,146 +691,102 @@ const mockSales: Sale[] = [
     userId: "1",
     invoiceNumber: "FAC-2024-004",
   },
+];
+// Ventas adicionales
+mockSales.push(
   {
     id: "5",
-    date: "2025-02-01",
-    customerId: "2",
-    customerName: "Transportes Rápidos S.A.",
+    date: "2025-01-23",
+    customerId: "4",
+    customerName: "Taller Los Andes",
     items: [
-      { productId: "7", productName: "Filtro de Aire Mann C27005", quantity: 4, unitPrice: 29.5, subtotal: 118.0 },
-      { productId: "9", productName: "Lubricante Chevron Delo 400", quantity: 2, unitPrice: 55.0, subtotal: 110.0 },
+      { productId: "11", productName: "Aceite Valvoline MaxLife 10W-40", quantity: 8, unitPrice: 39.9, subtotal: 319.2 },
+      { productId: "6", productName: "Filtro de Cabina Bosch", quantity: 10, unitPrice: 22.5, subtotal: 225.0 },
     ],
-    subtotal: 228.0,
-    tax: 36.48,
-    total: 264.48,
+    subtotal: 544.2,
+    tax: 87.07,
+    total: 631.27,
     paymentMethod: "transferencia",
     status: "completada",
     userId: "1",
-    invoiceNumber: "FAC-2025-005",
+    invoiceNumber: "FAC-2024-005",
   },
   {
     id: "6",
-    date: "2025-02-02",
-    customerId: "3",
-    customerName: "María Rodríguez",
-    items: [
-      { productId: "6", productName: "Refrigerante Prestone 50/50", quantity: 1, unitPrice: 21.9, subtotal: 21.9 },
-      { productId: "11", productName: "Filtro de Aceite Bosch 0986AF022", quantity: 1, unitPrice: 23.9, subtotal: 23.9 },
-    ],
-    subtotal: 45.8,
-    tax: 7.33,
-    total: 53.13,
-    paymentMethod: "efectivo",
-    status: "pendiente",
-    userId: "2",
-    invoiceNumber: "FAC-2025-006",
-  },
-  {
-    id: "7",
-    date: "2025-02-03",
-    customerId: "4",
-    customerName: "Taxi Express Cía. Ltda.",
-    items: [
-      { productId: "10", productName: "Aditivo Liqui Moly Limpiador de Inyectores", quantity: 6, unitPrice: 24.75, subtotal: 148.5 },
-      { productId: "8", productName: "Aceite Valvoline MaxLife 10W-40", quantity: 8, unitPrice: 36.9, subtotal: 295.2 },
-    ],
-    subtotal: 443.7,
-    tax: 71.0,
-    total: 514.7,
-    paymentMethod: "tarjeta",
-    status: "completada",
-    userId: "2",
-    invoiceNumber: "FAC-2025-007",
-  },
-  {
-    id: "8",
-    date: "2025-11-24",
-    customerId: "2",
-    customerName: "María González",
-    items: [
-      { productId: "12", productName: "Aceite Total Quartz 9000 5W-40", quantity: 2, unitPrice: 39.9, subtotal: 79.8 },
-      { productId: "11", productName: "Filtro de Aceite Bosch 0986AF022", quantity: 1, unitPrice: 23.9, subtotal: 23.9 },
-    ],
-    subtotal: 103.7,
-    tax: 16.59,
-    total: 120.29,
-    paymentMethod: "efectivo",
-    status: "completada",
-    userId: "2",
-    invoiceNumber: "FAC-2025-008",
-  },
-  {
-    id: "9",
-    date: "2025-11-25",
+    date: "2025-01-24",
     customerId: "5",
-    customerName: "Transporte La Maná S.A.",
+    customerName: "Luis Herrera",
     items: [
-      { productId: "9", productName: "Lubricante Chevron Delo 400", quantity: 5, unitPrice: 55.0, subtotal: 275.0 },
-      { productId: "5", productName: "Aceite Shell Helix", quantity: 3, unitPrice: 42.0, subtotal: 126.0 },
+      { productId: "9", productName: "Aceite Motul 8100 0W-20", quantity: 2, unitPrice: 49.0, subtotal: 98.0 },
+      { productId: "10", productName: "Filtro de Combustible Fram", quantity: 1, unitPrice: 27.9, subtotal: 27.9 },
     ],
-    subtotal: 401.0,
-    tax: 64.16,
-    total: 465.16,
-    paymentMethod: "transferencia",
-    status: "completada",
-    userId: "1",
-    invoiceNumber: "FAC-2025-009",
-  },
-  {
-    id: "10",
-    date: "2025-11-26",
-    customerId: "1",
-    customerName: "Juan Pérez",
-    items: [
-      { productId: "1", productName: "Aceite Mobil 1 5W-30", quantity: 1, unitPrice: 45.5, subtotal: 45.5 },
-      { productId: "3", productName: "Lubricante Castrol GTX", quantity: 1, unitPrice: 52.25, subtotal: 52.25 },
-    ],
-    subtotal: 97.75,
-    tax: 15.64,
-    total: 113.39,
-    paymentMethod: "tarjeta",
-    status: "pendiente",
-    userId: "1",
-    invoiceNumber: "FAC-2025-010",
-  },
-  {
-    id: "11",
-    date: "2025-11-26T14:30:00Z",
-    customerId: "3",
-    customerName: "Automotriz Rodríguez C.A.",
-    items: [
-      { productId: "15", productName: "Lubricante Castrol EDGE 0W-20", quantity: 2, unitPrice: 58.9, subtotal: 117.8 },
-      { productId: "14", productName: "Filtro de Combustible Wix 33312", quantity: 4, unitPrice: 27.5, subtotal: 110.0 },
-    ],
-    subtotal: 227.8,
-    tax: 36.45,
-    total: 264.25,
+    subtotal: 125.9,
+    tax: 20.14,
+    total: 146.04,
     paymentMethod: "efectivo",
     status: "completada",
-    userId: "1",
-    invoiceNumber: "FAC-2025-011",
+    userId: "2",
+    invoiceNumber: "FAC-2024-006",
+  }
+);
+
+const mockSuppliers: Supplier[] = [
+  {
+    id: "1",
+    name: "Distribuidora Central",
+    contactPerson: "Pedro Ramírez",
+    email: "pedro@distribuidoracentral.com",
+    phone: "555-1111",
+    address: "Zona Industrial, Calle 5",
+    category: "Distribuidor",
+    status: "active",
+    notes: "Proveedor principal con entrega rápida",
+  },
+  {
+    id: "2",
+    name: "Repuestos Toyota",
+    contactPerson: "Ana Martínez",
+    email: "ana@repuestostoyota.com",
+    phone: "555-2222",
+    address: "Av. Principal, Edificio Torre A, Piso 3",
+    category: "Repuestos",
+    status: "active",
+    notes: "Especialistas en repuestos originales Toyota",
+  },
+  {
+    id: "3",
+    name: "Castrol Ecuador",
+    contactPerson: "Carlos Jiménez",
+    email: "carlos@castrolecuador.com",
+    phone: "555-3333",
+    address: "Centro Comercial Automotriz, Local 15",
+    category: "Lubricantes",
+    status: "active",
+    notes: "Aceites de alta calidad para todo tipo de vehículos",
+  },
+  {
+    id: "4",
+    name: "Químicos del Sur",
+    contactPerson: "María López",
+    email: "maria@quimicossur.com",
+    phone: "555-4444",
+    address: "Parque Industrial Sur, Galpón 12",
+    category: "Químicos",
+    status: "active",
+    notes: "Productos químicos para limpieza automotriz",
+  },
+  {
+    id: "5",
+    name: "Shell Ecuador",
+    contactPerson: "Roberto Silva",
+    email: "roberto@shellecuador.com",
+    phone: "555-5555",
+    address: "Torre Empresarial, Piso 8",
+    category: "Combustibles",
+    status: "active",
+    notes: "Combustibles premium y lubricantes Shell",
   },
 ];
-
-const mockSuppliers: Supplier[] = mdSuppliers.map((s: any) => ({
-  id: s.id,
-  name: s.name,
-  contactPerson: s.contactPerson,
-  email: s.email,
-  phone: s.phone,
-  address: s.address,
-  category: s.productsSupplied?.[0] || s.category,
-  status: s.status,
-  notes: s.notes,
-  city: s.city,
-  country: s.country,
-  ruc: s.ruc,
-  paymentTerms: s.paymentTerms,
-  productsSupplied: s.productsSupplied,
-  totalOrders: s.totalOrders,
-  lastOrderDate: s.lastOrderDate,
-  rating: s.rating,
-}));
 
 
 const mockUsers: User[] = [
@@ -824,38 +811,95 @@ const mockUsers: User[] = [
     role: "manager",
     status: "active",
   },
+];
+
+const stockAlerts: StockAlert[] = [
   {
-    id: "6",
-    name: "Técnico 1",
-    email: "tecnico1@lubricadora.com",
-    role: "manager",
-    status: "active",
+    id: "1",
+    productName: "Aceite Mobil 1 5W-30",
+    currentStock: 3,
+    minStock: 10,
+    category: "Aceites Sintéticos",
+    urgency: "critical",
+    supplier: "Mobil Ecuador",
+    sku: "MOB-5W30-001",
+    lastUpdated: "2024-01-20",
+    trend: "worsening",
+    price: 45.5,
+    unit: "unidad",
   },
   {
-    id: "7",
-    name: "Técnico 2",
-    email: "tecnico2@lubricadora.com",
-    role: "manager",
-    status: "active",
+    id: "2",
+    productName: "Filtro Aire Toyota Corolla",
+    currentStock: 5,
+    minStock: 15,
+    category: "Filtros",
+    urgency: "high",
+    supplier: "Toyota Parts",
+    sku: "TOY-AIR-001",
+    lastUpdated: "2024-01-19",
+    trend: "stable",
+    price: 28.75,
+    unit: "unidad",
   },
   {
-    id: "5",
-    name: "Cajero 2",
-    email: "cajero2@lubricadora.com",
-    role: "cashier",
-    status: "active",
+    id: "3",
+    productName: "Lubricante Castrol GTX",
+    currentStock: 8,
+    minStock: 20,
+    category: "Lubricantes",
+    urgency: "medium",
+    supplier: "Castrol Ecuador",
+    sku: "CAS-GTX-001",
+    lastUpdated: "2024-01-18",
+    trend: "improving",
+    price: 52.25,
+    unit: "unidad",
   },
 ];
 
-const stockAlerts: StockAlert[] = mdStockAlerts as any;
-
-const inventoryAnalyticsData: InventoryAnalytics = mdInventoryAnalyticsData as any;
+const inventoryAnalyticsData: InventoryAnalytics = {
+  categoryDistribution: [
+    { name: "Aceites Sintéticos", value: 35 },
+    { name: "Aceites Convencionales", value: 28 },
+    { name: "Filtros", value: 22 },
+    { name: "Lubricantes", value: 18 },
+    { name: "Aditivos", value: 12 },
+  ],
+  stockLevels: [
+    { name: "Sin Stock", value: 5 },
+    { name: "Stock Bajo", value: 15 },
+    { name: "Stock Normal", value: 45 },
+    { name: "Stock Alto", value: 35 },
+  ],
+  topSellingProducts: [
+    { name: "Aceite Mobil 1 5W-30", value: 120 },
+    { name: "Filtro Aire Toyota", value: 95 },
+    { name: "Castrol GTX 20W-50", value: 85 },
+    { name: "Shell Helix Ultra", value: 75 },
+    { name: "Valvoline MaxLife", value: 65 },
+  ],
+  lowStockProducts: [
+    { name: "Aceite Mobil 1 5W-30", value: 3 },
+    { name: "Filtro Aire Toyota", value: 5 },
+    { name: "Aditivo STP", value: 2 },
+    { name: "Lubricante Castrol", value: 8 },
+    { name: "Shell V-Power", value: 4 },
+  ],
+  inventoryValue: [
+    { name: "Aceites Sintéticos", value: 15750 },
+    { name: "Aceites Convencionales", value: 8500 },
+    { name: "Filtros", value: 4200 },
+    { name: "Lubricantes", value: 6800 },
+    { name: "Aditivos", value: 2100 },
+  ],
+};
 
 // ===== DATOS MOCK DE CONFIGURACIÓN =====
 const mockCompanySettings: CompanySettings = {
   name: "Lubricadora El Motor",
   ruc: "1234567890001",
-  address: "Av. Principal 123, Quito",
+  address: "Av. Principal 123, La Maná, Cotopaxi, Ecuador",
   phone: "02-2345678",
   email: "info@elmotor.com",
 }
@@ -864,7 +908,7 @@ const mockBranches: Branch[] = [
   {
     id: "1",
     name: "Sucursal Principal",
-    address: "Av. Principal 123, Quito",
+    address: "Av. Principal 123, La Maná, Cotopaxi, Ecuador",
     phone: "02-2345678",
     email: "principal@elmotor.com",
     isMain: true,
@@ -873,7 +917,7 @@ const mockBranches: Branch[] = [
   {
     id: "2",
     name: "Sucursal Norte",
-    address: "Av. 6 de Diciembre 456, Quito",
+    address: "Av. 6 de Diciembre 456, La Maná, Cotopaxi, Ecuador",
     phone: "02-2345679",
     email: "norte@elmotor.com",
     isMain: false,
@@ -943,8 +987,10 @@ export const api = {
   createProduct: async (product: Omit<Product, "id">): Promise<Product> => {
     return new Promise((resolve) => {
       setTimeout(() => {
+        const inferred = classifyProductCategory(product);
         const newProduct = {
           ...product,
+          category: inferred.category as Product["category"],
           id: Math.random().toString(36).substring(2, 9),
           lastUpdated: new Date().toISOString().split("T")[0],
         };
@@ -962,9 +1008,11 @@ export const api = {
       setTimeout(() => {
         const index = mockProducts.findIndex((p) => p.id === id);
         if (index !== -1) {
+          const base = { ...mockProducts[index], ...product };
+          const inferred = classifyProductCategory(base);
           mockProducts[index] = {
-            ...mockProducts[index],
-            ...product,
+            ...base,
+            category: inferred.category as Product["category"],
             lastUpdated: new Date().toISOString().split("T")[0],
           };
           resolve(mockProducts[index]);
@@ -1217,21 +1265,16 @@ export const api = {
   getProductClassification: async (): Promise<any> => {
     return new Promise((resolve) => {
       setTimeout(() => {
+        const byCategory = mockProducts.reduce(
+          (acc: Record<string, Product[]>, p) => {
+            (acc[p.category] = acc[p.category] || []).push(p);
+            return acc;
+          },
+          {}
+        );
         resolve({
-          highRotation: mockProducts.filter((p) => (p.rotationRate || 0) > 0.7),
-          mediumRotation: mockProducts.filter(
-            (p) => (p.rotationRate || 0) <= 0.7 && (p.rotationRate || 0) > 0.4
-          ),
-          lowRotation: mockProducts.filter((p) => (p.rotationRate || 0) <= 0.4),
-          highProfitMargin: mockProducts.filter(
-            (p) => (p.profitMargin || 0) > 0.4
-          ),
-          mediumProfitMargin: mockProducts.filter(
-            (p) => (p.profitMargin || 0) <= 0.4 && (p.profitMargin || 0) > 0.25
-          ),
-          lowProfitMargin: mockProducts.filter(
-            (p) => (p.profitMargin || 0) <= 0.25
-          ),
+          byCategory,
+          accuracyEstimate: 0.95,
         });
       }, 800);
     });
@@ -1290,6 +1333,28 @@ export const api = {
           ],
         });
       }, 700);
+    });
+  },
+
+  getObsolescenceMetrics: async (): Promise<{ count: number; avgDays: number; impact: number }> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const now = new Date().getTime();
+        const obsolete = mockProducts.filter((p) => {
+          const rot = p.rotationRate || 0;
+          const last = new Date(p.lastUpdated).getTime();
+          const days = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+          return (rot <= 0.4 || days >= 180) && (p.stock || 0) > 0;
+        });
+        const count = obsolete.length;
+        const avgDays = count === 0 ? 0 : Math.round(obsolete.reduce((s, p) => {
+          const last = new Date(p.lastUpdated).getTime();
+          const days = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+          return s + days;
+        }, 0) / count);
+        const impact = obsolete.reduce((s, p) => s + (p.cost || 0) * (p.stock || 0), 0);
+        resolve({ count, avgDays, impact });
+      }, 500);
     });
   },
 
@@ -1535,5 +1600,93 @@ export const api = {
     });
   },
 };
+
+export function classifyProductCategory(
+  product: Partial<Product>
+): { category: Product["category"]; confidence: number; reasons: string[] } {
+  const text = [product.name, product.brand, product.sku, product.supplier]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  const has = (k: string) => text.includes(k);
+
+  const scores: Record<Product["category"], number> = {
+    aceites: 0,
+    filtros: 0,
+    lubricantes: 0,
+    aditivos: 0,
+  };
+  const reasons: string[] = [];
+
+  const aceiteKeywords = [
+    "aceite",
+    "5w",
+    "10w",
+    "0w",
+    "mobil",
+    "shell",
+    "valvoline",
+    "motul",
+    "helix",
+  ];
+  const filtroKeywords = [
+    "filtro",
+    "filter",
+    "aire",
+    "aceite",
+    "combustible",
+    "cabina",
+  ];
+  const lubricanteKeywords = [
+    "lubricante",
+    "grasa",
+    "grease",
+    "gtx",
+  ];
+  const aditivoKeywords = [
+    "aditivo",
+    "limpiador",
+    "stp",
+    "tratamiento",
+  ];
+
+  aceiteKeywords.forEach((k) => {
+    if (has(k)) {
+      scores.aceites += 2;
+      reasons.push(`Coincidencia: ${k}`);
+    }
+  });
+  filtroKeywords.forEach((k) => {
+    if (has(k)) {
+      scores.filtros += 2;
+      reasons.push(`Coincidencia: ${k}`);
+    }
+  });
+  lubricanteKeywords.forEach((k) => {
+    if (has(k)) {
+      scores.lubricantes += 2;
+      reasons.push(`Coincidencia: ${k}`);
+    }
+  });
+  aditivoKeywords.forEach((k) => {
+    if (has(k)) {
+      scores.aditivos += 2;
+      reasons.push(`Coincidencia: ${k}`);
+    }
+  });
+
+  // Reglas adicionales por formato de nombre
+  if (/\b\d{1,2}w-\d{2}\b/.test(text)) {
+    scores.aceites += 3;
+    reasons.push("Formato viscosidad detectado");
+  }
+
+  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0] as Product["category"];
+  const maxScore = Math.max(...Object.values(scores));
+  const confidence = Math.min(1, maxScore / 6);
+
+  return { category: best, confidence, reasons };
+}
 
 export default api;

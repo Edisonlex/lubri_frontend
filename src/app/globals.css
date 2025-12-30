@@ -3,6 +3,175 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Estilos personalizados para scroll horizontal */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mejoras para dispositivos extra pequeños (xs) */
+@media (max-width: 474px) {
+  .xs-text-xs {
+    font-size: 0.75rem;
+  }
+  
+  .xs-hidden {
+    display: none;
+  }
+  
+  .xs-padding-2 {
+    padding: 0.5rem;
+  }
+}
+
+/* Mejoras para dispositivos pequeños (sm) */
+@media (max-width: 639px) {
+  .sm-text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .sm-padding-3 {
+    padding: 0.75rem;
+  }
+  
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Indicador visual de scroll horizontal */
+  .overflow-x-auto::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to right, transparent, rgba(0,0,0,0.1));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .overflow-x-auto.can-scroll::after {
+    opacity: 1;
+  }
+}
+
+/* Mejoras para dispositivos móviles (md) - Breakpoint principal */
+@media (max-width: 767px) {
+  .mobile-optimized {
+    font-size: 0.875rem;
+  }
+  
+  .mobile-padding {
+    padding: 0.75rem;
+  }
+  
+  .mobile-text-center {
+    text-align: center;
+  }
+  
+  .mobile-flex-col {
+    flex-direction: column;
+  }
+  
+  .mobile-gap-2 {
+    gap: 0.5rem;
+  }
+}
+
+/* Mejoras para tablets (lg) */
+@media (max-width: 1023px) {
+  .tablet-optimized {
+    font-size: 0.9375rem;
+  }
+  
+  .tablet-padding {
+    padding: 1rem;
+  }
+  
+  .tablet-text-sm {
+    font-size: 0.875rem;
+  }
+}
+
+/* Animaciones suaves para tabs */
+[data-slot="tabs-list"] {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Correcciones de layout para desktop */
+@media (min-width: 768px) {
+  /* Asegurar que el contenido principal ocupe el ancho completo disponible */
+  .main-content-area {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Evitar desbordamiento horizontal */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Asegurar que los contenedores flexibles usen el espacio correcto */
+  .flex-1 {
+    min-width: 0; /* Importante para evitar desbordamiento */
+  }
+}
+
+/* Correcciones para modo sidebar colapsado */
+[data-sidebar][data-collapsed="true"] ~ * .container {
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Asegurar que las grillas se adapten correctamente */
+@media (min-width: 768px) {
+  .responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+/* Mejoras visuales para tabs en móvil */
+@media (max-width: 640px) {
+  [data-slot="tabs-trigger"] {
+    min-width: fit-content;
+    white-space: nowrap;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Sombras dinámicas para indicar scroll */
+.overflow-x-auto {
+  position: relative;
+}
+
+.overflow-x-auto.can-scroll::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.overflow-x-auto.can-scroll.scrolled-left::before {
+  opacity: 1;
+}
+
 :root {
   --background: oklch(0.98 0.01 220);
   --foreground: oklch(0.15 0.04 220);

@@ -82,40 +82,40 @@ export function ForecastTab({ salesData, forecastData }: ForecastTabProps) {
                   textAnchor={isMobile ? "end" : "middle"}
                   height={isMobile ? 50 : 40}
                   tick={{
-                    fill: "hsl(222.2 84% 4.9%)",
+                    fill: "var(--foreground)",
                     fontSize: isMobile ? 10 : 12,
                     fontWeight: 500,
                   }}
-                  axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                  tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                  axisLine={{ stroke: "var(--border)" }}
+                  tickLine={{ stroke: "var(--border)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                 />
                 <YAxis
                   tick={{
-                    fill: "hsl(222.2 84% 4.9%)",
+                    fill: "var(--foreground)",
                     fontSize: isMobile ? 10 : 12,
                     fontWeight: 500,
                   }}
-                  axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                  tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                  axisLine={{ stroke: "var(--border)" }}
+                  tickLine={{ stroke: "var(--border)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "6px",
                     fontSize: "12px",
                     padding: "8px",
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                   }}
                   itemStyle={{
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                     fontSize: "12px",
                     fontWeight: "500",
                   }}
                   labelStyle={{
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                     fontWeight: "bold",
                     marginBottom: "4px",
                   }}
@@ -139,20 +139,20 @@ export function ForecastTab({ salesData, forecastData }: ForecastTabProps) {
                 <Line
                   type="monotone"
                   dataKey="actual"
-                  stroke="#16a34a"
+                  stroke="var(--chart-1)"
                   strokeWidth={2}
                   name="Ventas Reales"
-                  dot={{ fill: "#16a34a", strokeWidth: 2, r: isMobile ? 3 : 4 }}
+                  dot={{ fill: "var(--chart-1)", strokeWidth: 2, r: isMobile ? 3 : 4 }}
                   activeDot={{ r: isMobile ? 5 : 6 }}
                 />
                 <Line
                   type="monotone"
                   dataKey="forecast"
-                  stroke="#059669"
+                  stroke="var(--chart-2)"
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   name="Pronóstico"
-                  dot={{ fill: "#059669", strokeWidth: 2, r: isMobile ? 3 : 4 }}
+                  dot={{ fill: "var(--chart-2)", strokeWidth: 2, r: isMobile ? 3 : 4 }}
                   activeDot={{ r: isMobile ? 5 : 6 }}
                 />
               </LineChart>

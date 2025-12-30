@@ -166,40 +166,40 @@ export function InventoryRotationTab({ customers }: InventoryRotationTabProps) {
                     textAnchor={isMobile ? "end" : "middle"}
                     height={isMobile ? 50 : 40}
                     tick={{
-                      fill: "hsl(222.2 84% 4.9%)",
+                      fill: "var(--foreground)",
                       fontSize: isMobile ? 10 : 12,
                       fontWeight: 500,
                     }}
-                    axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                    tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
                     className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                   />
                   <YAxis
                     tick={{
-                      fill: "hsl(222.2 84% 4.9%)",
+                      fill: "var(--foreground)",
                       fontSize: isMobile ? 10 : 12,
                       fontWeight: 500,
                     }}
-                    axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                    tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
                     className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "6px",
                       fontSize: "12px",
                       padding: "8px",
-                      color: "hsl(var(--foreground))",
+                      color: "var(--foreground)",
                     }}
                     itemStyle={{
-                      color: "hsl(var(--foreground))",
+                      color: "var(--foreground)",
                       fontSize: "12px",
                       fontWeight: "500",
                     }}
                     labelStyle={{
-                      color: "hsl(var(--foreground))",
+                      color: "var(--foreground)",
                       fontWeight: "bold",
                       marginBottom: "4px",
                     }}
@@ -219,13 +219,13 @@ export function InventoryRotationTab({ customers }: InventoryRotationTabProps) {
                   />
                   <Bar
                     dataKey="rotation"
-                    fill="#16a34a"
+                    fill="var(--chart-1)"
                     name="Rotación Actual"
                     radius={[3, 3, 0, 0]}
                   />
                   <Bar
                     dataKey="optimal"
-                    fill="#059669"
+                    fill="var(--chart-2)"
                     name="Rotación Óptima"
                     radius={[3, 3, 0, 0]}
                   />

@@ -14,16 +14,11 @@ import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { inventoryFiltersSchema } from "@/lib/validation";
+import type { InventoryFilters } from "@/lib/validation";
 
 interface InventoryFiltersProps {
-  filters: {
-    category: string;
-    brand: string;
-    status: string;
-    stockLevel: string;
-    search: string;
-  };
-  setFilters: (filters: any) => void;
+  filters: InventoryFilters;
+  setFilters: (filters: InventoryFilters) => void;
 }
 
 export function InventoryFilters({
@@ -39,6 +34,7 @@ export function InventoryFilters({
       brand: "all",
       status: "all",
       stockLevel: "all",
+      obsolescence: "all",
       search: "",
     });
   };
@@ -48,6 +44,7 @@ export function InventoryFilters({
     filters.brand !== "all" ||
     filters.status !== "all" ||
     filters.stockLevel !== "all" ||
+    filters.obsolescence !== "all" ||
     filters.search !== "";
 
   return (
@@ -117,7 +114,10 @@ export function InventoryFilters({
           <Select
             value={filters.category}
             onValueChange={(value) =>
-              setFilters({ ...filters, category: value })
+              setFilters({
+                ...filters,
+                category: value as InventoryFilters["category"],
+              })
             }
           >
             <SelectTrigger
@@ -139,7 +139,12 @@ export function InventoryFilters({
         <div className="col-span-1">
           <Select
             value={filters.brand}
-            onValueChange={(value) => setFilters({ ...filters, brand: value })}
+            onValueChange={(value) =>
+              setFilters({
+                ...filters,
+                brand: value as InventoryFilters["brand"],
+              })
+            }
           >
             <SelectTrigger
               className={isMobile ? "h-7 text-xs" : "h-10 text-sm"}
@@ -161,7 +166,12 @@ export function InventoryFilters({
         <div className="col-span-1">
           <Select
             value={filters.status}
-            onValueChange={(value) => setFilters({ ...filters, status: value })}
+            onValueChange={(value) =>
+              setFilters({
+                ...filters,
+                status: value as InventoryFilters["status"],
+              })
+            }
           >
             <SelectTrigger
               className={isMobile ? "h-7 text-xs" : "h-10 text-sm"}
@@ -182,7 +192,10 @@ export function InventoryFilters({
           <Select
             value={filters.stockLevel}
             onValueChange={(value) =>
-              setFilters({ ...filters, stockLevel: value })
+              setFilters({
+                ...filters,
+                stockLevel: value as InventoryFilters["stockLevel"],
+              })
             }
           >
             <SelectTrigger
@@ -196,6 +209,29 @@ export function InventoryFilters({
               <SelectItem value="normal">Stock normal</SelectItem>
               <SelectItem value="high">Stock alto</SelectItem>
               <SelectItem value="out">Sin stock</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Obsolescence Filter */}
+        <div className="col-span-1">
+          <Select
+            value={filters.obsolescence}
+            onValueChange={(value) =>
+              setFilters({
+                ...filters,
+                obsolescence: value as InventoryFilters["obsolescence"],
+              })
+            }
+          >
+            <SelectTrigger
+              className={isMobile ? "h-7 text-xs" : "h-10 text-sm"}
+            >
+              <SelectValue placeholder="Obsolescencia" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="obsolete">Obsoletos (≥6 meses sin venta)</SelectItem>
             </SelectContent>
           </Select>
         </div>

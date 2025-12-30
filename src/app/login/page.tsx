@@ -18,7 +18,6 @@ import { Eye, EyeOff, Wrench, Info, Copy, CheckCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
-import { loginSchema } from "@/lib/validation";
 
 // Credenciales de prueba
 const loginCredentials = [
@@ -35,7 +34,7 @@ const loginCredentials = [
   {
     email: "tecnico1@lubricadora.com",
     password: "tecnico123",
-    userId: "6",
+    userId: "3",
   },
 ];
 
@@ -47,22 +46,11 @@ export default function LoginPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { login, isLoading } = useAuth();
   const router = useRouter();
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
-      const result = loginSchema.safeParse({ email, password });
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          const key = String(err.path[0] ?? "general");
-          fieldErrors[key] = err.message;
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-      setErrors({});
       console.log("Intentando login con:", email, password);
       const success = await login(email, password);
 
@@ -136,9 +124,6 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                {errors.email && (
-                  <p className="text-destructive text-sm">{errors.email}</p>
-                )}
               </div>
               <div className="space-y-1 sm:space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
@@ -154,9 +139,6 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  {errors.password && (
-                    <p className="text-destructive text-sm">{errors.password}</p>
-                  )}
                   <Button
                     type="button"
                     variant="ghost"

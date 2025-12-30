@@ -33,11 +33,11 @@ export function CompetitionAnalysisTab({
 
   // Datos para el gráfico de participación de mercado
   const marketShareData = [
-    { name: "LubriSmart", value: 18, color: "#16a34a" },
-    { name: "Competidor A", value: 25, color: "#059669" },
-    { name: "Competidor B", value: 22, color: "#10b981" },
-    { name: "Competidor C", value: 15, color: "#34d399" },
-    { name: "Otros", value: 20, color: "#6ee7b7" },
+    { name: "LubriSmart", value: 18, color: "#0ea5e9" },
+    { name: "Competidor A", value: 25, color: "#22c55e" },
+    { name: "Competidor B", value: 22, color: "#a855f7" },
+    { name: "Competidor C", value: 15, color: "#f59e0b" },
+    { name: "Otros", value: 20, color: "#ef4444" },
   ];
 
   // Tamaños responsive
@@ -92,8 +92,10 @@ export function CompetitionAnalysisTab({
         </CardHeader>
         <CardContent className={isMobile ? "px-4 pb-4" : "px-6 pb-6"}>
           <div className="space-y-4">
-            {products.slice(0, 4).map((product) => {
-              const avgPrice = product.price * (0.9 + Math.random() * 0.2);
+            {products.slice(0, 4).map((product, index) => {
+              // Usar valores pseudoaleatorios basados en el índice para evitar Math.random()
+              const priceMultiplier = 0.9 + ((index * 7) % 20) * 0.01;
+              const avgPrice = product.price * priceMultiplier;
               const status =
                 avgPrice > product.price
                   ? "high"
@@ -164,20 +166,20 @@ export function CompetitionAnalysisTab({
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "6px",
                     fontSize: "12px",
                     padding: "8px",
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                   }}
                   itemStyle={{
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                     fontSize: "12px",
                     fontWeight: "500",
                   }}
                   labelStyle={{
-                    color: "hsl(var(--foreground))",
+                    color: "var(--foreground)",
                     fontWeight: "bold",
                     marginBottom: "4px",
                   }}

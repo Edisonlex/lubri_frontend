@@ -10,6 +10,9 @@ import React, {
 } from "react";
 import { StockAlert, api, Product } from "@/lib/api";
 import type { UserRole } from "@/contexts/auth-context";
+import { toast } from "sonner";
+import { usePreferences } from "@/contexts/preferences-context";
+import { useAuth } from "@/contexts/auth-context";
 
 interface AlertContextType {
   alerts: StockAlert[];
@@ -36,6 +39,9 @@ export function AlertProvider({ children }: AlertProviderProps) {
   const [hasNewAlerts, setHasNewAlerts] = useState(false);
   const [previousAlertCount, setPreviousAlertCount] = useState(0);
   const [resolvedAlerts, setResolvedAlerts] = useState<Set<string>>(new Set());
+  const [previousAlertIds, setPreviousAlertIds] = useState<Set<string>>(new Set());
+  const { preferences, isNotificationsEnabledForRole } = usePreferences();
+  const { user } = useAuth();
 
   const loadAlerts = async () => {
     try {
@@ -47,13 +53,36 @@ export function AlertProvider({ children }: AlertProviderProps) {
         (alert) => !resolvedAlerts.has(alert.id)
       );
 
-      // Verificar si hay nuevas alertas
-      if (activeAlerts.length > previousAlertCount) {
+      const currentIds = new Set(activeAlerts.map((a) => a.id));
+      const newIds = Array.from(currentIds).filter((id) => !previousAlertIds.has(id));
+      if (newIds.length > 0) {
         setHasNewAlerts(true);
+        if (user && isNotificationsEnabledForRole(user.role)) {
+          const newAlerts = activeAlerts.filter((a) => newIds.includes(a.id));
+          const criticalCount = newAlerts.filter((a) => a.urgency === "critical").length;
+          const highCount = newAlerts.filter((a) => a.urgency === "high").length;
+          const total = newAlerts.length;
+          const title = criticalCount > 0 ? `Alertas críticas de inventario` : `Nuevas alertas de inventario`;
+          const description = `Total: ${total}${highCount ? ` • Altas: ${highCount}` : ""}${criticalCount ? ` • Críticas: ${criticalCount}` : ""}`;
+          const show = criticalCount > 0 ? toast.warning : toast.info;
+          show(`${title}`, {
+            description,
+            action: {
+              label: "Ver alertas",
+              onClick: () => {
+                try {
+                  window.location.href = "/inventory?filter=alerts";
+                } catch {}
+              },
+            },
+            duration: 6000,
+          });
+        }
       }
 
       setPreviousAlertCount(activeAlerts.length);
       setAlerts(activeAlerts);
+      setPreviousAlertIds(currentIds);
     } catch (error) {
       console.error("Error cargando alertas:", error);
     } finally {
@@ -115,6 +144,7 @@ export function AlertProvider({ children }: AlertProviderProps) {
         resolvedAlerts,
         checkAndCreateAlerts,
         getAlertsForRole: (role: UserRole) => {
+          const maxVisible = 7;
           const urgencyRank: Record<string, number> = {
             critical: 4,
             high: 3,
@@ -125,7 +155,7 @@ export function AlertProvider({ children }: AlertProviderProps) {
           const base = alerts.filter((a) => !resolvedAlerts.has(a.id));
 
           const isCriticalOrHigh = (u: StockAlert["urgency"]) =>
-            (["critical", "high"] as StockAlert["urgency"][]).includes(u);
+            u === "critical" || u === "high";
 
           const filtered = base.filter((a) => {
             if (a.urgency === "critical") return true;
@@ -152,7 +182,7 @@ export function AlertProvider({ children }: AlertProviderProps) {
             return 0;
           });
 
-          return sorted;
+          return sorted.slice(0, maxVisible);
         },
       }}
     >

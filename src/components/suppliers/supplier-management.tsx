@@ -305,31 +305,52 @@ export function SupplierManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gestión de Proveedores</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Proveedores</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Administra la información de tus proveedores y sus productos
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => {
-            const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
-            const data = filteredSuppliers.map((s) => {
-              const city = getExtendedData(s).city || s.city || "";
-              return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
-            });
-            exportToPDF({ headers, data, fileName: "Proveedores" });
-          }}>Exportar PDF</Button>
-          <Button variant="outline" onClick={() => {
-            const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
-            const data = filteredSuppliers.map((s) => {
-              const city = getExtendedData(s).city || s.city || "";
-              return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
-            });
-            exportToExcel({ headers, data, fileName: "Proveedores" });
-          }}>Exportar Excel</Button>
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Proveedor
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
+              const data = filteredSuppliers.map((s) => {
+                const city = getExtendedData(s).city || s.city || "";
+                return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
+              });
+              exportToPDF({ headers, data, fileName: "Proveedores" });
+            }}
+            className="flex-1 sm:flex-none"
+          >
+            <span className="hidden sm:inline">Exportar PDF</span>
+            <span className="sm:hidden">PDF</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
+              const data = filteredSuppliers.map((s) => {
+                const city = getExtendedData(s).city || s.city || "";
+                return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
+              });
+              exportToExcel({ headers, data, fileName: "Proveedores" });
+            }}
+            className="flex-1 sm:flex-none"
+          >
+            <span className="hidden sm:inline">Exportar Excel</span>
+            <span className="sm:hidden">Excel</span>
+          </Button>
+          <Button 
+            onClick={() => handleOpenForm()} 
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            <span className="hidden sm:inline">Nuevo Proveedor</span>
+            <span className="sm:hidden">Nuevo</span>
           </Button>
         </div>
       </div>

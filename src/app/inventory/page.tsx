@@ -1,11 +1,12 @@
 // app/inventory/page.tsx (versión conectada)
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { InventoryTable } from "@/components/inventory/inventory-table";
 import { InventoryFilters } from "@/components/inventory/inventory-filters";
 import { AddProductModal } from "@/components/inventory/add-product-modal";
 import { StockAdjustmentModal } from "@/components/inventory/stock-adjustment-modal";
+import { StockMovementModal } from "@/components/inventory/stock-movement-modal";
 import { RealTimeInventory } from "@/components/inventory/real-time-inventory";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { api, Product } from "@/lib/api";
 import {
   DropdownMenu,
@@ -34,33 +35,35 @@ import { ExportModal } from "@/components/inventory/export-modal";
 import { AnalyticsModal } from "@/components/inventory/analytics-modal";
 import { useAlerts } from "@/contexts/alerts-context";
 import { toast } from "sonner";
-import { ProtectedRoute } from "@/contexts/auth-context";
-import { StockMovementHistory } from "@/components/inventory/stock-movement-history";
-import { MovementsExportModal } from "@/components/inventory/export/movements-export-modal";
-import type { StockMovement } from "@/lib/api";
+import type { InventoryFilters as InventoryFiltersType } from "@/lib/validation";
+import type { Sale } from "@/lib/api";
+import { useScrollIndicator } from "@/hooks/use-scroll-indicator";
 
-function InventoryContent() {
+export default function InventoryPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { refreshAlerts } = useAlerts();
+  const { scrollRef, canScroll, isScrolledLeft, scrollToActiveTab } = useScrollIndicator();
+  const [activeTab, setActiveTab] = useState("inventory");
 
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showStockAdjustment, setShowStockAdjustment] = useState(false);
+  const [showStockMovement, setShowStockMovement] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [adjustments, setAdjustments] = useState<StockMovement[]>([]);
-  const searchParams = useSearchParams();
-  const initialSearch = searchParams.get("search") || "";
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<InventoryFiltersType>({
     category: "all",
     brand: "all",
     status: "all",
     stockLevel: "all",
-    search: initialSearch,
+    obsolescence: "all",
+    search: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [obsoleteProductIds, setObsoleteProductIds] = useState<Set<string>>(new Set());
+  const [daysSinceLastSaleById, setDaysSinceLastSaleById] = useState<Map<string, number>>(new Map());
 
   // Estados para controlar la visibilidad de los modales en móvil
   const [showExportModal, setShowExportModal] = useState(false);
@@ -70,21 +73,36 @@ function InventoryContent() {
     try {
       const data = await api.getProducts();
       setProducts(data);
+
+      const sales: Sale[] = await api.getSales();
+      const lastSaleByProduct: Record<string, number | null> = {};
+      data.forEach((p) => (lastSaleByProduct[p.id] = null));
+      sales.forEach((s) => {
+        s.items.forEach((item) => {
+          const dt = new Date(s.date).getTime();
+          const prev = lastSaleByProduct[item.productId];
+          if (!prev || dt > prev) lastSaleByProduct[item.productId] = dt;
+        });
+      });
+      const now = Date.now();
+      const sixMonthsMs = 180 * 24 * 60 * 60 * 1000;
+      const obsoleteIds = new Set<string>();
+      const daysMap = new Map<string, number>();
+      data.forEach((p) => {
+        const last = lastSaleByProduct[p.id];
+        const isObsolete = !last || now - last >= sixMonthsMs;
+        if (isObsolete) obsoleteIds.add(p.id);
+        const days = last ? Math.floor((now - last) / (1000 * 60 * 60 * 24)) : 9999;
+        daysMap.set(p.id, days);
+      });
+      setObsoleteProductIds(obsoleteIds);
+      setDaysSinceLastSaleById(daysMap);
     } catch (error) {
       console.error("Error loading products:", error);
       toast.error("Error al cargar los productos");
     } finally {
       setIsLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  const loadAdjustments = async () => {
-    try {
-      const movements = await api.getStockMovements();
-      setAdjustments(movements.filter((m) => m.type === "ajuste"));
-    } catch (error) {
-      console.error("Error cargando ajustes:", error);
     }
   };
 
@@ -97,7 +115,6 @@ function InventoryContent() {
 
   useEffect(() => {
     loadProducts();
-    loadAdjustments();
   }, []);
 
   const handleProductSaved = () => {
@@ -106,7 +123,6 @@ function InventoryContent() {
 
   const handleStockUpdated = () => {
     loadProducts(); // Recargar productos después de ajustar stock
-    loadAdjustments(); // Actualizar historial de ajustes
   };
 
   // Botones para móvil en dropdown
@@ -130,7 +146,10 @@ function InventoryContent() {
           <BarChart2 className="h-4 w-4 mr-2" />
           Análisis
         </DropdownMenuItem>
-        
+        <DropdownMenuItem onClick={() => router.push("/inventory/movements")}>
+          <History className="h-4 w-4 mr-2" />
+          Movimientos
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Actualizar
@@ -170,12 +189,19 @@ function InventoryContent() {
 
       <AnalyticsModal products={products} />
 
-      
+      <Button
+        variant="outline"
+        className="bg-transparent h-8 sm:h-10 text-xs sm:text-sm px-2 sm:px-4"
+        size="sm"
+        onClick={() => router.push("/inventory/movements")}
+      >
+        <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+        Movimientos
+      </Button>
     </div>
   );
 
   return (
-    <ProtectedRoute permission="inventory.view">
     <div className="max-w-7xl mx-auto space-y-4 p-3 sm:p-4 md:p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -202,16 +228,24 @@ function InventoryContent() {
         </div>
       </motion.div>
 
-      <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mb-4 h-10">
+      <Tabs 
+        defaultValue="inventory" 
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          scrollToActiveTab(value);
+        }}
+        className="w-full"
+      >
+        <TabsList 
+          ref={scrollRef}
+          className={`w-full overflow-x-auto flex gap-2 min-w-max mb-4 h-10 sm:grid sm:grid-cols-2 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
+        >
           <TabsTrigger value="inventory" className="text-xs sm:text-sm">
             Inventario
           </TabsTrigger>
           <TabsTrigger value="realtime" className="text-xs sm:text-sm">
             Tiempo Real
-          </TabsTrigger>
-          <TabsTrigger value="adjustments" className="text-xs sm:text-sm">
-            Ajustes
           </TabsTrigger>
         </TabsList>
 
@@ -264,6 +298,8 @@ function InventoryContent() {
               filters={filters}
               products={products}
               isLoading={isLoading}
+              obsoleteProductIds={obsoleteProductIds}
+              daysSinceLastSaleById={daysSinceLastSaleById}
               onEditProduct={(product) => {
                 setSelectedProduct(product);
                 setShowAddProduct(true);
@@ -272,7 +308,10 @@ function InventoryContent() {
                 setSelectedProduct(product);
                 setShowStockAdjustment(true);
               }}
-              
+              onRegisterMovement={(product: Product) => {
+                setSelectedProduct(product);
+                setShowStockMovement(true);
+              }}
             />
           </div>
         </TabsContent>
@@ -281,18 +320,6 @@ function InventoryContent() {
           <div className="overflow-hidden">
             <RealTimeInventory />
           </div>
-        </TabsContent>
-
-        <TabsContent value="adjustments" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Historial de Ajustes</h3>
-            <MovementsExportModal
-              movements={adjustments}
-              movementType="adjustment"
-              disabled={adjustments.length === 0}
-            />
-          </div>
-          <StockMovementHistory movements={adjustments} isLoading={false} />
         </TabsContent>
       </Tabs>
 
@@ -316,7 +343,14 @@ function InventoryContent() {
         onStockUpdated={handleStockUpdated}
       />
 
-      
+      <StockMovementModal
+        isOpen={showStockMovement}
+        onClose={() => {
+          setShowStockMovement(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+      />
 
       {/* Modales para móvil - controlados por estado */}
       {isMobile && (
@@ -335,14 +369,5 @@ function InventoryContent() {
         </>
       )}
     </div>
-    </ProtectedRoute>
-  );
-}
-
-export default function InventoryPage() {
-  return (
-    <Suspense fallback={<div className="p-4 text-sm">Cargando inventario...</div>}>
-      <InventoryContent />
-    </Suspense>
   );
 }

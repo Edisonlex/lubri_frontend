@@ -25,7 +25,7 @@ import { Package, Save } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { toast } from "sonner";
-import { api, Product } from "@/lib/api";
+import { api, Product, classifyProductCategory } from "@/lib/api";
 import { productSchema } from "@/lib/validation";
 
 interface AddProductModalProps {
@@ -99,6 +99,16 @@ export function AddProductModal({
       });
     }
   }, [product]);
+
+  useEffect(() => {
+    const res = classifyProductCategory({
+      name: formData.name,
+      brand: formData.brand,
+      sku: formData.sku,
+      supplier: formData.supplier,
+    });
+    setFormData((prev) => ({ ...prev, category: res.category }));
+  }, [formData.name, formData.brand, formData.sku, formData.supplier]);
 
   useEffect(() => {
     const loadSuppliers = async () => {

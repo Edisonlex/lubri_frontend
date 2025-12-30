@@ -25,13 +25,11 @@ import { Search, MapPin, Users, Navigation } from "lucide-react";
 interface CustomerMapProps {
   customers?: GeographicEntity[];
   className?: string;
-  onViewEntity?: (entity: GeographicEntity) => void;
 }
 
 export function CustomerMap({
   customers: propCustomers,
   className = "",
-  onViewEntity,
 }: CustomerMapProps) {
   const {
     customers: contextCustomers,
@@ -46,14 +44,12 @@ export function CustomerMap({
     useState<GeographicEntity | null>(null);
 
   // Filter customers based on search term
-  const filteredCustomers = customers
-    .filter((c) => (c.city || '').toLowerCase() === 'la maná')
-    .filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.city.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Apply radius filter if set
   const displayCustomers =
@@ -142,7 +138,7 @@ export function CustomerMap({
       {/* Customer List and Map */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Customer List */}
-        <Card className="order-2 lg:col-span-1">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg">Lista de Clientes</CardTitle>
           </CardHeader>
@@ -207,7 +203,7 @@ export function CustomerMap({
         </Card>
 
         {/* Map */}
-        <Card className="order-1 lg:col-span-2">
+        <Card className="lg:col-span-2">
           <CardContent className="p-0">
             <LubriSmartMap
               height="500px"
@@ -223,8 +219,7 @@ export function CustomerMap({
               showLegend={false}
               showControls={true}
               provider="google_embed"
-              embedUrl="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d744.749040415921!2d-79.22882253653658!3d-0.9416570378798896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1ses!2sec!4v1763477539749!5m2!1ses!2sec"
-              onViewEntity={onViewEntity}
+              embedUrl="https://www.google.com/maps?q=loc:-0.941723,-79.229129&output=embed"
             />
             <div className="p-3">
               <div className="bg-white border rounded-lg p-3">

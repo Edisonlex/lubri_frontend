@@ -63,7 +63,7 @@ export function SalesOverview({
 
   return (
     <>
-      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -212,40 +212,40 @@ export function SalesOverview({
                       textAnchor={isMobile ? "end" : "middle"}
                       height={isMobile ? 50 : 40}
                       tick={{
-                        fill: "hsl(222.2 84% 4.9%)",
+                        fill: "var(--foreground)",
                         fontSize: isMobile ? 10 : 12,
                         fontWeight: 500,
                       }}
-                      axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                      tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                      axisLine={{ stroke: "var(--border)" }}
+                      tickLine={{ stroke: "var(--border)" }}
                       className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                     />
                     <YAxis
                       tick={{
-                        fill: "hsl(222.2 84% 4.9%)",
+                        fill: "var(--foreground)",
                         fontSize: isMobile ? 10 : 12,
                         fontWeight: 500,
                       }}
-                      axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
-                      tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
+                      axisLine={{ stroke: "var(--border)" }}
+                      tickLine={{ stroke: "var(--border)" }}
                       className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "var(--card)",
+                        border: "1px solid var(--border)",
                         borderRadius: "6px",
                         fontSize: "12px",
                         padding: "8px",
-                        color: "hsl(var(--foreground))",
+                        color: "var(--foreground)",
                       }}
                       itemStyle={{
-                        color: "hsl(var(--foreground))",
+                        color: "var(--foreground)",
                         fontSize: "12px",
                         fontWeight: "500",
                       }}
                       labelStyle={{
-                        color: "hsl(var(--foreground))",
+                        color: "var(--foreground)",
                         fontWeight: "bold",
                         marginBottom: "4px",
                       }}
@@ -260,7 +260,7 @@ export function SalesOverview({
                     />
                     <Bar
                       dataKey="ventas"
-                      fill="#16a34a"
+                      fill="var(--chart-1)"
                       radius={[3, 3, 0, 0]}
                     />
                   </BarChart>
@@ -303,7 +303,20 @@ export function SalesOverview({
                       labelLine={false}
                     >
                       {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            index === 0
+                              ? "var(--chart-1)"
+                              : index === 1
+                              ? "var(--chart-2)"
+                              : index === 2
+                              ? "var(--chart-3)"
+                              : index === 3
+                              ? "var(--chart-4)"
+                              : "var(--chart-5)"
+                          }
+                        />
                       ))}
                     </Pie>
                     <Tooltip

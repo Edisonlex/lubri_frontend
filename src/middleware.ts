@@ -7,6 +7,8 @@ const protectedRoutes = [
   '/inventory',
   '/customers',
   '/analytics',
+  '/obsolescence',
+  '/classification',
   '/profile',
   '/settings',
 ];
@@ -44,5 +46,5 @@ export function middleware(request: NextRequest) {
 
 // Configurar el middleware para que se ejecute solo en las rutas especificadas
 export const config = {
-  matcher: ['/dashboard/:path*', '/pos/:path*', '/inventory/:path*', '/customers/:path*', '/analytics/:path*', '/profile/:path*', '/settings/:path*', '/login/:path*'],
+  matcher: ['/dashboard/:path*', '/pos/:path*', '/inventory/:path*', '/customers/:path*', '/analytics/:path*', '/obsolescence/:path*', '/classification/:path*', '/profile/:path*', '/settings/:path*', '/login/:path*'],
 };

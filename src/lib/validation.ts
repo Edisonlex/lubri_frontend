@@ -292,8 +292,11 @@ export const inventoryFiltersSchema = z.object({
   brand: z.enum(["all", "mobil", "castrol", "shell", "valvoline", "motul"]),
   status: z.enum(["all", "active", "inactive", "discontinued"]),
   stockLevel: z.enum(["all", "low", "normal", "high", "out"]),
+  obsolescence: z.enum(["all", "obsolete"]).default("all"),
   search: z.string().max(100).optional().default(""),
 });
+
+export type InventoryFilters = z.infer<typeof inventoryFiltersSchema>;
 
 export const customerFiltersSchema = z.object({
   customerType: z.enum(["all", "individual", "business"]),

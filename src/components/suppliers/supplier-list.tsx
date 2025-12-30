@@ -59,7 +59,7 @@ export function SupplierList({
 
   return (
     <div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <AnimatePresence>
         {pagedSuppliers.map((supplier) => (
           <SupplierCard
@@ -73,27 +73,65 @@ export function SupplierList({
         ))}
         </AnimatePresence>
       </div>
-      <div className="flex items-center justify-between mt-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Mostrar</span>
+      
+      {/* Pagination - responsive */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 sm:mt-6">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="hidden sm:inline">Mostrar</span>
           <select
-            className="border rounded px-2 py-1 text-sm"
+            className="border rounded px-2 py-1 text-sm h-8"
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
           >
             <option value={6}>6</option>
             <option value={12}>12</option>
             <option value={24}>24</option>
+            <option value={48}>48</option>
           </select>
-          <span className="text-sm">por página</span>
+          <span className="hidden sm:inline">por página</span>
+          <span className="text-muted-foreground">({totalItems} total)</span>
         </div>
+        
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>
-            Anterior
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setPage(Math.max(1, page - 1))} 
+            disabled={page === 1}
+            className="h-8 px-3"
+          >
+            <span className="hidden sm:inline">Anterior</span>
+            <span className="sm:hidden">‹</span>
           </Button>
-          <span className="text-sm">{page} / {totalPages}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>
-            Siguiente
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+              if (pageNum > totalPages) return null;
+              
+              return (
+                <Button
+                  key={pageNum}
+                  variant={pageNum === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPage(pageNum)}
+                  className={`h-8 w-8 p-0 ${pageNum === page ? 'bg-primary text-primary-foreground' : ''}`}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setPage(Math.min(totalPages, page + 1))} 
+            disabled={page === totalPages}
+            className="h-8 px-3"
+          >
+            <span className="hidden sm:inline">Siguiente</span>
+            <span className="sm:hidden">›</span>
           </Button>
         </div>
       </div>

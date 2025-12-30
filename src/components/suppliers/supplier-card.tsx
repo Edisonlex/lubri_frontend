@@ -95,13 +95,14 @@ export function SupplierCard({
       className="group"
     >
       <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
+          {/* Header with status and actions */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-blue-600" />
+              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               <Badge
                 variant={getStatusBadgeVariant(supplier.status)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs sm:text-sm"
               >
                 {getStatusIcon(supplier.status)}
                 {supplier.status === "active" ? "Activo" : "Inactivo"}
@@ -112,20 +113,22 @@ export function SupplierCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => onView(supplier)}
+                className="h-7 w-7 sm:h-8 sm:w-8"
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onEdit(supplier)}
+                className="h-7 w-7 sm:h-8 sm:w-8"
               >
-                <Edit className="h-4 w-4" />
+                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="h-7 w-7 sm:h-8 sm:w-8">
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -151,72 +154,80 @@ export function SupplierCard({
             </div>
           </div>
 
+          {/* Supplier info */}
           <div className="space-y-2">
-            <h3 className="font-semibold text-lg">{supplier.name}</h3>
+            <h3 className="font-semibold text-base sm:text-lg">{supplier.name}</h3>
             {getSupplierField(supplier, "businessName") && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {getSupplierField(supplier, "businessName")}
               </p>
             )}
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{supplier.email}</span>
-            </div>
+            {/* Contact info - responsive layout */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">{supplier.email}</span>
+              </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{supplier.phone}</span>
-            </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span>{supplier.phone}</span>
+              </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>Contacto: {supplier.contactPerson}</span>
-            </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Contacto: {supplier.contactPerson}</span>
+              </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>
-                {getSupplierField(supplier, "city") || "No especificada"}
-              </span>
-            </div>
-
-            {supplier.category && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Package className="h-4 w-4" />
-                <span>
-                  {supplierCategories.find(
-                    (cat) => cat.value === supplier.category
-                  )?.label || supplier.category}
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">
+                  {getSupplierField(supplier, "city") || "No especificada"}
                 </span>
               </div>
-            )}
+            </div>
 
-            {getSupplierField(supplier, "deliveryTime") && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Truck className="h-4 w-4" />
-                <span>
-                  Entrega: {getSupplierField(supplier, "deliveryTime")}
-                </span>
-              </div>
-            )}
+            {/* Additional info - conditional */}
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {supplier.category && (
+                <div className="flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  <span>
+                    {supplierCategories.find(
+                      (cat) => cat.value === supplier.category
+                    )?.label || supplier.category}
+                  </span>
+                </div>
+              )}
 
-            {getSupplierField(supplier, "minimumOrder") > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <DollarSign className="h-4 w-4" />
-                <span>
-                  Mín:{" "}
-                  {formatCurrency(
-                    Number(getSupplierField(supplier, "minimumOrder"))
-                  )}
-                </span>
-              </div>
-            )}
+              {getSupplierField(supplier, "deliveryTime") && (
+                <div className="flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  <span>
+                    Entrega: {getSupplierField(supplier, "deliveryTime")}
+                  </span>
+                </div>
+              )}
 
+              {getSupplierField(supplier, "minimumOrder") > 0 && (
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  <span>
+                    Mín:{" "}
+                    {formatCurrency(
+                      Number(getSupplierField(supplier, "minimumOrder"))
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Rating */}
             {getSupplierField(supplier, "rating") && (
               <div className="flex items-center gap-1">
                 {renderStars(Number(getSupplierField(supplier, "rating")))}
-                <span className="text-sm text-muted-foreground ml-1">
+                <span className="text-xs text-muted-foreground ml-1">
                   ({getSupplierField(supplier, "rating")}/5)
                 </span>
               </div>

@@ -10,6 +10,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { motion, AnimatePresence } from "framer-motion";
 import { usePOS, type Product } from "@/contexts/pos-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 export function ProductGrid() {
   const { products, addToCart, searchQuery, selectedCategory, loadingProducts } = usePOS();
@@ -138,9 +139,20 @@ export function ProductGrid() {
                   </div>
 
                   <div className="relative mb-4">
-                    <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                      <Package className="h-16 w-16 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
+                    <AspectRatio ratio={16 / 9}>
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover rounded-lg border"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                          <Package className="h-16 w-16 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      )}
+                    </AspectRatio>
                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Tooltip>
                         <TooltipTrigger asChild>

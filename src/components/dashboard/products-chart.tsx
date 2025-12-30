@@ -65,11 +65,11 @@ export function ProductsChart() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
-          <div className="h-48 sm:h-60 md:h-80">
+          <div className="h-64 sm:h-72 md:h-80 lg:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={productsData}
-                margin={{ bottom: 30, left: 0, right: 5, top: 5 }}
+                margin={{ bottom: 40, left: 0, right: 5, top: 10 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -79,51 +79,57 @@ export function ProductsChart() {
                   dataKey="categoria"
                   angle={-45}
                   textAnchor="end"
-                  height={50}
+                  height={60}
                   tick={{
                     fill: "hsl(222.2 84% 4.9%)", // Texto oscuro para modo claro
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: 500,
                   }}
                   axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
+                  interval={0}
                 />
                 <YAxis
                   tick={{
                     fill: "hsl(222.2 84% 4.9%)", // Texto oscuro para modo claro
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: 500,
                   }}
                   axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
+                  tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "6px",
-                    fontSize: "12px",
-                    padding: "8px",
+                    fontSize: "11px",
+                    padding: "6px",
                     color: "hsl(var(--foreground))",
                   }}
                   itemStyle={{
                     color: "hsl(var(--foreground))",
-                    fontSize: "12px",
+                    fontSize: "11px",
                     fontWeight: "500",
                   }}
                   labelStyle={{
                     color: "hsl(var(--foreground))",
                     fontWeight: "bold",
-                    marginBottom: "4px",
+                    marginBottom: "2px",
                   }}
                   cursor={{
                     fill: "hsl(var(--muted))",
                     fillOpacity: 0.3,
                   }}
+                  formatter={(value, name) => [
+                    `${value} unidades`, 
+                    name === 'vendidos' ? 'Vendidos' : name
+                  ]}
                 />
-                <Bar dataKey="vendidos" fill="#16a34a" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="vendidos" fill="#16a34a" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

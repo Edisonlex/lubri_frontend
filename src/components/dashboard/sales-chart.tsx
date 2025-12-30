@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,6 +34,81 @@ import { exportSalesToPDF, exportSalesToExcel } from "@/lib/export-utils";
 function getWeekdayShort(date: Date) {
   const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   return days[date.getDay()];
+}
+
+// Componente DaySalesTooltip movido fuera de la función principal para evitar crear componentes durante render
+interface DaySalesTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  sales: any[];
+  setSelectedSale: (sale: any) => void;
+  setIsDetailsOpen: (open: boolean) => void;
+  setSelectedDay: (day: Date) => void;
+  setDaySales: (sales: any[]) => void;
+  setIsDayOpen: (open: boolean) => void;
+  handleDownloadInvoice: (sale: any) => void;
+  handlePrintInvoice: (sale: any) => void;
+}
+
+function DaySalesTooltip({ 
+  active, 
+  payload, 
+  sales, 
+  setSelectedSale, 
+  setIsDetailsOpen, 
+  setSelectedDay, 
+  setDaySales, 
+  setIsDayOpen, 
+  handleDownloadInvoice, 
+  handlePrintInvoice 
+}: DaySalesTooltipProps) {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0].payload;
+  const pointDate = new Date(point.fullDate);
+  const daySales = sales.filter(
+    (s) => new Date(s.date).toDateString() === pointDate.toDateString()
+  );
+  const totalSales = daySales.reduce((sum, sale) => sum + sale.total, 0);
+  
+  return (
+    <div className="p-3 space-y-2 bg-card text-card-foreground border rounded-lg shadow-lg">
+      <div className="flex justify-between items-center">
+        <p className="font-semibold text-sm">
+          {format(pointDate, "EEEE dd/MM", { locale: es })}
+        </p>
+        <p className="font-bold text-primary">
+          ${totalSales.toFixed(2)}
+        </p>
+      </div>
+      {daySales.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sin ventas registradas</p>
+      ) : (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            {daySales.length} venta{daySales.length !== 1 ? 's' : ''} registrada{daySales.length !== 1 ? 's' : ''}
+          </p>
+          {daySales.slice(0, 3).map((s) => (
+            <div key={s.id} className="flex justify-between items-center text-xs py-1 border-b border-border/50 last:border-0">
+              <span className="truncate max-w-[120px]">{s.customerName || "Cliente"}</span>
+              <span className="font-medium">${s.total.toFixed(2)}</span>
+            </div>
+          ))}
+          {daySales.length > 3 && (
+            <button 
+              className="text-xs text-primary hover:text-primary/80 underline"
+              onClick={() => {
+                setSelectedDay(pointDate);
+                setDaySales(daySales);
+                setIsDayOpen(true);
+              }}
+            >
+              Ver {daySales.length - 3} más...
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SalesChart() {
@@ -111,7 +186,6 @@ export function SalesChart() {
       return {
         name: label,
         ventas: Number(dayTotal.toFixed(2)),
-        meta: 1500,
         fullDate: d.toISOString(),
       };
     });
@@ -207,25 +281,32 @@ export function SalesChart() {
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <Card>
-        <CardHeader>
-          <CardTitle>Tendencia de Ventas</CardTitle>
-          <CardDescription>
-            Ventas de los últimos 7 días vs meta diaria
+        <CardHeader className="pb-3 sm:pb-5 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">Tendencia de Ventas</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Tendencia de ventas diarias - últimos 7 días
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-80">
+        <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
+          <div className="h-64 sm:h-72 md:h-80 lg:h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={salesData}>
+              <AreaChart data={salesData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--muted))"
+                  opacity={0.3}
                 />
                 <XAxis
                   dataKey="name"
                   tick={{
-                    fill: "hsl(222.2 84% 4.9%)", // Texto oscuro para modo claro
-                    fontSize: 12,
+                    fill: "hsl(222.2 84% 4.9%)",
+                    fontSize: 10,
                     fontWeight: 500,
                   }}
                   axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
@@ -234,97 +315,46 @@ export function SalesChart() {
                 />
                 <YAxis
                   tick={{
-                    fill: "hsl(222.2 84% 4.9%)", // Texto oscuro para modo claro
-                    fontSize: 12,
+                    fill: "hsl(222.2 84% 4.9%)",
+                    fontSize: 10,
                     fontWeight: 500,
                   }}
                   axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
+                  tickFormatter={(value) => `$${value}`}
                 />
                 <Tooltip
-                  content={(() => {
-                    const DaySalesTooltip = ({ active, payload }: any) => {
-                      if (!active || !payload || !payload.length) return null;
-                      const point = payload[0].payload;
-                      const pointDate = new Date(point.fullDate);
-                      const daySales = sales.filter(
-                        (s) => new Date(s.date).toDateString() === pointDate.toDateString()
-                      );
-                      return (
-                        <div className="p-3 space-y-2 bg-card text-card-foreground border rounded-lg">
-                          <p className="font-semibold text-sm">
-                            {format(pointDate, "EEEE dd/MM", { locale: es })}
-                          </p>
-                          {daySales.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">Sin ventas registradas</p>
-                          ) : (
-                            <div className="space-y-2">
-                              <div className="max-h-48 overflow-y-auto space-y-2">
-                              {daySales.slice(0, 6).map((s) => (
-                                <div key={s.id} className="text-xs">
-                                  <div className="flex justify-between">
-                                    <span className="truncate max-w-[160px]">{s.customerName || "Cliente"}</span>
-                                    <span className="font-bold">${s.total.toFixed(2)}</span>
-                                  </div>
-                                  <div className="mt-1 flex gap-1">
-                                    <Button size="sm" className="h-7 px-2 text-xs" variant="outline" onClick={() => { setSelectedSale(s); setIsDetailsOpen(true); }}>
-                                      Ver
-                                    </Button>
-                                    <Button size="sm" className="h-7 px-2 text-xs" onClick={() => handleDownloadInvoice(s)}>Descargar</Button>
-                                    <Button size="sm" className="h-7 px-2 text-xs" variant="secondary" onClick={() => handlePrintInvoice(s)}>Imprimir</Button>
-                                  </div>
-                                </div>
-                              ))}
-                              </div>
-                              {daySales.length > 6 && (
-                                <Button size="sm" className="h-7 px-2 text-xs" variant="ghost" onClick={() => {
-                                  setSelectedDay(pointDate);
-                                  setDaySales(daySales);
-                                  setIsDayOpen(true);
-                                }}>Ver todas</Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    };
-                    return <DaySalesTooltip />;
-                  })()}
+                  content={(props) => (
+                    <DaySalesTooltip 
+                      {...props} 
+                      sales={sales}
+                      setSelectedSale={setSelectedSale}
+                      setIsDetailsOpen={setIsDetailsOpen}
+                      setSelectedDay={setSelectedDay}
+                      setDaySales={setDaySales}
+                      setIsDayOpen={setIsDayOpen}
+                      handleDownloadInvoice={handleDownloadInvoice}
+                      handlePrintInvoice={handlePrintInvoice}
+                    />
+                  )}
                   cursor={{
                     stroke: "hsl(var(--muted-foreground))",
                     strokeWidth: 1,
                     strokeDasharray: "5 5",
                   }}
                 />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="ventas"
-                  stroke="#16a34a"
+                  stroke="#38bdf8"
                   strokeWidth={3}
-                  dot={(props: any) => (
-                    <circle
-                      key={`dot-${props.index}`}
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={4}
-                      fill="#16a34a"
-                      strokeWidth={2}
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handlePointClick(props.index)}
-                    />
-                  )}
-                  activeDot={{ r: 6, fill: "#059669" }}
+                  fillOpacity={1}
+                  fill="url(#colorVentas)"
+                  onClick={(_, index) => handlePointClick(index)}
+                  name="Ventas"
                 />
-                <Line
-                  type="monotone"
-                  dataKey="meta"
-                  stroke="hsl(var(--muted-foreground))"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
           {recentSales.length > 0 && (

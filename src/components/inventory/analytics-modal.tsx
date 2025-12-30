@@ -14,8 +14,10 @@ import {
   TrendingUp,
   Package,
   RefreshCw,
+  AlertTriangle,
+  Gauge,
 } from "lucide-react";
-import { type Product } from "@/contexts/pos-context";
+import type { Product, Sale } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
@@ -33,6 +35,15 @@ export function AnalyticsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [salesData, setSalesData] = useState<any>(null);
+  const [obsoleteMetrics, setObsoleteMetrics] = useState<{
+    count: number;
+    avgDays: number;
+    impact: number;
+  } | null>(null);
+  const [productClassification, setProductClassification] = useState<any>(null);
+  const [obsoleteProducts, setObsoleteProducts] = useState<
+    Array<{ id: string; name: string; daysSinceLastSale: number; stock: number }>
+  >([]);
 
   // Cargar datos de análisis cuando se abre el modal
   useEffect(() => {
@@ -43,9 +54,45 @@ export function AnalyticsModal({
           // Cargar datos de análisis del inventario
           const inventoryAnalytics = await api.getInventoryAnalytics();
           const salesAnalytics = await api.getSalesAnalytics();
+          const metrics = await api.getObsolescenceMetrics();
+          const classification = await api.getProductClassification();
+          const sales: Sale[] = await api.getSales();
 
           setAnalyticsData(inventoryAnalytics);
           setSalesData(salesAnalytics);
+          setObsoleteMetrics(metrics);
+          setProductClassification(classification);
+
+          const lastSaleByProduct: Record<string, number | null> = {};
+          products.forEach((p) => (lastSaleByProduct[p.id] = null));
+          sales.forEach((s) => {
+            s.items.forEach((item) => {
+              const dt = new Date(s.date).getTime();
+              const prev = lastSaleByProduct[item.productId];
+              if (!prev || dt > prev) lastSaleByProduct[item.productId] = dt;
+            });
+          });
+          const now = Date.now();
+          const sixMonthsMs = 180 * 24 * 60 * 60 * 1000;
+          const computedObsolete = products
+            .map((p) => {
+              const last = lastSaleByProduct[p.id];
+              const days = last
+                ? Math.floor((now - last) / (1000 * 60 * 60 * 24))
+                : 9999;
+              return {
+                id: p.id,
+                name: p.name,
+                daysSinceLastSale: days,
+                stock: p.stock,
+              };
+            })
+            .filter((o) => o.daysSinceLastSale * 24 * 60 * 60 * 1000 >= sixMonthsMs);
+          setObsoleteProducts(
+            computedObsolete
+              .sort((a, b) => b.daysSinceLastSale - a.daysSinceLastSale)
+              .slice(0, 10)
+          );
         } catch (error) {
           console.error("Error loading analytics data:", error);
         } finally {
@@ -104,9 +151,45 @@ export function AnalyticsModal({
     try {
       const inventoryAnalytics = await api.getInventoryAnalytics();
       const salesAnalytics = await api.getSalesAnalytics();
+      const metrics = await api.getObsolescenceMetrics();
+      const classification = await api.getProductClassification();
+      const sales: Sale[] = await api.getSales();
 
       setAnalyticsData(inventoryAnalytics);
       setSalesData(salesAnalytics);
+      setObsoleteMetrics(metrics);
+      setProductClassification(classification);
+
+      const lastSaleByProduct: Record<string, number | null> = {};
+      products.forEach((p) => (lastSaleByProduct[p.id] = null));
+      sales.forEach((s) => {
+        s.items.forEach((item) => {
+          const dt = new Date(s.date).getTime();
+          const prev = lastSaleByProduct[item.productId];
+          if (!prev || dt > prev) lastSaleByProduct[item.productId] = dt;
+        });
+      });
+      const now = Date.now();
+      const sixMonthsMs = 180 * 24 * 60 * 60 * 1000;
+      const computedObsolete = products
+        .map((p) => {
+          const last = lastSaleByProduct[p.id];
+          const days = last
+            ? Math.floor((now - last) / (1000 * 60 * 60 * 24))
+            : 9999;
+          return {
+            id: p.id,
+            name: p.name,
+            daysSinceLastSale: days,
+            stock: p.stock,
+          };
+        })
+        .filter((o) => o.daysSinceLastSale * 24 * 60 * 60 * 1000 >= sixMonthsMs);
+      setObsoleteProducts(
+        computedObsolete
+          .sort((a, b) => b.daysSinceLastSale - a.daysSinceLastSale)
+          .slice(0, 10)
+      );
     } catch (error) {
       console.error("Error refreshing analytics data:", error);
     } finally {
@@ -309,6 +392,117 @@ export function AnalyticsModal({
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     }) || "0.00"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {obsoleteMetrics && (
+            <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border dark:border-red-900/30">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-red-800 dark:text-red-300">
+                <AlertTriangle className="h-4 w-4" /> Productos Obsoletos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground dark:text-red-200">
+                    Cantidad detectada
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {obsoleteMetrics.count}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-red-200">
+                    Días promedio sin venta
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {obsoleteMetrics.avgDays}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-red-200">
+                    Impacto en valor
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    ${obsoleteMetrics.impact.toLocaleString("es-MX")}
+                  </p>
+                </div>
+              </div>
+              {obsoleteProducts.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-muted-foreground dark:text-red-200 mb-1">
+                    Criterio: sin ventas en los últimos 6 meses
+                  </p>
+                  <ul className="text-sm space-y-1">
+                    {obsoleteProducts.map((p) => (
+                      <li key={p.id} className="flex justify-between">
+                        <span className="dark:text-red-100">{p.name}</span>
+                        <span className="font-medium dark:text-white">
+                          {p.daysSinceLastSale} días • Stock: {p.stock}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {productClassification && (
+            <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border dark:border-purple-900/30">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-purple-800 dark:text-purple-300">
+                <Gauge className="h-4 w-4" /> Clasificación Automática
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Alta rotación
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.highRotation.length}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Rotación media
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.mediumRotation.length}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Baja rotación
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.lowRotation.length}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Alto margen
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.highProfitMargin.length}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Margen medio
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.mediumProfitMargin.length}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground dark:text-purple-200">
+                    Margen bajo
+                  </span>
+                  <p className="font-semibold dark:text-white">
+                    {productClassification.lowProfitMargin.length}
                   </p>
                 </div>
               </div>

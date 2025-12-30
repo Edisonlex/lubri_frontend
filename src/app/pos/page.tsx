@@ -20,62 +20,24 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { POSProvider, usePOS } from "@/contexts/pos-context";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ProtectedRoute } from "@/contexts/auth-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrollIndicator } from "@/hooks/use-scroll-indicator";
 
 export default function POSPage() {
   return (
-    <ProtectedRoute permission="pos.use">
-      <POSProvider>
-        <POSContent />
-      </POSProvider>
-    </ProtectedRoute>
+    <POSProvider>
+      <POSContent />
+    </POSProvider>
   );
 }
 
 function POSContent() {
-  const { cartItemCount, clearCart, loadingProducts, loadingCustomers } = usePOS();
+  const { cartItemCount, clearCart } = usePOS();
   const [showPayment, setShowPayment] = useState(false);
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("products");
-
-  if (loadingProducts || loadingCustomers) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <header className="bg-background border-b">
-          <div className="px-4 py-3 sm:px-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-9 w-9" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-7 w-7 rounded-lg" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <Skeleton className="h-16 w-full" />
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-64 w-full" />
-              </div>
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-64 w-full" />
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const { scrollRef, canScroll, isScrolledLeft, scrollToActiveTab } = useScrollIndicator();
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -142,10 +104,16 @@ function POSContent() {
           <div className="h-full">
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={(value) => {
+                setActiveTab(value);
+                scrollToActiveTab(value);
+              }}
               className="h-full flex flex-col"
             >
-              <TabsList className="grid w-full grid-cols-2 px-4 pt-3">
+              <TabsList 
+                ref={scrollRef}
+                className={`w-full overflow-x-auto flex gap-2 min-w-max px-4 pt-3 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
+              >
                 <TabsTrigger
                   value="products"
                   className="flex items-center gap-2"
@@ -223,11 +191,11 @@ function POSContent() {
                 </div>
               </div>
 
-          {/* Productos */}
-          <div className="bg-card rounded-lg border p-4">
-            <ProductGrid />
-          </div>
-        </div>
+              {/* Productos */}
+              <div className="bg-card rounded-lg border p-4">
+                <ProductGrid />
+              </div>
+            </div>
 
             {/* Botón del Carrito Desktop - Fijo en esquina */}
             <div className="fixed bottom-6 right-6 z-40">

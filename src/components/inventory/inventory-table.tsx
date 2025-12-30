@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/api";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import type { InventoryFilters } from "@/lib/validation";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mock inventory data
@@ -117,25 +119,25 @@ const mockProducts: Product[] = [
 ];
 
 interface InventoryTableProps {
-  filters: {
-    category: string;
-    brand: string;
-    status: string;
-    stockLevel: string;
-    search: string;
-  };
+  filters: InventoryFilters;
   onEditProduct: (product: Product) => void;
   onAdjustStock: (product: Product) => void;
+  onRegisterMovement: (product: Product) => void;
   isLoading?: boolean;
   products?: Product[];
+  obsoleteProductIds?: Set<string>;
+  daysSinceLastSaleById?: Map<string, number>;
 }
 
 export function InventoryTable({
   filters,
   onEditProduct,
   onAdjustStock,
+  onRegisterMovement,
   isLoading = false,
   products = mockProducts,
+  obsoleteProductIds = new Set<string>(),
+  daysSinceLastSaleById = new Map<string, number>(),
 }: InventoryTableProps) {
   const isMobile = useIsMobile();
   const [sortField, setSortField] = useState<keyof Product>("name");
@@ -181,11 +183,27 @@ export function InventoryTable({
       matchesBrand &&
       matchesStatus &&
       matchesSearch &&
-      matchesStockLevel
+      matchesStockLevel &&
+      (filters.obsolescence === "all" || obsoleteProductIds.has(product.id))
     );
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
+    // Priorizar obsoletos cuando no está activo el filtro, colocarlos primeros
+    if (filters.obsolescence === "all") {
+      const aOb = obsoleteProductIds.has(a.id) ? 1 : 0;
+      const bOb = obsoleteProductIds.has(b.id) ? 1 : 0;
+      if (aOb !== bOb) return bOb - aOb;
+    }
+
+    // Si el filtro de obsolescencia está activo, ordenar por días sin venta desc
+    if (filters.obsolescence === "obsolete") {
+      const aDays = daysSinceLastSaleById.get(a.id) ?? 0;
+      const bDays = daysSinceLastSaleById.get(b.id) ?? 0;
+      if (aDays !== bDays) return bDays - aDays;
+    }
+
+    // Fallback al orden seleccionado por el usuario
     const aValue = a[sortField];
     const bValue = b[sortField];
     const direction = sortDirection === "asc" ? 1 : -1;
@@ -244,20 +262,25 @@ export function InventoryTable({
             : ""
         }`}
       >
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              {(stockStatus.status === "out" ||
-                stockStatus.status === "low") && (
-                <AlertTriangle className="h-3 w-3 text-destructive" />
-              )}
-              <h4 className="font-medium text-sm truncate">{product.name}</h4>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span>{product.brand}</span>
-              <span>•</span>
-              <span>{product.sku}</span>
-            </div>
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                {(stockStatus.status === "out" ||
+                  stockStatus.status === "low") && (
+                  <AlertTriangle className="h-3 w-3 text-destructive" />
+                )}
+                <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                {obsoleteProductIds.has(product.id) && (
+                  <Badge variant="destructive" className="text-[10px] px-1 py-0.5">
+                    Obsoleto
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span>{product.brand}</span>
+                <span>•</span>
+                <span>{product.sku}</span>
+              </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -280,10 +303,30 @@ export function InventoryTable({
                 <Settings className="h-3 w-3 mr-2" />
                 Ajustar Stock
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onRegisterMovement(product)}
+                className="text-xs"
+              >
+                <Package className="h-3 w-3 mr-2" />
+                Registrar Movimiento
+              </DropdownMenuItem>
               
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {product.imageUrl && (
+          <div className="mb-3">
+            <AspectRatio ratio={16 / 9}>
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover rounded-md border"
+                loading="lazy"
+              />
+            </AspectRatio>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
@@ -406,6 +449,7 @@ export function InventoryTable({
               <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="py-3">Imagen</TableHead>
                     <TableHead
                       className="cursor-pointer py-3"
                       onClick={() => handleSort("name")}
@@ -463,6 +507,7 @@ export function InventoryTable({
                     </TableHead>
                     <TableHead className="py-3">Estado</TableHead>
                     <TableHead className="py-3">Ubicación</TableHead>
+                    <TableHead className="py-3">Obsolescencia</TableHead>
                     <TableHead className="text-right py-3">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -482,6 +527,20 @@ export function InventoryTable({
                             : ""
                         }`}
                       >
+                        <TableCell className="py-3">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-12 w-12 rounded object-cover border"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="py-3">
                           <div className="flex items-center gap-2">
                             {(stockStatus.status === "out" ||
@@ -532,6 +591,13 @@ export function InventoryTable({
                         <TableCell className="py-3 text-muted-foreground">
                           {product.location}
                         </TableCell>
+                        <TableCell className="py-3">
+                          {obsoleteProductIds.has(product.id) ? (
+                            <Badge variant="destructive">Obsoleto</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -555,6 +621,12 @@ export function InventoryTable({
             >
               <Settings className="h-4 w-4 mr-2" />
               Ajustar Stock
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onRegisterMovement(product)}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Registrar Movimiento
             </DropdownMenuItem>
             
           </DropdownMenuContent>

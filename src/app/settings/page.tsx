@@ -4,21 +4,15 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  api,
-  CompanySettings,
-  Branch,
-  SRISettings,
-  BackupSettings,
-  AuditLog,
-} from "@/lib/api";
+import { api, CompanySettings, Branch, BackupSettings } from "@/lib/api";
 import { LoadingState } from "@/components/settings/loading-state";
 import { CompanySettingsTab } from "@/components/settings/company-settings-tab";
 import { BackupSettingsTab } from "@/components/settings/backup-settings-tab";
-import { AuditLogsTab } from "@/components/settings/audit-logs-tab";
-import { ProtectedRoute } from "@/contexts/auth-context";
+import { useScrollIndicator } from "@/hooks/use-scroll-indicator";
 
 export default function SettingsPage() {
+  const { scrollRef, canScroll, isScrolledLeft, scrollToActiveTab } = useScrollIndicator();
+  const [activeTab, setActiveTab] = useState("company");
   const [companyData, setCompanyData] = useState<CompanySettings>({
     name: "",
     ruc: "",
@@ -28,19 +22,11 @@ export default function SettingsPage() {
   });
 
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [sriSettings, setSriSettings] = useState<SRISettings>({
-    environment: "test",
-    emissionType: "normal",
-    certificateFile: "",
-    certificatePassword: "",
-    isActive: false,
-  });
   const [backupSettings, setBackupSettings] = useState<BackupSettings>({
     lastBackup: "",
     autoBackup: true,
     backupFrequency: "daily",
   });
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -51,25 +37,15 @@ export default function SettingsPage() {
     try {
       setIsLoading(true);
 
-      const [
-        companyData,
-        branchesData,
-        sriSettingsData,
-        backupSettingsData,
-        auditLogsData,
-      ] = await Promise.all([
+      const [companyData, branchesData, backupSettingsData] = await Promise.all([
         api.getCompanySettings(),
         api.getBranches(),
-        api.getSriSettings(),
         api.getBackupSettings(),
-        api.getAuditLogs(),
       ]);
 
       setCompanyData(companyData);
       setBranches(branchesData);
-      setSriSettings(sriSettingsData);
       setBackupSettings(backupSettingsData);
-      setAuditLogs(auditLogsData);
     } catch (error) {
       console.error("Error loading settings:", error);
       toast.error("Error al cargar la configuración");
@@ -83,7 +59,6 @@ export default function SettingsPage() {
   }
 
   return (
-    <ProtectedRoute permission="settings.manage">
     <div className="flex bg-background">
       <div className="flex-1 flex flex-col">
         <main className="flex-1">
@@ -103,11 +78,21 @@ export default function SettingsPage() {
               </div>
             </motion.div>
 
-            <Tabs defaultValue="company" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs 
+              defaultValue="company" 
+              value={activeTab}
+              onValueChange={(value) => {
+                setActiveTab(value);
+                scrollToActiveTab(value);
+              }}
+              className="space-y-6"
+            >
+              <TabsList 
+                ref={scrollRef}
+                className={`w-full overflow-x-auto flex gap-2 min-w-max sm:grid sm:grid-cols-2 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
+              >
                 <TabsTrigger value="company">Empresa</TabsTrigger>
                 <TabsTrigger value="backup">Respaldos</TabsTrigger>
-                <TabsTrigger value="audit">Auditoría</TabsTrigger>
               </TabsList>
 
               <TabsContent value="company" className="space-y-6">
@@ -126,19 +111,12 @@ export default function SettingsPage() {
                   setBackupSettings={setBackupSettings}
                   companyData={companyData}
                   branches={branches}
-                  sriSettings={sriSettings}
-                  auditLogs={auditLogs}
                 />
-              </TabsContent>
-
-              <TabsContent value="audit" className="space-y-6">
-                <AuditLogsTab auditLogs={auditLogs} />
               </TabsContent>
             </Tabs>
           </div>
         </main>
       </div>
     </div>
-    </ProtectedRoute>
   );
 }

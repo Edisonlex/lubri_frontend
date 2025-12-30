@@ -68,8 +68,12 @@ export function DashboardMetrics() {
       return defaultMetrics;
     }
 
+    // Obtener fecha actual y ayer usando useMemo para evitar funciones impuras
+    const now = new Date();
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+
     // Ventas de hoy
-    const todayDate = new Date();
     const todaySales = sales.filter((sale) => {
       const d = new Date(sale.date);
       return d.toDateString() === todayDate.toDateString();
@@ -77,7 +81,6 @@ export function DashboardMetrics() {
     const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.total, 0);
 
     // Ventas de ayer (para comparación)
-    const yesterdayDate = new Date(Date.now() - 86400000);
     const yesterdaySales = sales.filter((sale) => {
       const d = new Date(sale.date);
       return d.toDateString() === yesterdayDate.toDateString();
@@ -109,15 +112,13 @@ export function DashboardMetrics() {
     // Clientes nuevos hoy
     const newCustomersToday = customers.filter((customer) => {
       const regDate = new Date(customer.registrationDate);
-      const today = new Date();
-      return regDate.toDateString() === today.toDateString();
+      return regDate.toDateString() === todayDate.toDateString();
     });
 
     // Clientes nuevos ayer
     const newCustomersYesterday = customers.filter((customer) => {
       const regDate = new Date(customer.registrationDate);
-      const yesterday = new Date(Date.now() - 86400000);
-      return regDate.toDateString() === yesterday.toDateString();
+      return regDate.toDateString() === yesterdayDate.toDateString();
     });
 
     // Calcular cambios porcentuales

@@ -25,10 +25,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGIS, type GeographicEntity } from "@/contexts/gis-context";
-// Replace direct map import with dynamic client-only import to avoid SSR errors during build
+// Replace direct map import with dynamic client-only import to avoid SSR errors
 import dynamic from "next/dynamic";
-const LubriSmartMap = dynamic(
-  () => import("./map").then((m) => m.LubriSmartMap),
+const SidebarAwareMap = dynamic(
+  () => import("./sidebar-aware-map").then((m) => m.SidebarAwareMap),
   { ssr: false }
 );
 import {
@@ -70,16 +70,16 @@ export function AnalyticsMap({ className = "" }: AnalyticsMapProps) {
     null
   );
 
-  // Mock sales data for demonstration
+  // Mock sales data for demonstration - usar valores estáticos para evitar funciones impuras
   const salesData: SalesData[] = useMemo(() => {
-    return customers.map((customer) => ({
+    return customers.map((customer, index) => ({
       location: customer,
-      sales: Math.floor(Math.random() * 10000) + 1000,
-      visits: Math.floor(Math.random() * 50) + 10,
+      sales: 5000 + (index * 1234) % 10000, // Valores pseudoaleatorios basados en índice
+      visits: 20 + (index * 7) % 50, // Valores pseudoaleatorios basados en índice
       lastVisit: new Date(
-        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        new Date().getTime() - ((index * 7) % 30) * 24 * 60 * 60 * 1000
       ).toISOString(),
-      growth: (Math.random() - 0.5) * 40, // -20% to +20%
+      growth: ((index % 40) - 20), // Valores entre -20% y +20%
     }));
   }, [customers]);
 
@@ -318,12 +318,14 @@ export function AnalyticsMap({ className = "" }: AnalyticsMapProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <LubriSmartMap
+            <SidebarAwareMap
               height="400px"
               {...mapConfig}
               className="border-0"
               provider="leaflet"
               onViewEntity={handleViewEntity}
+              title="Análisis Geográfico"
+              showFilters={true}
             />
             <div className="p-3">
               <div className="bg-white border rounded-lg p-3">

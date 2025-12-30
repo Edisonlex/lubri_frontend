@@ -10,19 +10,27 @@ import {
 } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar, Filter } from "lucide-react";
+import { Calendar, Filter, AlertTriangle, Brain } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface AnalyticsHeaderProps {
   selectedPeriod: string;
   onPeriodChange: (period: string) => void;
+  title?: string;
+  subtitle?: string;
+  hideQuickLinks?: boolean;
 }
 
 export function AnalyticsHeader({
   selectedPeriod,
   onPeriodChange,
+  title = "Análisis & Reportes",
+  subtitle = "Dashboards interactivos y reportes avanzados",
+  hideQuickLinks = false,
 }: AnalyticsHeaderProps) {
   const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
 
   return (
     <motion.div
@@ -34,10 +42,10 @@ export function AnalyticsHeader({
       <div className="flex flex-col gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-balance">
-            Análisis & Reportes
+            {title}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Dashboards interactivos y reportes avanzados
+            {subtitle}
           </p>
         </div>
 
@@ -57,6 +65,30 @@ export function AnalyticsHeader({
           </Button>
         </div>
       </div>
+
+      {/* Acceso rápido */}
+      {!hideQuickLinks && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/obsolescence")}
+            className="flex items-center gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            Obsolescencia
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/classification")}
+            className="flex items-center gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            Clasificación
+          </Button>
+        </div>
+      )}
 
       {/* Controles de Filtro */}
       <div

@@ -9,8 +9,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { AuthProvider } from "@/contexts/auth-context";
 import { POSProvider } from "@/contexts/pos-context";
-import { GISProvider } from "@/contexts/gis-context";
 import { AlertProvider } from "@/contexts/alerts-context";
+import { PreferencesProvider } from "@/contexts/preferences-context";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -81,16 +81,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AlertProvider>
-            <AuthProvider>
-              <POSProvider>
-                <GISProvider>
+          <AuthProvider>
+            <PreferencesProvider>
+              <AlertProvider>
+                <POSProvider>
                   <Toaster />
                   {children}
-                </GISProvider>
-              </POSProvider>
-            </AuthProvider>
-          </AlertProvider>
+                </POSProvider>
+              </AlertProvider>
+            </PreferencesProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

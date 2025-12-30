@@ -1,9 +1,13 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import { geocodeAddress, reverseGeocode, batchGeocode, isGeocodingError } from '@/lib/geocoding'
 import { 
+  ecuadorCustomers, 
+  ecuadorSuppliers, 
   getCityCoordinates,
+  ecuadorCustomersEnhanced,
+  ecuadorSuppliersEnhanced,
   getCityCoordinatesEnhanced,
   getCitiesByRegion as getCitiesByRegionFunc,
   getNearbyCities as getNearbyCitiesFunc,
@@ -12,7 +16,6 @@ import {
   sampleEcuadorCoordinates,
   getRegionalStatistics as getRegionalStatisticsFunc
 } from '@/lib/ecuador-mock-data';
-import { api } from '@/lib/api';
 
 // Geographic coordinates for Ecuador locations
 export interface Coordinates {
@@ -85,65 +88,76 @@ export function GISProvider({ children }: { children: ReactNode }) {
   const [zoom, setZoom] = useState<number>(12)
   const [selectedEntity, setSelectedEntity] = useState<GeographicEntity | null>(null)
   
-  const [customers, setCustomers] = useState<GeographicEntity[]>([]);
-  const [suppliers, setSuppliers] = useState<GeographicEntity[]>([]);
-
-  // Load data from API (which is backed by mock-data.ts)
-  useEffect(() => {
-    (async () => {
-      try {
-        const [apiCustomers, apiSuppliers] = await Promise.all([
-          api.getCustomers(),
-          api.getSuppliers(),
-        ]);
-
-        const mappedCustomers: GeographicEntity[] = apiCustomers.map((c: any) => {
-          const coords = getCityCoordinatesEnhanced(c.city || 'Quito');
-          return {
-            id: c.id,
-            name: c.name,
-            type: 'customer',
-            coordinates: coords,
-            address: c.address,
-            city: c.city || 'Quito',
-            status: c.status as 'active' | 'inactive',
-            metadata: {
-              customerType: c.customerType,
-              totalPurchases: c.totalPurchases,
-              lastPurchase: c.lastPurchase,
-              email: c.email,
-              phone: c.phone,
-            },
-          };
-        });
-
-        const mappedSuppliers: GeographicEntity[] = apiSuppliers.map((s: any) => {
-          const coords = getCityCoordinatesEnhanced(s.city || 'Quito');
-          return {
-            id: s.id,
-            name: s.name,
-            type: 'supplier',
-            coordinates: coords,
-            address: s.address,
-            city: s.city || 'Quito',
-            status: s.status as 'active' | 'inactive',
-            metadata: {
-              contactPerson: s.contactPerson,
-              email: s.email,
-              phone: s.phone,
-              rating: s.rating,
-              totalOrders: s.totalOrders,
-            },
-          };
-        });
-
-        setCustomers(mappedCustomers);
-        setSuppliers(mappedSuppliers);
-      } catch (e) {
-        console.error('Error loading GIS data from API', e);
+  // Initialize with sample Ecuador data
+  const [customers, setCustomers] = useState<GeographicEntity[]>(() => [
+    ...ecuadorCustomers.map(customer => ({
+      id: customer.id,
+      name: customer.name,
+      type: 'customer' as const,
+      coordinates: getCityCoordinates(customer.city),
+      address: customer.address,
+      city: customer.city,
+      status: customer.status as 'active' | 'inactive',
+      metadata: {
+        customerType: customer.customerType,
+        totalPurchases: customer.totalPurchases,
+        lastPurchase: customer.lastPurchase,
+        email: customer.email,
+        phone: customer.phone
       }
-    })();
-  }, []);
+    })),
+    ...ecuadorCustomersEnhanced.map(customer => ({
+      id: customer.id,
+      name: customer.name,
+      type: 'customer' as const,
+      coordinates: getCityCoordinatesEnhanced(customer.city),
+      address: customer.address,
+      city: customer.city,
+      status: customer.status as 'active' | 'inactive',
+      metadata: {
+        customerType: customer.customerType,
+        totalPurchases: customer.totalPurchases,
+        lastPurchase: customer.lastPurchase,
+        email: customer.email,
+        phone: customer.phone
+      }
+    }))
+  ]);
+
+  const [suppliers, setSuppliers] = useState<GeographicEntity[]>(() => [
+    ...ecuadorSuppliers.map(supplier => ({
+      id: supplier.id,
+      name: supplier.name,
+      type: 'supplier' as const,
+      coordinates: getCityCoordinates(supplier.city || 'Quito'),
+      address: supplier.address,
+      city: supplier.city || 'Quito',
+      status: supplier.status as 'active' | 'inactive',
+      metadata: {
+        contactPerson: supplier.contactPerson,
+        email: supplier.email,
+        phone: supplier.phone,
+        rating: supplier.rating,
+        totalOrders: supplier.totalOrders
+      }
+    })),
+    ...ecuadorSuppliersEnhanced.map(supplier => ({
+      id: supplier.id,
+      name: supplier.name,
+      type: 'supplier' as const,
+      coordinates: getCityCoordinatesEnhanced(supplier.city || 'Quito'),
+      address: supplier.address,
+      city: supplier.city || 'Quito',
+      status: supplier.status as 'active' | 'inactive',
+      metadata: {
+        contactPerson: supplier.contactPerson,
+        email: supplier.email,
+        phone: supplier.phone,
+        rating: supplier.rating,
+        totalOrders: supplier.totalOrders
+      }
+    }))
+  ]);
 
   const [warehouses, setWarehouses] = useState<GeographicEntity[]>(() => [
     {
@@ -341,52 +355,45 @@ export function GISProvider({ children }: { children: ReactNode }) {
     return getRegionalStatisticsFunc();
   }, []);
 
-  const loadEnhancedEcuadorData = useCallback(async () => {
-    try {
-      const [apiCustomers, apiSuppliers] = await Promise.all([
-        api.getCustomers(),
-        api.getSuppliers(),
-      ]);
+  const loadEnhancedEcuadorData = useCallback(() => {
+    // Load enhanced customer data
+    const enhancedCustomers = [...ecuadorCustomers, ...ecuadorCustomersEnhanced].map(customer => ({
+      id: customer.id,
+      name: customer.name,
+      type: 'customer' as const,
+      coordinates: getCityCoordinatesEnhanced(customer.city),
+      address: customer.address,
+      city: customer.city,
+      status: customer.status as 'active' | 'inactive',
+      metadata: {
+        customerType: customer.customerType,
+        totalPurchases: customer.totalPurchases,
+        lastPurchase: customer.lastPurchase,
+        email: customer.email,
+        phone: customer.phone
+      }
+    }));
 
-      const enhancedCustomers = apiCustomers.map((customer: any) => ({
-        id: customer.id,
-        name: customer.name,
-        type: 'customer' as const,
-        coordinates: getCityCoordinatesEnhanced(customer.city || 'Quito'),
-        address: customer.address,
-        city: customer.city || 'Quito',
-        status: customer.status as 'active' | 'inactive',
-        metadata: {
-          customerType: customer.customerType,
-          totalPurchases: customer.totalPurchases,
-          lastPurchase: customer.lastPurchase,
-          email: customer.email,
-          phone: customer.phone,
-        },
-      }));
+    // Load enhanced supplier data
+    const enhancedSuppliers = [...ecuadorSuppliers, ...ecuadorSuppliersEnhanced].map(supplier => ({
+      id: supplier.id,
+      name: supplier.name,
+      type: 'supplier' as const,
+      coordinates: getCityCoordinatesEnhanced(supplier.city || 'Quito'),
+      address: supplier.address,
+      city: supplier.city || 'Quito',
+      status: supplier.status as 'active' | 'inactive',
+      metadata: {
+        contactPerson: supplier.contactPerson,
+        email: supplier.email,
+        phone: supplier.phone,
+        rating: supplier.rating,
+        totalOrders: supplier.totalOrders
+      }
+    }));
 
-      const enhancedSuppliers = apiSuppliers.map((supplier: any) => ({
-        id: supplier.id,
-        name: supplier.name,
-        type: 'supplier' as const,
-        coordinates: getCityCoordinatesEnhanced(supplier.city || 'Quito'),
-        address: supplier.address,
-        city: supplier.city || 'Quito',
-        status: supplier.status as 'active' | 'inactive',
-        metadata: {
-          contactPerson: supplier.contactPerson,
-          email: supplier.email,
-          phone: supplier.phone,
-          rating: supplier.rating,
-          totalOrders: supplier.totalOrders,
-        },
-      }));
-
-      setCustomers(enhancedCustomers);
-      setSuppliers(enhancedSuppliers);
-    } catch (e) {
-      console.error('Error loading enhanced data', e);
-    }
+    setCustomers(enhancedCustomers);
+    setSuppliers(enhancedSuppliers);
   }, [])
   
   const value: GISContextType = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { customerFiltersSchema } from "@/lib/validation";
 
 interface CustomerFiltersProps {
   filters: {
@@ -26,17 +25,6 @@ interface CustomerFiltersProps {
 
 export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setMounted(true);
-    const handleResize = () => setIsDesktop(window.innerWidth >= 640);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const clearFilters = () => {
     setFilters({
@@ -85,7 +73,8 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
 
       {/* Filters Content - Collapsible on mobile, always visible on desktop */}
       <AnimatePresence>
-        {mounted && (isExpanded || isDesktop) && (
+        {(isExpanded ||
+          (typeof window !== "undefined" && window.innerWidth >= 640)) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -102,28 +91,11 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
                     type="search"
                     placeholder="Buscar clientes..."
                     value={filters.search}
-                    onChange={(e) => {
-                      const next = { ...filters, search: e.target.value.trim() };
-                      const result = customerFiltersSchema.safeParse(next);
-                      if (!result.success) {
-                        const fieldErrors: Record<string, string> = {};
-                        result.error.errors.forEach((err) => {
-                          const key = String(err.path[0] ?? "general");
-                          fieldErrors[key] = err.message;
-                        });
-                        setErrors(fieldErrors);
-                        return;
-                      }
-                      setErrors({});
-                      setFilters(result.data);
-                    }}
+                    onChange={(e) =>
+                      setFilters({ ...filters, search: e.target.value })
+                    }
                     className="w-full pl-7 sm:pl-8 text-xs sm:text-sm bg-background h-8 sm:h-10"
                   />
-                  {errors.search && (
-                    <p className="text-destructive text-xs mt-1">
-                      {errors.search}
-                    </p>
-                  )}
                 </div>
 
                 {/* Customer Type Filter */}
@@ -176,32 +148,36 @@ export function CustomerFilters({ filters, setFilters }: CustomerFiltersProps) {
                 </Select>
 
                 {/* City Filter */}
-                <div className="relative">
-                  <Input
-                    placeholder="Ciudad (escribe para filtrar)"
-                    value={filters.city === "all" ? "" : filters.city}
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
-                      const value = raw
-                        ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
-                        : "all";
-                      const next = { ...filters, city: value };
-                      const result = customerFiltersSchema.safeParse(next);
-                      if (!result.success) {
-                        const fieldErrors: Record<string, string> = {};
-                        result.error.errors.forEach((err) => {
-                          const key = String(err.path[0] ?? "general");
-                          fieldErrors[key] = err.message;
-                        });
-                        setErrors(fieldErrors);
-                        return;
-                      }
-                      setErrors({});
-                      setFilters(result.data);
-                    }}
-                    className="w-full text-xs sm:text-sm h-8 sm:h-10"
-                  />
-                </div>
+                <Select
+                  value={filters.city}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, city: value })
+                  }
+                >
+                  <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
+                    <SelectValue placeholder="Ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs sm:text-sm">
+                      Todas las ciudades
+                    </SelectItem>
+                    <SelectItem value="quito" className="text-xs sm:text-sm">
+                      Quito
+                    </SelectItem>
+                    <SelectItem
+                      value="guayaquil"
+                      className="text-xs sm:text-sm"
+                    >
+                      Guayaquil
+                    </SelectItem>
+                    <SelectItem value="cuenca" className="text-xs sm:text-sm">
+                      Cuenca
+                    </SelectItem>
+                    <SelectItem value="ambato" className="text-xs sm:text-sm">
+                      Ambato
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </motion.div>

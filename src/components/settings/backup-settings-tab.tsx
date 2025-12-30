@@ -12,14 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Database, Download, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  api,
-  BackupSettings,
-  CompanySettings,
-  Branch,
-  SRISettings,
-  AuditLog,
-} from "@/lib/api";
+import { api, BackupSettings, CompanySettings, Branch } from "@/lib/api";
 import { BackupList } from "./backup-list";
 import { RestoreBackup } from "./restore-backup";
 
@@ -36,8 +29,6 @@ interface BackupSettingsTabProps {
   setBackupSettings: (settings: BackupSettings) => void;
   companyData: CompanySettings;
   branches: Branch[];
-  sriSettings: SRISettings;
-  auditLogs: AuditLog[];
 }
 
 export function BackupSettingsTab({
@@ -45,14 +36,13 @@ export function BackupSettingsTab({
   setBackupSettings,
   companyData,
   branches,
-  sriSettings,
-  auditLogs,
 }: BackupSettingsTabProps) {
   const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
   const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(
     null
   );
   const [isGeneratingBackup, setIsGeneratingBackup] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const handleBackup = async () => {
     try {
@@ -61,9 +51,7 @@ export function BackupSettingsTab({
       const backupData = {
         company: companyData,
         branches: branches,
-        sriSettings: sriSettings,
         backupSettings: backupSettings,
-        auditLogs: auditLogs,
         timestamp: new Date().toISOString(),
         version: "1.0.0",
       };
@@ -129,6 +117,61 @@ export function BackupSettingsTab({
     }
   };
 
+  const handleRestore = async () => {
+    if (!selectedBackupFile) return;
+    try {
+      setIsRestoring(true);
+      const text = await selectedBackupFile.text();
+      const data = JSON.parse(text);
+
+      if (!data.company || !data.branches) {
+        toast.error("El respaldo no contiene datos válidos de empresa o sucursales");
+        return;
+      }
+
+      await api.updateCompanySettings(data.company);
+      if (Array.isArray(data.branches)) {
+        for (const b of data.branches as Branch[]) {
+          if (b.id) {
+            try {
+              await api.updateBranch(b.id, b);
+            } catch {
+              // si no existe, lo crea
+              await api.createBranch({
+                name: b.name,
+                address: b.address,
+                phone: b.phone,
+                email: b.email,
+                isMain: b.isMain,
+                status: b.status,
+              });
+            }
+          } else {
+            await api.createBranch({
+              name: b.name,
+              address: b.address,
+              phone: b.phone,
+              email: b.email,
+              isMain: b.isMain,
+              status: b.status,
+            });
+          }
+        }
+      }
+
+      const timestamp = new Date().toISOString();
+      setBackupSettings({ ...backupSettings, lastBackup: timestamp });
+      await api.updateBackupSettings({ ...backupSettings, lastBackup: timestamp });
+
+      toast.success("Datos restaurados desde el respaldo");
+    } catch (error) {
+      console.error("Error restoring backup:", error);
+      toast.error("Error al restaurar el respaldo");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <Card>
@@ -191,9 +234,7 @@ export function BackupSettingsTab({
       <RestoreBackup
         selectedBackupFile={selectedBackupFile}
         setSelectedBackupFile={setSelectedBackupFile}
-        onRestoreBackup={async () => {
-          // Lógica de restauración aquí
-        }}
+        onRestoreBackup={handleRestore}
       />
     </div>
   );

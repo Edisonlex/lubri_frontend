@@ -1,0 +1,259 @@
+/* Enhanced Map Styles */
+
+/* Sidebar-aware positioning - Now handled at layout level */
+/* These styles ensure proper positioning when sidebar padding is applied */
+.leaflet-control-container .leaflet-top.leaflet-left {
+  left: 16px !important;
+  transition: left 0.3s ease;
+}
+
+/* Move zoom controls to bottom right to avoid sidebar collision */
+.leaflet-control-zoom {
+  position: absolute !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+}
+
+/* Scale control positioning */
+.leaflet-control-scale {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 20px !important;
+  margin: 0 !important;
+}
+
+.leaflet-control-attribution {
+  margin-right: 16px !important;
+  margin-bottom: 16px !important;
+}
+
+/* Custom popup styles */
+.enhanced-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.enhanced-popup .leaflet-popup-tip {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Custom marker styles */
+.custom-marker {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.2s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Map controls enhancement */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-zoom a {
+  background: white !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 18px !important;
+  line-height: 24px !important;
+  transition: all 0.2s ease;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f9fafb !important;
+  color: #111827 !important;
+}
+
+.leaflet-control-zoom a:first-child {
+  border-radius: 6px 6px 0 0 !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-radius: 0 0 6px 6px !important;
+}
+
+/* Map container responsive adjustments */
+.map-with-sidebar {
+  position: relative;
+  overflow: hidden;
+}
+
+.map-with-sidebar .leaflet-container {
+  border-radius: 8px;
+}
+
+/* Floating panels positioning */
+.floating-stats-panel {
+  position: absolute;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .enhanced-popup .leaflet-popup-content-wrapper {
+    background: #1f2937;
+    color: #f9fafb;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .enhanced-popup .leaflet-popup-tip {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .leaflet-control-zoom a {
+    background: #374151 !important;
+    color: #f9fafb !important;
+    border-color: #4b5563 !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: #4b5563 !important;
+    color: white !important;
+  }
+}
+
+/* Responsive map styles */
+@media (max-width: 640px) {
+  .leaflet-control-zoom {
+    transform: scale(0.85);
+    bottom: 15px !important;
+    right: 15px !important;
+  }
+  
+  .leaflet-control-scale {
+    transform: scale(0.85);
+    bottom: 15px !important;
+    left: 15px !important;
+  }
+  
+  .enhanced-popup .leaflet-popup-content-wrapper {
+    max-width: 280px;
+  }
+  
+  .floating-stats-panel {
+    max-width: 180px !important;
+    font-size: 0.7rem;
+    padding: 0.5rem !important;
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+  
+  /* Hide attribution on very small screens */
+  .leaflet-control-attribution {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .leaflet-control-container .leaflet-top.leaflet-left {
+    left: 16px !important;
+  }
+  
+  .floating-stats-panel {
+    max-width: 200px !important;
+    font-size: 0.75rem;
+  }
+  
+  .leaflet-control-zoom {
+    bottom: 20px !important;
+    right: 20px !important;
+  }
+  
+  .leaflet-control-scale {
+    bottom: 20px !important;
+    left: 20px !important;
+  }
+}
+
+/* Animation for map loading */
+@keyframes mapFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map-container {
+  animation: mapFadeIn 0.3s ease-out;
+}
+
+/* Custom tile layer styles for better contrast */
+.leaflet-tile-pane {
+  filter: contrast(1.05) brightness(1.02);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .leaflet-tile-pane {
+    filter: contrast(1.2) brightness(1.1);
+  }
+  
+  .custom-marker {
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1280px) {
+  .floating-stats-panel {
+    max-width: 250px !important;
+    font-size: 0.875rem;
+  }
+  
+  .leaflet-control-zoom {
+    transform: scale(1.1);
+    bottom: 25px !important;
+    right: 25px !important;
+  }
+  
+  .leaflet-control-scale {
+    transform: scale(1.1);
+    bottom: 25px !important;
+    left: 25px !important;
+  }
+}
+
+/* Ultra-wide screen support */
+@media (min-width: 1536px) {
+  .floating-stats-panel {
+    max-width: 280px !important;
+    padding: 1rem !important;
+  }
+  
+  [data-sidebar][data-collapsed="false"] ~ * .leaflet-control-container .leaflet-top.leaflet-left {
+    left: 320px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .custom-marker {
+    transition: none;
+  }
+  
+  .leaflet-control-zoom a {
+    transition: none;
+  }
+  
+  .map-container {
+    animation: none;
+  }
+  
+  .floating-stats-panel {
+    transition: none;
+  }
+}

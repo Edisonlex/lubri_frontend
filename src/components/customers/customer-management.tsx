@@ -9,16 +9,19 @@ import { Customer } from "@/lib/api";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerMap } from "@/components/gis/customer-map";
+import { generateCoordinatesNearCity } from "@/lib/ecuador-mock-data";
 import type { GeographicEntity } from "@/contexts/gis-context";
 import { exportCustomersToPDF, exportCustomersToExcel, prepareCustomersData } from "@/lib/export-utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Download, FileText, Table as TableIcon, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useGIS } from "@/contexts/gis-context";
+import { GISProvider } from "@/contexts/gis-context";
 import { usePOS } from "@/contexts/pos-context";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export function CustomerManagement() {
-  const { customers: posCustomers, loadingCustomers, refreshCustomers } = usePOS();
+  const { customers: gisCustomers } = useGIS();
+  const { customers: posCustomers } = usePOS();
   const [customers, setCustomers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     customerType: "all",
@@ -34,38 +37,32 @@ export function CustomerManagement() {
     null
   );
 
-  // Cargar clientes desde el contexto y sincronizar estado local
+  // Sync POS customers with local state
   useEffect(() => {
-    setCustomers(posCustomers);
+    if (posCustomers && posCustomers.length > 0) {
+      setCustomers(posCustomers);
+    }
   }, [posCustomers]);
 
-  useEffect(() => {
-    refreshCustomers();
-  }, [refreshCustomers]);
-
-  const handleViewCustomerFromMap = (entity: GeographicEntity) => {
-    const mappedCustomer: Customer = {
-      id: entity.id,
-      name: entity.name,
-      email: (entity.metadata?.email as string) || "",
-      phone: (entity.metadata?.phone as string) || "",
-      address: entity.address,
-      city: entity.city,
-      idNumber: "",
-      customerType: (entity.metadata?.customerType as "individual" | "business") || "individual",
-      businessName: entity.metadata?.businessName as string | undefined,
-      ruc: entity.metadata?.ruc as string | undefined,
-      vehicles: [],
-      totalPurchases: (entity.metadata?.totalPurchases as number) || 0,
-      lastPurchase: (entity.metadata?.lastPurchase as string) || "",
-      registrationDate: "",
-      status: entity.status || "active",
-      notes: "",
-      preferredContact: "phone",
-    };
-    setSelectedCustomer(mappedCustomer);
-    setIsDetailOpen(true);
-  };
+  // Convertir clientes POS a entidades geográficas centradas en La Maná
+  const geoCustomersFromPOS: GeographicEntity[] = (customers || []).map((c) => {
+    const coords = generateCoordinatesNearCity("La Maná", 5);
+    return {
+      id: c.id,
+      name: c.name,
+      type: "customer",
+      coordinates: coords,
+      address: c.address,
+      city: "La Maná",
+      status: c.status,
+      metadata: {
+        email: c.email,
+        phone: c.phone,
+        customerType: c.customerType,
+        totalPurchases: c.totalPurchases,
+      },
+    } as GeographicEntity;
+  });
 
   const handleExportCustomersPDF = () => {
     const { headers, data } = prepareCustomersData(customers as any[]);
@@ -175,40 +172,25 @@ export function CustomerManagement() {
         </TabsList>
 
         <TabsContent value="table" className="space-y-6">
-          {loadingCustomers && (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-48" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-64 w-full" />
-            </div>
-          )}
           {/* Filtros */}
-          {!loadingCustomers && (
-            <CustomerFilters filters={filters} setFilters={setFilters} />
-          )}
+          <CustomerFilters filters={filters} setFilters={setFilters} />
 
           {/* Tabla */}
-          {!loadingCustomers && (
-            <CustomersTable
-              customers={customers}
-              filters={filters}
-              onViewCustomer={handleViewCustomer}
-              onEditCustomer={handleEditCustomer}
-              onMaintenanceReminder={(customer) => {
-                setSelectedCustomer(customer);
-                setIsReminderOpen(true);
-              }}
-            />
-          )}
+          <CustomersTable
+            customers={customers}
+            filters={filters}
+            onViewCustomer={handleViewCustomer}
+            onEditCustomer={handleEditCustomer}
+            onMaintenanceReminder={(customer) => {
+              setSelectedCustomer(customer);
+              setIsReminderOpen(true);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="map" className="space-y-6">
           {/* Mapa de clientes con GIS */}
-          {!loadingCustomers ? (
-            <CustomerMap onViewEntity={handleViewCustomerFromMap} />
-          ) : (
-            <Skeleton className="h-[400px] w-full" />
-          )}
+          <CustomerMap customers={geoCustomersFromPOS} />
         </TabsContent>
       </Tabs>
 
