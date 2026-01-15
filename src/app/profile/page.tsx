@@ -8,7 +8,7 @@ import { api, User as UserType, Sale, AuditLog } from "@/lib/api";
 import { useTheme } from "next-themes";
 import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { PreferencesForm } from "@/components/profile/PreferencesForm";
-import { usePreferences } from "@/contexts/preferences-context";
+import { usePreferences, Preferences } from "@/contexts/preferences-context";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { SecurityForm } from "@/components/profile/SecurityForm";
@@ -81,10 +81,10 @@ export default function ProfilePage() {
   // Sincronizar el tema de las preferencias con el tema actual
   useEffect(() => {
     if (mounted && theme) {
-      setPreferences((prev) => ({
-        ...prev,
+      setPreferences({
+        ...preferences,
         theme: theme,
-      }));
+      });
     }
   }, [theme, mounted]);
 

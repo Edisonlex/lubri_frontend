@@ -175,6 +175,55 @@ export function CustomerSelector() {
                   </div>
                   <div className="max-h-72 overflow-y-auto space-y-2">
                     <AnimatePresence>
+                      {("consumidor final cf".includes(searchQuery.toLowerCase()) || searchQuery.trim() === "") && (
+                        <motion.div
+                          key="cf-item"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent hover:border-accent-foreground/20 transition-all duration-200 group"
+                          onClick={() => {
+                            setSelectedCustomer({
+                              id: "CF",
+                              name: "Consumidor Final",
+                              email: "",
+                              phone: "",
+                              address: "",
+                              city: "",
+                              idNumber: "9999999999",
+                              customerType: "individual",
+                              vehicles: [],
+                              totalPurchases: 0,
+                              lastPurchase: "",
+                              registrationDate: new Date().toISOString().split("T")[0],
+                              status: "active",
+                              notes: "",
+                              preferredContact: "phone",
+                            });
+                            setShowCustomerList(false);
+                            setSearchQuery("");
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-foreground truncate">
+                                  Consumidor Final
+                                </p>
+                                <Badge variant="outline" className="text-xs">
+                                  Individual
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Usar sin datos del cliente
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
                       {filteredCustomers.map((customer) => (
                         <motion.div
                           key={customer.id}

@@ -127,7 +127,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     try {
-      // Verificar credenciales
+      if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+        const auth = await api.authLogin({ email, password });
+        const userRole = roleMapping[String(auth.user.role).toLowerCase()] || "cashier";
+        const userWithMappedRole = {
+          id: auth.user.id,
+          name: auth.user.name,
+          email: auth.user.email,
+          role: userRole,
+          avatar: "/placeholder-user.jpg",
+          status: auth.user.status,
+        };
+        setUser(userWithMappedRole);
+        document.cookie = `user=${encodeURIComponent(JSON.stringify(userWithMappedRole))}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+        document.cookie = `token=${auth.token}; path=/; max-age=${auth.expiresIn}; SameSite=Strict`;
+        setIsLoading(false);
+        if (userRole === "cashier") {
+          router.push("/pos");
+        } else if (userRole === "technician") {
+          router.push("/dashboard");
+        } else {
+          router.push("/dashboard");
+        }
+        return true;
+      }
+
       const credentials = loginCredentials.find(
         (cred) => cred.email === email && cred.password === password
       );
@@ -138,7 +162,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // Obtener datos del usuario desde la API
       const users = await api.getUsers();
       const foundUser = users.find((u) => u.id === credentials.userId);
 
@@ -148,9 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // Mapear el rol correctamente
       const userRole = roleMapping[foundUser.role.toLowerCase()] || "cashier";
-
       const userWithMappedRole = {
         id: foundUser.id,
         name: foundUser.name,
@@ -159,11 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: "/placeholder-user.jpg",
         status: foundUser.status,
       };
-
       setUser(userWithMappedRole);
-      document.cookie = `user=${encodeURIComponent(
-        JSON.stringify(userWithMappedRole)
-      )}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(userWithMappedRole))}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
       setIsLoading(false);
       if (userRole === "cashier") {
         router.push("/pos");

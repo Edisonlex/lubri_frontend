@@ -100,6 +100,7 @@ export function ProductsChart() {
                   tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
                   tickFormatter={(value) => `${value}`}
+                  domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax * 1.2))]}
                 />
                 <Tooltip
                   contentStyle={{

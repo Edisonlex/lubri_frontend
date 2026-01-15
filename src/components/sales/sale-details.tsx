@@ -1,6 +1,7 @@
 // src/components/ventas/sale-details.tsx
 "use client";
 
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,8 @@ import {
   X,
   Printer,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface SaleDetailsProps {
   sale: Sale | null;
@@ -53,6 +56,9 @@ export function SaleDetails({
         return "outline";
     }
   };
+
+  const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -146,11 +152,12 @@ export function SaleDetails({
                     <div>
                       <p className="font-medium">{item.productName}</p>
                       <p className="text-sm text-muted-foreground">
-                        ${item.unitPrice.toFixed(2)} x {item.quantity} unidades
+                        {formatCurrency(item.unitPrice)} x {item.quantity}{" "}
+                        unidades
                       </p>
                     </div>
                   </div>
-                  <p className="font-bold">${item.subtotal.toFixed(2)}</p>
+                  <p className="font-bold">{formatCurrency(item.subtotal)}</p>
                 </div>
               ))}
             </div>
@@ -161,16 +168,18 @@ export function SaleDetails({
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal:</span>
-              <span className="font-medium">${sale.subtotal.toFixed(2)}</span>
+              <span className="font-medium">
+                {formatCurrency(sale.subtotal)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">IVA (12%):</span>
-              <span className="font-medium">${sale.tax.toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(sale.tax)}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-bold text-lg">
               <span>Total:</span>
-              <span className="text-primary">${sale.total.toFixed(2)}</span>
+              <span className="text-primary">{formatCurrency(sale.total)}</span>
             </div>
           </div>
 
@@ -188,23 +197,68 @@ export function SaleDetails({
           )}
 
           {/* Acciones */}
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              <X className="h-4 w-4 mr-2" />
-              Cerrar
-            </Button>
-            <Button onClick={() => onDownloadInvoice(sale)} className="flex-1">
-              <Download className="h-4 w-4 mr-2" />
-              Descargar Factura
-            </Button>
-            <Button
-              onClick={() => onPrintInvoice(sale)}
-              variant="secondary"
-              className="flex-1"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
+          <div className="sticky bottom-0 z-10 bg-card/95 backdrop-blur-sm border-t pt-4 pb-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={onClose} className="sm:flex-1">
+                <X className="h-4 w-4 mr-2" />
+                Cerrar
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    setDownloading(true);
+                    await onDownloadInvoice(sale);
+                  } finally {
+                    setDownloading(false);
+                  }
+                }}
+                className="sm:flex-1"
+                disabled={downloading || printing}
+              >
+                {downloading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                    className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2"
+                  />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Descargar Factura
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    setPrinting(true);
+                    await onPrintInvoice(sale);
+                  } finally {
+                    setPrinting(false);
+                  }
+                }}
+                variant="secondary"
+                className="sm:flex-1"
+                disabled={printing || downloading}
+              >
+                {printing ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                    className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full mr-2"
+                  />
+                ) : (
+                  <Printer className="h-4 w-4 mr-2" />
+                )}
+                Imprimir
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UserFormData, roles, statuses } from "./types";
+import { UserFormData, roles, statuses, convertApiUserToFormData } from "./types";
 import { userFormSchema } from "@/lib/validation";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
 
 interface UserFormProps {
   isOpen: boolean;
@@ -46,28 +47,30 @@ export function UserForm({
   isLoading = false,
 }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const schema = userFormSchema({ requirePassword: !editingUser });
+  const form = useZodLiveForm(schema, initialFormData);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (editingUser) {
+      const filled = convertApiUserToFormData(editingUser);
+      form.setData({ ...initialFormData, ...filled });
+    } else {
+      form.reset(initialFormData);
+    }
+  }, [editingUser, isOpen]);
+
+  useEffect(() => {}, [editingUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = userFormSchema({ requirePassword: !editingUser }).safeParse(
-      formData
-    );
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        const key = String(err.path[0] ?? "general");
-        fieldErrors[key] = err.message;
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-    setErrors({});
-    await onSubmit(result.data);
+    const res = form.validate();
+    if (!res.ok) return;
+    await onSubmit(res.value as UserFormData);
   };
 
   const handleClose = () => {
-    setFormData(initialFormData);
+    form.reset(initialFormData);
     onClose();
   };
 
@@ -88,51 +91,57 @@ export function UserForm({
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre completo</Label>
+              <p className="text-muted-foreground text-xs">Mínimo 2 caracteres</p>
               <Input
                 id="name"
-                value={formData.name}
+                value={form.data.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  form.setField("name", e.target.value)
                 }
                 placeholder="Ingresa el nombre completo"
                 required
+                {...form.ariaProps("name", "name-help")}
               />
-              {errors.name && (
-                <p className="text-destructive text-sm">{errors.name}</p>
+              {form.errors.name && (
+                <p className="text-destructive text-sm">{form.errors.name}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
+              <p className="text-muted-foreground text-xs">Formato de correo válido</p>
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
+                value={form.data.email}
                 onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
+                  form.setField("email", e.target.value)
                 }
                 placeholder="usuario@ejemplo.com"
                 required
+                {...form.ariaProps("email", "email-help")}
               />
-              {errors.email && (
-                <p className="text-destructive text-sm">{errors.email}</p>
+              {form.errors.email && (
+                <p className="text-destructive text-sm">{form.errors.email}</p>
               )}
             </div>
             {!editingUser && (
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
+                <p className="text-muted-foreground text-xs">Mínimo 6 caracteres</p>
                 <Input
                   id="password"
                   type="password"
-                  value={formData.password}
+                  value={form.data.password}
                   onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
+                    form.setField("password", e.target.value)
                   }
                   placeholder="Contraseña temporal"
                   required
+                  {...form.ariaProps("password", "password-help")}
                 />
-                {errors.password && (
+                {form.errors.password && (
                   <p className="text-destructive text-sm">
-                    {errors.password}
+                    {form.errors.password}
                   </p>
                 )}
               </div>
@@ -140,10 +149,11 @@ export function UserForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="role">Rol</Label>
+                <p className="text-muted-foreground text-xs">Selecciona el rol del usuario</p>
                 <Select
-                  value={formData.role}
+                  value={form.data.role}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, role: value })
+                    form.setField("role", value)
                   }
                 >
                   <SelectTrigger>
@@ -157,16 +167,17 @@ export function UserForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.role && (
-                  <p className="text-destructive text-sm">{errors.role}</p>
+                {form.errors.role && (
+                  <p className="text-destructive text-sm">{form.errors.role}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
+                <p className="text-muted-foreground text-xs">Activo o Inactivo</p>
                 <Select
-                  value={formData.status}
+                  value={form.data.status}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, status: value })
+                    form.setField("status", value)
                   }
                 >
                   <SelectTrigger>
@@ -180,8 +191,8 @@ export function UserForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.status && (
-                  <p className="text-destructive text-sm">{errors.status}</p>
+                {form.errors.status && (
+                  <p className="text-destructive text-sm">{form.errors.status}</p>
                 )}
               </div>
             </div>

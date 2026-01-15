@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
@@ -43,6 +43,8 @@ import {
 import { Plus, Edit, Trash2, Search, UserCheck, UserX, X } from "lucide-react"; // Agregué X icon
 import { toast } from "sonner";
 import { usePOS } from "@/contexts/pos-context";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
 
 // Tipos para el formulario (interfaz de usuario)
 interface UserFormData {
@@ -148,6 +150,59 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
   const [isFormLoading, setIsFormLoading] = useState(false); // Estado para carga del formulario
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: string;
+    status?: string;
+  }>({});
+  const [isValid, setIsValid] = useState(false);
+
+  useEffect(() => {
+    const roleValues = roles.map((r) => r.value);
+    const statusValues = statuses.map((s) => s.value);
+
+    const baseSchema = {
+      name: z
+        .string()
+        .min(3, { message: "Mínimo 3 caracteres" })
+        .max(60, { message: "Máximo 60 caracteres" })
+        .regex(/^[A-Za-zÁÉÍÓÚÑáéíóúñ ]+$/, {
+          message: "Solo letras y espacios",
+        }),
+      email: z.string().email({ message: "Email inválido" }),
+      role: z.enum(roleValues as [string, ...string[]], {
+        message: "Seleccione un rol válido",
+      }),
+      status: z.enum(statusValues as [string, ...string[]], {
+        message: "Seleccione un estado válido",
+      }),
+    };
+
+    const schema = editingUser
+      ? z.object(baseSchema)
+      : z.object({
+          ...baseSchema,
+          password: z
+            .string()
+            .min(6, { message: "Mínimo 6 caracteres" }),
+        });
+
+    const result = schema.safeParse(formData);
+    if (result.success) {
+      setErrors({});
+      setIsValid(true);
+    } else {
+      const fieldErrors: any = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0] as keyof typeof formData;
+        fieldErrors[path] ||= issue.message;
+      });
+      setErrors(fieldErrors);
+      setIsValid(false);
+    }
+  }, [formData, editingUser]);
 
   // Función para limpiar todos los filtros
   const clearAllFilters = () => {
@@ -313,8 +368,16 @@ export function UserManagement() {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     placeholder="Ingresa el nombre completo"
-                    required
+                    aria-invalid={!!errors.name}
                   />
+                  <p
+                    className={cn(
+                      "text-xs",
+                      errors.name ? "text-destructive" : "text-muted-foreground"
+                    )}
+                  >
+                    {errors.name || "Solo letras y espacios. Mínimo 3 caracteres"}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -326,8 +389,16 @@ export function UserManagement() {
                       setFormData({ ...formData, email: e.target.value })
                     }
                     placeholder="usuario@ejemplo.com"
-                    required
+                    aria-invalid={!!errors.email}
                   />
+                  <p
+                    className={cn(
+                      "text-xs",
+                      errors.email ? "text-destructive" : "text-muted-foreground"
+                    )}
+                  >
+                    {errors.email || "Debe ser un email válido"}
+                  </p>
                 </div>
                 {!editingUser && (
                   <div className="space-y-2">
@@ -340,8 +411,16 @@ export function UserManagement() {
                         setFormData({ ...formData, password: e.target.value })
                       }
                       placeholder="Contraseña temporal"
-                      required
+                      aria-invalid={!!errors.password}
                     />
+                    <p
+                      className={cn(
+                        "text-xs",
+                        errors.password ? "text-destructive" : "text-muted-foreground"
+                      )}
+                    >
+                      {errors.password || "Mínimo 6 caracteres"}
+                    </p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
@@ -364,6 +443,14 @@ export function UserManagement() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p
+                      className={cn(
+                        "text-xs",
+                        errors.role ? "text-destructive" : "text-muted-foreground"
+                      )}
+                    >
+                      {errors.role || "Seleccione un rol"}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
@@ -384,6 +471,14 @@ export function UserManagement() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p
+                      className={cn(
+                        "text-xs",
+                        errors.status ? "text-destructive" : "text-muted-foreground"
+                      )}
+                    >
+                      {errors.status || "Seleccione el estado"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -395,7 +490,7 @@ export function UserManagement() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isFormLoading}>
+                <Button type="submit" disabled={isFormLoading || !isValid}>
                   {isFormLoading
                     ? "Guardando..."
                     : editingUser

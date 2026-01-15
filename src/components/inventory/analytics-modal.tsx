@@ -20,6 +20,7 @@ import {
 import type { Product, Sale } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { reportsService } from "@/lib/reports-service";
 
 interface AnalyticsModalProps {
   products: Product[];
@@ -52,11 +53,11 @@ export function AnalyticsModal({
         setIsLoading(true);
         try {
           // Cargar datos de análisis del inventario
-          const inventoryAnalytics = await api.getInventoryAnalytics();
-          const salesAnalytics = await api.getSalesAnalytics();
-          const metrics = await api.getObsolescenceMetrics();
-          const classification = await api.getProductClassification();
-          const sales: Sale[] = await api.getSales();
+          const inventoryAnalytics = await reportsService.getInventoryAnalytics();
+          const salesAnalytics = await reportsService.getSalesAnalytics();
+          const metrics = await reportsService.getObsolescenceMetrics();
+          const classification = await reportsService.getProductClassification();
+          const sales: Sale[] = await reportsService.getSales();
 
           setAnalyticsData(inventoryAnalytics);
           setSalesData(salesAnalytics);
@@ -149,11 +150,11 @@ export function AnalyticsModal({
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      const inventoryAnalytics = await api.getInventoryAnalytics();
-      const salesAnalytics = await api.getSalesAnalytics();
-      const metrics = await api.getObsolescenceMetrics();
-      const classification = await api.getProductClassification();
-      const sales: Sale[] = await api.getSales();
+      const inventoryAnalytics = await reportsService.getInventoryAnalytics();
+      const salesAnalytics = await reportsService.getSalesAnalytics();
+      const metrics = await reportsService.getObsolescenceMetrics();
+      const classification = await reportsService.getProductClassification();
+      const sales: Sale[] = await reportsService.getSales();
 
       setAnalyticsData(inventoryAnalytics);
       setSalesData(salesAnalytics);

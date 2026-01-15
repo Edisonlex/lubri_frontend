@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PriceOptimization } from "@/components/analytics/price-optimization";
 import { api } from "@/lib/api";
+import { reportsService } from "@/lib/reports-service";
 import { LoadingState } from "@/components/analytics/loading-state";
 import { AnalyticsHeader } from "@/components/analytics/header";
 import { SalesOverview } from "@/components/analytics/sales-overview";
@@ -68,34 +69,19 @@ export default function AnalyticsPage() {
         inventoryAnalytics,
         demandForecast,
         customersData,
+        salesList,
+        productsList,
       ] = await Promise.all([
-        api.getSalesAnalytics(),
-        api.getInventoryAnalytics(),
-        api.getDemandForecast(),
-        api.getCustomers(),
+        reportsService.getSalesAnalytics(),
+        reportsService.getInventoryAnalytics(),
+        reportsService.getDemandForecast(), // Ahora usa el servicio con fallback
+        reportsService.getCustomers(), // Ahora usa el servicio con fallback
+        api.getSales(),
+        api.getProducts(),
       ]);
 
-      // Procesar datos (código existente)
-      const processedSalesData = Object.entries(
-        salesAnalytics.salesByMonth
-      ).map(([month, ventas], index) => ({
-        month,
-        ventas: ventas as number,
-        productos: Math.floor((ventas as number) / 40),
-      }));
-
-      const processedCategoryData = Object.entries(
-        salesAnalytics.salesByCategory
-      ).map(([name, value], index) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        value: Math.round(
-          ((value as number) / salesAnalytics.totalRevenue) * 100
-        ),
-        color: categoryColors[index % categoryColors.length],
-      }));
-
-      const currentMonth = new Date().getMonth();
-      const months = [
+      // Construir serie mensual dinámica desde ventas reales
+      const monthNames = [
         "Ene",
         "Feb",
         "Mar",
@@ -110,25 +96,73 @@ export default function AnalyticsPage() {
         "Dic",
       ];
 
-      const processedForecastData = months
-        .slice(currentMonth, currentMonth + 4)
-        .map((month, index) => ({
-          month,
-          actual:
-            index === 0
-              ? (salesAnalytics.salesByMonth[
-                  month as keyof typeof salesAnalytics.salesByMonth
-                ] as number)
-              : null,
-          forecast: Math.floor(
-            (salesAnalytics.totalRevenue / 6) * (1 + index * 0.1)
-          ),
+      const now = new Date();
+      const lastMonths = Array.from({ length: 6 }).map((_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        return { key: `${d.getFullYear()}-${d.getMonth() + 1}`, label: monthNames[d.getMonth()] };
+      });
+
+      const monthlyTotals: Record<string, { ventas: number; productos: number }> = {};
+      for (const m of lastMonths) monthlyTotals[m.key] = { ventas: 0, productos: 0 };
+
+      salesList.forEach((sale) => {
+        const d = new Date(sale.date);
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+        if (monthlyTotals[key]) {
+          monthlyTotals[key].ventas += sale.total;
+          monthlyTotals[key].productos += sale.items.reduce((acc: number, it: any) => acc + (it.quantity || 0), 0);
+        }
+      });
+
+      const processedSalesData = lastMonths.map(({ key, label }) => ({
+        month: label,
+        ventas: monthlyTotals[key]?.ventas || 0,
+        productos: monthlyTotals[key]?.productos || 0,
+      }));
+
+      // Construir distribución por categoría en tiempo real
+      const productCategoryMap = new Map<string, string>();
+      productsList.forEach((p: any) => productCategoryMap.set(p.id, p.category || "Otros"));
+
+      const categoryTotals: Record<string, number> = {};
+      let totalRevenue = 0;
+      salesList.forEach((sale) => {
+        totalRevenue += sale.total;
+        sale.items.forEach((it: any) => {
+          const cat = productCategoryMap.get(it.productId) || "Otros";
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + ((it.subtotal ?? (it.quantity * (it.unitPrice ?? 0))) || 0);
+        });
+      });
+
+      const processedCategoryData = Object.entries(categoryTotals)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value], index) => ({
+          name,
+          value: totalRevenue > 0 ? Math.round((value / totalRevenue) * 100) : 0,
+          color: categoryColors[index % categoryColors.length],
         }));
+
+      // Pronóstico simple basado en tendencia de los últimos meses
+      const recent = processedSalesData.slice(-4);
+      const processedForecastData = recent.map((r, idx) => ({
+        month: r.month,
+        actual: idx === 0 ? r.ventas : null,
+        forecast: Math.floor((r.ventas || 0) * (1 + (idx + 1) * 0.08)),
+      }));
 
       setSalesData(processedSalesData);
       setCategoryData(processedCategoryData);
       setForecastData(processedForecastData);
-      setAnalyticsData(salesAnalytics);
+      setAnalyticsData({
+        totalSales: salesList.length,
+        totalRevenue: salesList.reduce((sum: number, s: any) => sum + (s.total || 0), 0),
+        averageTicket:
+          salesList.length > 0
+            ? salesList.reduce((sum: number, s: any) => sum + (s.total || 0), 0) / salesList.length
+            : 0,
+        paymentMethods: salesAnalytics.paymentMethods,
+      });
       setCustomers(customersData);
     } catch (error) {
       console.error("Error loading analytics data:", error);
@@ -139,6 +173,8 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     loadAnalyticsData();
+    const interval = setInterval(loadAnalyticsData, 30000);
+    return () => clearInterval(interval);
   }, [selectedPeriod]);
 
   // active tab handled in child wrapper with Suspense

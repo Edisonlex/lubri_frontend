@@ -32,6 +32,8 @@ import {
 } from "./invoice-generator";
 import { usePOS } from "@/contexts/pos-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
+import { cardPaymentSchema, transferPaymentSchema } from "@/lib/validation";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -54,15 +56,16 @@ export function PaymentModal({
   const [cashReceived, setCashReceived] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("pending");
-  const [cardDetails, setCardDetails] = useState({
+  const cardForm = useZodLiveForm(cardPaymentSchema, {
     number: "",
     expiry: "",
     cvv: "",
     holder: "",
   });
-  const [transferDetails, setTransferDetails] = useState({
-    reference: "",
+  const transferForm = useZodLiveForm(transferPaymentSchema, {
     bank: "",
+    reference: "",
+    dunaCode: "",
   });
 
   const totalWithTax = cartTotal * 1.12;
@@ -70,6 +73,9 @@ export function PaymentModal({
     paymentMethod === "cash"
       ? Math.max(0, Number.parseFloat(cashReceived || "0") - totalWithTax)
       : 0;
+
+  const isCardValid = cardPaymentSchema.safeParse(cardForm.data).success;
+  const isTransferValid = transferPaymentSchema.safeParse(transferForm.data).success;
 
   const simulatePaymentProcessing = async (
     method: PaymentMethod
@@ -91,10 +97,24 @@ export function PaymentModal({
       return;
     }
 
-    if (!selectedCustomer) {
-      toast.error("Debe seleccionar un cliente antes de procesar el pago");
-      return;
-    }
+    const consumerFinal = {
+      id: "CF",
+      name: "Consumidor Final",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      idNumber: "9999999999",
+      customerType: "individual" as const,
+      vehicles: [],
+      totalPurchases: 0,
+      lastPurchase: "",
+      registrationDate: new Date().toISOString().split("T")[0],
+      status: "active" as const,
+      notes: "",
+      preferredContact: "phone" as const,
+    };
+    const customerForSale = selectedCustomer || consumerFinal;
 
     setIsProcessing(true);
     setPaymentStatus("processing");
@@ -108,10 +128,20 @@ export function PaymentModal({
           paymentSuccess = true; // Efectivo siempre funciona
           break;
         case "card":
-          paymentSuccess = await simulatePaymentProcessing("card");
+          if (!cardForm.validate().ok) {
+            toast.error("Revisa los datos de la tarjeta");
+            paymentSuccess = false;
+          } else {
+            paymentSuccess = await simulatePaymentProcessing("card");
+          }
           break;
         case "transfer":
-          paymentSuccess = await simulatePaymentProcessing("transfer");
+          if (!transferForm.validate().ok) {
+            toast.error("Revisa los datos de la transferencia");
+            paymentSuccess = false;
+          } else {
+            paymentSuccess = await simulatePaymentProcessing("transfer");
+          }
           break;
       }
 
@@ -121,8 +151,8 @@ export function PaymentModal({
 
       // Crear la venta en el sistema
       const saleData = {
-        customerId: selectedCustomer.id,
-        customerName: selectedCustomer.name,
+        customerId: selectedCustomer ? selectedCustomer.id : null,
+        customerName: customerForSale.name,
         items: cartItems.map((item) => ({
           productId: item.id,
           productName: item.name,
@@ -142,7 +172,7 @@ export function PaymentModal({
         userId: "current-user-id",
         notes:
           paymentMethod === "transfer"
-            ? `Referencia: ${transferDetails.reference}`
+            ? `Referencia: ${transferForm.data.reference}`
             : "",
       };
 
@@ -162,7 +192,7 @@ export function PaymentModal({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        customer: selectedCustomer,
+        customer: customerForSale,
         items: cartItems,
         subtotal: cartTotal,
         tax: cartTotal * 0.12,
@@ -280,15 +310,16 @@ export function PaymentModal({
               <Input
                 id="cardNumber"
                 placeholder="1234 5678 9012 3456"
-                value={cardDetails.number}
-                onChange={(e) =>
-                  setCardDetails((prev) => ({
-                    ...prev,
-                    number: e.target.value,
-                  }))
-                }
+                value={cardForm.data.number}
+                onChange={(e) => cardForm.setField("number", e.target.value)}
                 className="h-10 sm:h-12"
+                aria-invalid={Boolean(cardForm.errors.number)}
+                aria-describedby="cardNumber-help"
               />
+              <span id="cardNumber-help" className="sr-only">Debe pasar validación Luhn, 13-19 dígitos</span>
+              {cardForm.errors.number && (
+                <p className="text-destructive text-xs">{cardForm.errors.number}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -298,15 +329,16 @@ export function PaymentModal({
                 <Input
                   id="expiry"
                   placeholder="MM/AA"
-                  value={cardDetails.expiry}
-                  onChange={(e) =>
-                    setCardDetails((prev) => ({
-                      ...prev,
-                      expiry: e.target.value,
-                    }))
-                  }
+                  value={cardForm.data.expiry}
+                  onChange={(e) => cardForm.setField("expiry", e.target.value)}
                   className="h-10 sm:h-12"
+                  aria-invalid={Boolean(cardForm.errors.expiry)}
+                  aria-describedby="expiry-help"
                 />
+                <span id="expiry-help" className="sr-only">Formato MM/AA, debe ser futura</span>
+                {cardForm.errors.expiry && (
+                  <p className="text-destructive text-xs">{cardForm.errors.expiry}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cvv" className="text-xs sm:text-sm">
@@ -315,12 +347,16 @@ export function PaymentModal({
                 <Input
                   id="cvv"
                   placeholder="123"
-                  value={cardDetails.cvv}
-                  onChange={(e) =>
-                    setCardDetails((prev) => ({ ...prev, cvv: e.target.value }))
-                  }
+                  value={cardForm.data.cvv}
+                  onChange={(e) => cardForm.setField("cvv", e.target.value)}
                   className="h-10 sm:h-12"
+                  aria-invalid={Boolean(cardForm.errors.cvv)}
+                  aria-describedby="cvv-help"
                 />
+                <span id="cvv-help" className="sr-only">3 o 4 dígitos</span>
+                {cardForm.errors.cvv && (
+                  <p className="text-destructive text-xs">{cardForm.errors.cvv}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -330,15 +366,16 @@ export function PaymentModal({
               <Input
                 id="cardHolder"
                 placeholder="Nombre como aparece en la tarjeta"
-                value={cardDetails.holder}
-                onChange={(e) =>
-                  setCardDetails((prev) => ({
-                    ...prev,
-                    holder: e.target.value,
-                  }))
-                }
+                value={cardForm.data.holder}
+                onChange={(e) => cardForm.setField("holder", e.target.value)}
                 className="h-10 sm:h-12"
+                aria-invalid={Boolean(cardForm.errors.holder)}
+                aria-describedby="cardHolder-help"
               />
+              <span id="cardHolder-help" className="sr-only">Mínimo 2 caracteres</span>
+              {cardForm.errors.holder && (
+                <p className="text-destructive text-xs">{cardForm.errors.holder}</p>
+              )}
             </div>
           </motion.div>
         );
@@ -363,15 +400,16 @@ export function PaymentModal({
               <Input
                 id="bank"
                 placeholder="Ej: Banco del Pichincha"
-                value={transferDetails.bank}
-                onChange={(e) =>
-                  setTransferDetails((prev) => ({
-                    ...prev,
-                    bank: e.target.value,
-                  }))
-                }
+                value={transferForm.data.bank}
+                onChange={(e) => transferForm.setField("bank", e.target.value)}
                 className="h-10 sm:h-12"
+                aria-invalid={Boolean(transferForm.errors.bank)}
+                aria-describedby="bank-help"
               />
+              <span id="bank-help" className="sr-only">Nombre del banco requerido</span>
+              {transferForm.errors.bank && (
+                <p className="text-destructive text-xs">{transferForm.errors.bank}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reference" className="text-xs sm:text-sm">
@@ -380,15 +418,50 @@ export function PaymentModal({
               <Input
                 id="reference"
                 placeholder="Ej: TRF-123456789"
-                value={transferDetails.reference}
+                value={transferForm.data.reference}
                 onChange={(e) =>
-                  setTransferDetails((prev) => ({
-                    ...prev,
-                    reference: e.target.value,
-                  }))
+                  transferForm.setField("reference", e.target.value)
                 }
                 className="h-10 sm:h-12"
+                aria-invalid={Boolean(transferForm.errors.reference)}
+                aria-describedby="reference-help"
               />
+              <span id="reference-help" className="sr-only">8-20 caracteres alfanuméricos</span>
+              {transferForm.errors.reference && (
+                <p className="text-destructive text-xs">
+                  {transferForm.errors.reference}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duna" className="text-xs sm:text-sm">
+                Escanear Código (DUNA)
+              </Label>
+              <Input
+                id="duna"
+                placeholder="Pega el código escaneado"
+                value={transferForm.data.dunaCode || ""}
+                onChange={(e) => {
+                  const code = e.target.value;
+                  transferForm.setField("dunaCode", code);
+                  if (code.includes(":")) {
+                    const parts = code.split(":");
+                    if (parts.length >= 3) {
+                      transferForm.setField("bank", parts[1]);
+                      transferForm.setField("reference", parts[2]);
+                    }
+                  }
+                }}
+                className="h-10 sm:h-12"
+                aria-invalid={Boolean(transferForm.errors.dunaCode)}
+                aria-describedby="duna-help"
+              />
+              <span id="duna-help" className="sr-only">Código opcional para completar banco y referencia</span>
+              {transferForm.errors.dunaCode && (
+                <p className="text-destructive text-xs">
+                  {transferForm.errors.dunaCode}
+                </p>
+              )}
             </div>
           </motion.div>
         );
@@ -434,11 +507,11 @@ export function PaymentModal({
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {/* Customer Info */}
-            {selectedCustomer ? (
+            {true ? (
               <Card>
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    {selectedCustomer.customerType === "business" ? (
+                    {(selectedCustomer || { customerType: "individual" }).customerType === "business" ? (
                       <Building className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                     ) : (
                       <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
@@ -446,29 +519,29 @@ export function PaymentModal({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-sm">
-                          {selectedCustomer.name}
+                          {selectedCustomer ? selectedCustomer.name : "Consumidor Final"}
                         </h4>
                         <Badge
                           variant={
-                            selectedCustomer.customerType === "business"
+                            selectedCustomer && selectedCustomer.customerType === "business"
                               ? "default"
                               : "secondary"
                           }
                           className="text-xs px-2 py-0 h-5"
                         >
-                          {selectedCustomer.customerType === "business"
+                          {selectedCustomer && selectedCustomer.customerType === "business"
                             ? "Empresa"
-                            : "Individual"}
+                            : "Consumidor Final"}
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-0.5">
-                        {selectedCustomer.phone && (
+                        {selectedCustomer?.phone && (
                           <p>📱 {selectedCustomer.phone}</p>
                         )}
-                        {selectedCustomer.ruc && (
+                        {selectedCustomer?.ruc && (
                           <p>🏢 RUC: {selectedCustomer.ruc}</p>
                         )}
-                        {selectedCustomer.idNumber && !selectedCustomer.ruc && (
+                        {selectedCustomer?.idNumber && !selectedCustomer?.ruc && (
                           <p>🆔 Cédula: {selectedCustomer.idNumber}</p>
                         )}
                       </div>
@@ -476,23 +549,7 @@ export function PaymentModal({
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <Card className="border-destructive/50 bg-destructive/5">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 sm:gap-3 text-destructive">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <div>
-                      <p className="font-medium text-sm">
-                        Cliente no seleccionado
-                      </p>
-                      <p className="text-xs">
-                        Debe seleccionar un cliente para procesar la venta
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            ) : null}
 
             {/* Order Summary */}
             <div className="space-y-2 sm:space-y-3">
@@ -578,16 +635,12 @@ export function PaymentModal({
                 onClick={handlePayment}
                 disabled={
                   isProcessing ||
-                  !selectedCustomer ||
                   (paymentMethod === "cash" &&
                     Number.parseFloat(cashReceived || "0") < totalWithTax) ||
                   (paymentMethod === "card" &&
-                    (!cardDetails.number ||
-                      !cardDetails.expiry ||
-                      !cardDetails.cvv ||
-                      !cardDetails.holder)) ||
+                    !isCardValid) ||
                   (paymentMethod === "transfer" &&
-                    (!transferDetails.reference || !transferDetails.bank))
+                    !isTransferValid)
                 }
                 className="flex-1 h-9 sm:h-10 text-xs sm:text-sm"
               >

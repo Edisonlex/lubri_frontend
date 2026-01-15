@@ -121,6 +121,20 @@ export interface User {
   status: "active" | "inactive";
 }
 
+export interface AuthResponse {
+  token: string;
+  refreshToken?: string;
+  expiresIn: number;
+  user: User;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export interface StockAlert {
   id: string;
   productName: string;
@@ -146,44 +160,44 @@ export interface InventoryAnalytics {
 
 // ===== INTERFACES DE CONFIGURACIÓN =====
 export interface CompanySettings {
-  name: string
-  ruc: string
-  address: string
-  phone: string
-  email: string
+  name: string;
+  ruc: string;
+  address: string;
+  phone: string;
+  email: string;
 }
 
 export interface Branch {
-  id: string
-  name: string
-  address: string
-  phone: string
-  email: string
-  isMain: boolean
-  status: "active" | "inactive"
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  isMain: boolean;
+  status: "active" | "inactive";
 }
 
 export interface SRISettings {
-  environment: "test" | "production"
-  emissionType: "normal" | "contingency"
-  certificateFile: string
-  certificatePassword: string
-  isActive: boolean
+  environment: "test" | "production";
+  emissionType: "normal" | "contingency";
+  certificateFile: string;
+  certificatePassword: string;
+  isActive: boolean;
 }
 
 export interface BackupSettings {
-  lastBackup: string
-  autoBackup: boolean
-  backupFrequency: "daily" | "weekly" | "monthly"
+  lastBackup: string;
+  autoBackup: boolean;
+  backupFrequency: "daily" | "weekly" | "monthly";
 }
 
 export interface AuditLog {
-  id: string
-  action: string
-  user: string
-  timestamp: string
-  status: "success" | "error" | "warning"
-  details: string
+  id: string;
+  action: string;
+  user: string;
+  timestamp: string;
+  status: "success" | "error" | "warning";
+  details: string;
 }
 
 // ===== DATOS MOCK UNIFICADOS =====
@@ -206,7 +220,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.85,
     profitMargin: 0.42,
-    imageUrl: "https://images.unsplash.com/photo-1583511655857-d6d4b6114ea3?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/mobil-1-high-mileage-full-synthetic.jpg",
   },
   {
     id: "2",
@@ -225,7 +239,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.75,
     profitMargin: 0.39,
-    imageUrl: "https://images.unsplash.com/photo-1605647533473-ef3e11f3f5f3?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Filtro de Aceite Toyota.jpg",
   },
   {
     id: "3",
@@ -244,7 +258,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.65,
     profitMargin: 0.37,
-    imageUrl: "https://images.unsplash.com/photo-1615392937212-1fdddb8b27c2?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Lubricante Castrol GTX.jpg",
   },
   {
     id: "4",
@@ -263,7 +277,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.45,
     profitMargin: 0.54,
-    imageUrl: "https://images.unsplash.com/photo-1620912187035-9e8b4f0a9392?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Aditivo Limpiador STP.jpg",
   },
   {
     id: "5",
@@ -282,7 +296,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.72,
     profitMargin: 0.4,
-    imageUrl: "https://images.unsplash.com/photo-1560807707-8cc77767d783?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Aceite Shell Helix.jpg",
   },
   {
     id: "6",
@@ -301,7 +315,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.68,
     profitMargin: 0.3,
-    imageUrl: "https://images.unsplash.com/photo-1627589824099-08983e04ecda?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Filtro de Cabina Bosch.jpg",
   },
   {
     id: "7",
@@ -320,7 +334,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.81,
     profitMargin: 0.38,
-    imageUrl: "https://images.unsplash.com/photo-1572986336681-2b0b59f7a5fd?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Grasa Multiuso Valvoline.jpg",
   },
   {
     id: "8",
@@ -339,7 +353,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.33,
     profitMargin: 0.32,
-    imageUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4f33c4?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Aditivo Antihumo Wynn's.jpg",
   },
   {
     id: "9",
@@ -358,7 +372,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.74,
     profitMargin: 0.4,
-    imageUrl: "https://images.unsplash.com/photo-1551836022-4d3c9ff0e023?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Aceite Motul 8100 0W-20.jpg",
   },
   {
     id: "10",
@@ -377,7 +391,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.52,
     profitMargin: 0.43,
-    imageUrl: "https://images.unsplash.com/photo-1584714267221-980b7bba260b?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Filtro de Combustible Fram.jpg",
   },
   {
     id: "11",
@@ -396,7 +410,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.79,
     profitMargin: 0.42,
-    imageUrl: "https://images.unsplash.com/photo-1583512603871-3f9c9ed7d6f4?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Aceite Valvoline MaxLife 10W-40.jpg",
   },
   {
     id: "12",
@@ -415,7 +429,7 @@ const mockProducts: Product[] = [
     status: "active",
     rotationRate: 0.28,
     profitMargin: 0.39,
-    imageUrl: "https://images.unsplash.com/photo-1606904397922-ef02a2f4c8ad?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "/Lubricante Shell Gadus.jpg",
   },
 ];
 
@@ -620,7 +634,7 @@ const mockSales: Sale[] = [
   },
   {
     id: "2",
-    date: "2025-01-18",
+    date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     customerId: "2",
     customerName: "María González",
     items: [
@@ -642,7 +656,7 @@ const mockSales: Sale[] = [
   },
   {
     id: "3",
-    date: "2025-01-20",
+    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     customerId: "3",
     customerName: "Automotriz Rodríguez C.A.",
     items: [
@@ -671,7 +685,7 @@ const mockSales: Sale[] = [
   },
   {
     id: "4",
-    date: "2025-01-22",
+    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     customerId: "1",
     customerName: "Juan Pérez",
     items: [
@@ -696,12 +710,24 @@ const mockSales: Sale[] = [
 mockSales.push(
   {
     id: "5",
-    date: "2025-01-23",
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     customerId: "4",
     customerName: "Taller Los Andes",
     items: [
-      { productId: "11", productName: "Aceite Valvoline MaxLife 10W-40", quantity: 8, unitPrice: 39.9, subtotal: 319.2 },
-      { productId: "6", productName: "Filtro de Cabina Bosch", quantity: 10, unitPrice: 22.5, subtotal: 225.0 },
+      {
+        productId: "11",
+        productName: "Aceite Valvoline MaxLife 10W-40",
+        quantity: 8,
+        unitPrice: 39.9,
+        subtotal: 319.2,
+      },
+      {
+        productId: "6",
+        productName: "Filtro de Cabina Bosch",
+        quantity: 10,
+        unitPrice: 22.5,
+        subtotal: 225.0,
+      },
     ],
     subtotal: 544.2,
     tax: 87.07,
@@ -713,12 +739,24 @@ mockSales.push(
   },
   {
     id: "6",
-    date: "2025-01-24",
+    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     customerId: "5",
     customerName: "Luis Herrera",
     items: [
-      { productId: "9", productName: "Aceite Motul 8100 0W-20", quantity: 2, unitPrice: 49.0, subtotal: 98.0 },
-      { productId: "10", productName: "Filtro de Combustible Fram", quantity: 1, unitPrice: 27.9, subtotal: 27.9 },
+      {
+        productId: "9",
+        productName: "Aceite Motul 8100 0W-20",
+        quantity: 2,
+        unitPrice: 49.0,
+        subtotal: 98.0,
+      },
+      {
+        productId: "10",
+        productName: "Filtro de Combustible Fram",
+        quantity: 1,
+        unitPrice: 27.9,
+        subtotal: 27.9,
+      },
     ],
     subtotal: 125.9,
     tax: 20.14,
@@ -787,7 +825,6 @@ const mockSuppliers: Supplier[] = [
     notes: "Combustibles premium y lubricantes Shell",
   },
 ];
-
 
 const mockUsers: User[] = [
   {
@@ -902,7 +939,7 @@ const mockCompanySettings: CompanySettings = {
   address: "Av. Principal 123, La Maná, Cotopaxi, Ecuador",
   phone: "02-2345678",
   email: "info@elmotor.com",
-}
+};
 
 const mockBranches: Branch[] = [
   {
@@ -923,7 +960,7 @@ const mockBranches: Branch[] = [
     isMain: false,
     status: "active",
   },
-]
+];
 
 const mockSriSettings: SRISettings = {
   environment: "test",
@@ -931,13 +968,13 @@ const mockSriSettings: SRISettings = {
   certificateFile: "",
   certificatePassword: "",
   isActive: false,
-}
+};
 
 const mockBackupSettings: BackupSettings = {
   lastBackup: "2024-06-15T14:30:00",
   autoBackup: true,
   backupFrequency: "daily",
-}
+};
 
 const mockAuditLogs: AuditLog[] = [
   {
@@ -964,7 +1001,9 @@ const mockAuditLogs: AuditLog[] = [
     status: "success",
     details: "Ajuste de stock completado",
   },
-]
+];
+
+const mockResetCodes: Record<string, string> = {};
 
 // ===== FUNCIONES API =====
 export const api = {
@@ -1336,7 +1375,11 @@ export const api = {
     });
   },
 
-  getObsolescenceMetrics: async (): Promise<{ count: number; avgDays: number; impact: number }> => {
+  getObsolescenceMetrics: async (): Promise<{
+    count: number;
+    avgDays: number;
+    impact: number;
+  }> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         const now = new Date().getTime();
@@ -1347,12 +1390,20 @@ export const api = {
           return (rot <= 0.4 || days >= 180) && (p.stock || 0) > 0;
         });
         const count = obsolete.length;
-        const avgDays = count === 0 ? 0 : Math.round(obsolete.reduce((s, p) => {
-          const last = new Date(p.lastUpdated).getTime();
-          const days = Math.floor((now - last) / (1000 * 60 * 60 * 24));
-          return s + days;
-        }, 0) / count);
-        const impact = obsolete.reduce((s, p) => s + (p.cost || 0) * (p.stock || 0), 0);
+        const avgDays =
+          count === 0
+            ? 0
+            : Math.round(
+                obsolete.reduce((s, p) => {
+                  const last = new Date(p.lastUpdated).getTime();
+                  const days = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+                  return s + days;
+                }, 0) / count
+              );
+        const impact = obsolete.reduce(
+          (s, p) => s + (p.cost || 0) * (p.stock || 0),
+          0
+        );
         resolve({ count, avgDays, impact });
       }, 500);
     });
@@ -1599,11 +1650,121 @@ export const api = {
       }, 300);
     });
   },
+
+  // Autenticación: recuperación de contraseña (simulado)
+  requestPasswordReset: async (
+    email: string
+  ): Promise<{ success: boolean; exists?: boolean; demoCode?: string }> => {
+    if (API_BASE) {
+      const res = await fetch(`${API_BASE}/auth/password/reset/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("requestPasswordReset failed");
+      return res.json();
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const userExists = mockUsers.some((u) => u.email === email);
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        if (userExists) {
+          mockResetCodes[email] = code;
+          resolve({ success: true, exists: true, demoCode: code });
+        } else {
+          resolve({ success: true, exists: false });
+        }
+      }, 600);
+    });
+  },
+
+  verifyPasswordResetCode: async (
+    email: string,
+    code: string
+  ): Promise<boolean> => {
+    if (API_BASE) {
+      const res = await fetch(`${API_BASE}/auth/password/reset/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      if (!res.ok) throw new Error("verifyPasswordResetCode failed");
+      const data = await res.json();
+      return !!data.valid;
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockResetCodes[email] === code);
+      }, 400);
+    });
+  },
+
+  checkEmailExists: async (email: string): Promise<boolean> => {
+    if (API_BASE) {
+      const res = await fetch(`${API_BASE}/auth/check-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("checkEmailExists failed");
+      const data = await res.json();
+      return !!data.exists;
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockUsers.some((u) => u.email === email));
+      }, 200);
+    });
+  },
+
+  resetPassword: async (
+    email: string,
+    newPassword: string
+  ): Promise<boolean> => {
+    if (API_BASE) {
+      const res = await fetch(`${API_BASE}/auth/password/reset/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, newPassword }),
+      });
+      if (!res.ok) throw new Error("resetPassword failed");
+      const data = await res.json();
+      return !!data.success;
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        delete mockResetCodes[email];
+        resolve(true);
+      }, 700);
+    });
+  },
+  authLogin: async (payload: LoginPayload): Promise<AuthResponse> => {
+    if (API_BASE) {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("authLogin failed");
+      const data = await res.json();
+      return data as AuthResponse;
+    }
+    const user =
+      mockUsers.find((u) => u.email === payload.email) || mockUsers[0];
+    return {
+      token: Math.random().toString(36).slice(2),
+      refreshToken: Math.random().toString(36).slice(2),
+      expiresIn: 3600,
+      user,
+    };
+  },
 };
 
-export function classifyProductCategory(
-  product: Partial<Product>
-): { category: Product["category"]; confidence: number; reasons: string[] } {
+export function classifyProductCategory(product: Partial<Product>): {
+  category: Product["category"];
+  confidence: number;
+  reasons: string[];
+} {
   const text = [product.name, product.brand, product.sku, product.supplier]
     .filter(Boolean)
     .join(" ")
@@ -1638,18 +1799,8 @@ export function classifyProductCategory(
     "combustible",
     "cabina",
   ];
-  const lubricanteKeywords = [
-    "lubricante",
-    "grasa",
-    "grease",
-    "gtx",
-  ];
-  const aditivoKeywords = [
-    "aditivo",
-    "limpiador",
-    "stp",
-    "tratamiento",
-  ];
+  const lubricanteKeywords = ["lubricante", "grasa", "grease", "gtx"];
+  const aditivoKeywords = ["aditivo", "limpiador", "stp", "tratamiento"];
 
   aceiteKeywords.forEach((k) => {
     if (has(k)) {
@@ -1682,7 +1833,9 @@ export function classifyProductCategory(
     reasons.push("Formato viscosidad detectado");
   }
 
-  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0] as Product["category"];
+  const best = Object.entries(scores).sort(
+    (a, b) => b[1] - a[1]
+  )[0][0] as Product["category"];
   const maxScore = Math.max(...Object.values(scores));
   const confidence = Math.min(1, maxScore / 6);
 

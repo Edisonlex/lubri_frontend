@@ -111,6 +111,20 @@ export function AddProductModal({
   }, [formData.name, formData.brand, formData.sku, formData.supplier]);
 
   useEffect(() => {
+    const result = productSchema.safeParse({ ...formData });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const key = String(err.path[0] ?? "general");
+        fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+    } else {
+      setErrors({});
+    }
+  }, [formData]);
+
+  useEffect(() => {
     const loadSuppliers = async () => {
       try {
         setLoadingSuppliers(true);
@@ -200,6 +214,7 @@ export function AddProductModal({
                 <Label htmlFor="name" className="text-sm font-medium">
                   Nombre del Producto *
                 </Label>
+                <p id="name-help" className="text-muted-foreground text-xs">Mínimo 2 caracteres</p>
                 <Input
                   id="name"
                   value={formData.name}
@@ -207,6 +222,8 @@ export function AddProductModal({
                   placeholder="Ej: Aceite Mobil 1 5W-30"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby="name-help"
                 />
                 {errors.name && (
                   <p className="text-destructive text-sm">{errors.name}</p>
@@ -216,6 +233,7 @@ export function AddProductModal({
                 <Label htmlFor="brand" className="text-sm font-medium">
                   Marca *
                 </Label>
+                <p id="brand-help" className="text-muted-foreground text-xs">Mínimo 1 carácter</p>
                 <Input
                   id="brand"
                   value={formData.brand}
@@ -223,6 +241,8 @@ export function AddProductModal({
                   placeholder="Ej: Mobil"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.brand)}
+                  aria-describedby="brand-help"
                 />
                 {errors.brand && (
                   <p className="text-destructive text-sm">{errors.brand}</p>
@@ -238,7 +258,7 @@ export function AddProductModal({
                     handleInputChange("category", value)
                   }
                 >
-                  <SelectTrigger className="h-10 text-sm">
+                  <SelectTrigger className="h-10 text-sm" aria-invalid={Boolean(errors.category)} aria-describedby="category-help">
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,37 +276,40 @@ export function AddProductModal({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                <p id="category-help" className="text-muted-foreground text-xs">Selecciona una categoría válida</p>
                 {errors.category && (
                   <p className="text-destructive text-sm">{errors.category}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium">
-                  Estado
-                </Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleInputChange("status", value)}
-                >
-                  <SelectTrigger className="h-10 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active" className="text-sm">
-                      Activo
-                    </SelectItem>
-                    <SelectItem value="inactive" className="text-sm">
-                      Inactivo
-                    </SelectItem>
-                    <SelectItem value="discontinued" className="text-sm">
-                      Descontinuado
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.status && (
-                  <p className="text-destructive text-sm">{errors.status}</p>
-                )}
-              </div>
+              {Boolean(product) && (
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-medium">
+                    Estado
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleInputChange("status", value)}
+                  >
+                    <SelectTrigger className="h-10 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active" className="text-sm">
+                        Activo
+                      </SelectItem>
+                      <SelectItem value="inactive" className="text-sm">
+                        Inactivo
+                      </SelectItem>
+                      <SelectItem value="discontinued" className="text-sm">
+                        Descontinuado
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-destructive text-sm">{errors.status}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -302,6 +325,7 @@ export function AddProductModal({
                 <Label htmlFor="cost" className="text-sm font-medium">
                   Costo *
                 </Label>
+                <p className="text-muted-foreground text-xs">Formato numérico, mínimo 0</p>
                 <Input
                   id="cost"
                   type="number"
@@ -311,7 +335,10 @@ export function AddProductModal({
                   placeholder="0.00"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.cost)}
+                  aria-describedby="cost-help"
                 />
+                <span id="cost-help" className="sr-only">Costo mínimo 0</span>
                 {errors.cost && (
                   <p className="text-destructive text-sm">{errors.cost}</p>
                 )}
@@ -320,6 +347,7 @@ export function AddProductModal({
                 <Label htmlFor="price" className="text-sm font-medium">
                   Precio de Venta *
                 </Label>
+                <p className="text-muted-foreground text-xs">Formato numérico, mínimo 0</p>
                 <Input
                   id="price"
                   type="number"
@@ -329,7 +357,10 @@ export function AddProductModal({
                   placeholder="0.00"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.price)}
+                  aria-describedby="price-help"
                 />
+                <span id="price-help" className="sr-only">Precio mínimo 0</span>
                 {errors.price && (
                   <p className="text-destructive text-sm">{errors.price}</p>
                 )}
@@ -349,6 +380,7 @@ export function AddProductModal({
                 <Label htmlFor="stock" className="text-sm font-medium">
                   Stock Actual *
                 </Label>
+                <p className="text-muted-foreground text-xs">Solo enteros, mínimo 0</p>
                 <Input
                   id="stock"
                   type="number"
@@ -357,7 +389,10 @@ export function AddProductModal({
                   placeholder="0"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.stock)}
+                  aria-describedby="stock-help"
                 />
+                <span id="stock-help" className="sr-only">Stock mínimo 0</span>
                 {errors.stock && (
                   <p className="text-destructive text-sm">{errors.stock}</p>
                 )}
@@ -366,6 +401,7 @@ export function AddProductModal({
                 <Label htmlFor="minStock" className="text-sm font-medium">
                   Stock Mínimo *
                 </Label>
+                <p className="text-muted-foreground text-xs">Solo enteros, mínimo 0</p>
                 <Input
                   id="minStock"
                   type="number"
@@ -376,7 +412,10 @@ export function AddProductModal({
                   placeholder="0"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.minStock)}
+                  aria-describedby="minStock-help"
                 />
+                <span id="minStock-help" className="sr-only">Stock mínimo 0</span>
                 {errors.minStock && (
                   <p className="text-destructive text-sm">{errors.minStock}</p>
                 )}
@@ -385,6 +424,7 @@ export function AddProductModal({
                 <Label htmlFor="maxStock" className="text-sm font-medium">
                   Stock Máximo *
                 </Label>
+                <p className="text-muted-foreground text-xs">Debe ser ≥ stock mínimo</p>
                 <Input
                   id="maxStock"
                   type="number"
@@ -395,7 +435,10 @@ export function AddProductModal({
                   placeholder="0"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.maxStock)}
+                  aria-describedby="maxStock-help"
                 />
+                <span id="maxStock-help" className="sr-only">Stock máximo debe ser mayor o igual al mínimo</span>
                 {errors.maxStock && (
                   <p className="text-destructive text-sm">{errors.maxStock}</p>
                 )}
@@ -415,6 +458,7 @@ export function AddProductModal({
                 <Label htmlFor="sku" className="text-sm font-medium">
                   SKU *
                 </Label>
+                <p className="text-muted-foreground text-xs">Se autogenera si está vacío</p>
                 <Input
                   id="sku"
                   value={formData.sku}
@@ -422,7 +466,10 @@ export function AddProductModal({
                   placeholder="Ej: MOB-5W30-001"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.sku)}
+                  aria-describedby="sku-help"
                 />
+                <span id="sku-help" className="sr-only">SKU requerido</span>
                 {errors.sku && (
                   <p className="text-destructive text-sm">{errors.sku}</p>
                 )}
@@ -431,6 +478,7 @@ export function AddProductModal({
                 <Label htmlFor="barcode" className="text-sm font-medium">
                   Código de Barras
                 </Label>
+                <p className="text-muted-foreground text-xs">Opcional</p>
                 <Input
                   id="barcode"
                   value={formData.barcode}
@@ -443,11 +491,12 @@ export function AddProductModal({
                 <Label htmlFor="supplier" className="text-sm font-medium">
                   Proveedor *
                 </Label>
+                <p className="text-muted-foreground text-xs">Selecciona un proveedor</p>
                 <Select
                   value={formData.supplier}
                   onValueChange={(value) => handleInputChange("supplier", value)}
                 >
-                  <SelectTrigger id="supplier" className="h-10 text-sm">
+                  <SelectTrigger id="supplier" className="h-10 text-sm" aria-invalid={Boolean(errors.supplier)} aria-describedby="supplier-help">
                     <SelectValue placeholder={loadingSuppliers ? "Cargando..." : "Seleccionar proveedor"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -458,6 +507,7 @@ export function AddProductModal({
                     ))}
                   </SelectContent>
                 </Select>
+                <span id="supplier-help" className="sr-only">Proveedor requerido</span>
                 {errors.supplier && (
                   <p className="text-destructive text-sm">{errors.supplier}</p>
                 )}
@@ -466,6 +516,7 @@ export function AddProductModal({
                 <Label htmlFor="location" className="text-sm font-medium">
                   Ubicación *
                 </Label>
+                <p className="text-muted-foreground text-xs">Ejemplo: A1-B2</p>
                 <Input
                   id="location"
                   value={formData.location}
@@ -475,7 +526,10 @@ export function AddProductModal({
                   placeholder="Ej: A1-B2"
                   required
                   className="h-10 text-sm"
+                  aria-invalid={Boolean(errors.location)}
+                  aria-describedby="location-help"
                 />
+                <span id="location-help" className="sr-only">Ubicación requerida</span>
                 {errors.location && (
                   <p className="text-destructive text-sm">{errors.location}</p>
                 )}

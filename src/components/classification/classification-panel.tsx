@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Brain, ListTree, ThumbsUp, ThumbsDown, Info, Download, CheckCircle } from "lucide-react";
 import { api, type Product, classifyProductCategory } from "@/lib/api";
+import { reportsService } from "@/lib/reports-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { exportToExcel, exportToPDF } from "@/lib/export-utils";
@@ -38,8 +39,8 @@ export function ClassificationPanel() {
       try {
         setLoading(true);
         const [data, autoClass] = await Promise.all([
-          api.getProducts(),
-          api.getProductClassification(),
+          reportsService.getProducts(),
+          reportsService.getProductClassification(),
         ]);
         setProducts(data);
         setClassification(autoClass);

@@ -25,34 +25,55 @@ export interface ExportData {
 
 // ===== FUNCIONES PARA REPORTE DE INVENTARIO (YA EXISTENTES) =====
 export const exportToPDF = ({ headers, data, fileName }: ExportData) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "A4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Título del documento
+  doc.setFontSize(14);
   doc.text(
     `Reporte de Inventario - ${new Date().toLocaleDateString()}`,
-    14,
-    15
+    40,
+    40
   );
 
-  // Tabla usando autoTable
   autoTable(doc, {
     head: [headers],
     body: data,
-    startY: 25,
+    startY: 60,
     styles: {
-      fontSize: 8,
-      cellPadding: 2,
+      fontSize: 9,
+      cellPadding: 4,
+      overflow: "linebreak",
+      valign: "middle",
     },
     headStyles: {
       fillColor: [66, 135, 245],
       textColor: 255,
       fontStyle: "bold",
+      halign: "center",
     },
     alternateRowStyles: {
       fillColor: [240, 240, 240],
     },
-    margin: { top: 25 },
-  });
+    columnStyles: {
+      0: { cellWidth: 80 },   // SKU
+      1: { cellWidth: 160 },  // Nombre
+      2: { cellWidth: 90 },   // Marca
+      3: { cellWidth: 90 },   // Categoría
+      4: { cellWidth: 75 },   // Precio
+      5: { cellWidth: 70 },   // Stock
+      6: { cellWidth: 140 },  // Proveedor
+      7: { cellWidth: 80 },   // Ubicación
+      8: { cellWidth: 80 },   // Estado
+    },
+    margin: { top: 60, left: 30, right: 30 },
+    tableWidth: pageWidth - 60,
+    didDrawPage: (dataHook: any) => {
+      doc.setFontSize(8);
+      const pageLabel = `Página ${
+        dataHook.pageNumber
+      }/${doc.getNumberOfPages()}`;
+      doc.text(pageLabel, pageWidth - 80, pageHeight - 20);
 
   doc.save(`${fileName}_${new Date().toISOString().split("T")[0]}.pdf`);
 };
@@ -293,10 +314,7 @@ export const prepareInventoryData = (products: any[]) => {
     "Marca",
     "Categoría",
     "Precio",
-    "Costo",
     "Stock",
-    "Stock Mínimo",
-    "Stock Máximo",
     "Proveedor",
     "Ubicación",
     "Estado",
@@ -308,10 +326,7 @@ export const prepareInventoryData = (products: any[]) => {
     product.brand,
     product.category,
     `$${product.price.toFixed(2)}`,
-    `$${product.cost.toFixed(2)}`,
     product.stock,
-    product.minStock,
-    product.maxStock,
     product.supplier,
     product.location,
     product.status === "active" ? "Activo" : "Inactivo",
@@ -374,9 +389,17 @@ export const prepareCustomersData = (customers: any[]) => {
   return { headers, data };
 };
 
-export const exportObsolescenceHistoryToPDF = ({ headers, data, fileName }: ExportData) => {
+export const exportObsolescenceHistoryToPDF = ({
+  headers,
+  data,
+  fileName,
+}: ExportData) => {
   const doc = new jsPDF();
-  doc.text(`Histórico de Obsolescencia - ${new Date().toLocaleDateString()}`, 14, 15);
+  doc.text(
+    `Histórico de Obsolescencia - ${new Date().toLocaleDateString()}`,
+    14,
+    15
+  );
   autoTable(doc, {
     head: [headers],
     body: data,
@@ -387,7 +410,10 @@ export const exportObsolescenceHistoryToPDF = ({ headers, data, fileName }: Expo
     margin: { top: 25 },
   });
 
-  const totalObsoletos = data.reduce((sum, row) => sum + Number(row[1] || 0), 0);
+  const totalObsoletos = data.reduce(
+    (sum, row) => sum + Number(row[1] || 0),
+    0
+  );
   const impactoTotal = data.reduce((sum, row) => {
     const val = parseFloat(String(row[2]).replace(/[^0-9.-]/g, "")) || 0;
     return sum + val;
@@ -396,12 +422,23 @@ export const exportObsolescenceHistoryToPDF = ({ headers, data, fileName }: Expo
   const y = (doc.lastAutoTable?.finalY ?? 25) + 10;
   doc.text(`Totales del período`, 14, y);
   doc.text(`Obsoletos: ${totalObsoletos}`, 14, y + 6);
-  doc.text(`Impacto acumulado: $${impactoTotal.toLocaleString("es-ES", { minimumFractionDigits: 2 })}`, 14, y + 12);
+  doc.text(
+    `Impacto acumulado: $${impactoTotal.toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+    })}`,
+    14,
+    y + 12
+  );
 
   doc.save(`${fileName}_${new Date().toISOString().split("T")[0]}.pdf`);
 };
 
-export const exportObsolescenceHistoryToExcel = ({ headers, data, fileName, companyInfo }: ExportData) => {
+export const exportObsolescenceHistoryToExcel = ({
+  headers,
+  data,
+  fileName,
+  companyInfo,
+}: ExportData) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet([]);
 
@@ -417,10 +454,17 @@ export const exportObsolescenceHistoryToExcel = ({ headers, data, fileName, comp
   ];
 
   XLSX.utils.sheet_add_aoa(worksheet, companyRows, { origin: "A1" });
-  XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: `A${companyRows.length + 1}` });
-  XLSX.utils.sheet_add_aoa(worksheet, data, { origin: `A${companyRows.length + 2}` });
+  XLSX.utils.sheet_add_aoa(worksheet, [headers], {
+    origin: `A${companyRows.length + 1}`,
+  });
+  XLSX.utils.sheet_add_aoa(worksheet, data, {
+    origin: `A${companyRows.length + 2}`,
+  });
 
-  const totalObsoletos = data.reduce((sum, row) => sum + Number(row[1] || 0), 0);
+  const totalObsoletos = data.reduce(
+    (sum, row) => sum + Number(row[1] || 0),
+    0
+  );
   const impactoTotal = data.reduce((sum, row) => {
     const val = parseFloat(String(row[2]).replace(/[^0-9.-]/g, "")) || 0;
     return sum + val;
@@ -433,11 +477,16 @@ export const exportObsolescenceHistoryToExcel = ({ headers, data, fileName, comp
     ["Total obsoletos", totalObsoletos],
     ["Impacto acumulado", impactoTotal],
   ];
-  XLSX.utils.sheet_add_aoa(worksheet, summaryRows, { origin: `A${summaryStartRow}` });
+  XLSX.utils.sheet_add_aoa(worksheet, summaryRows, {
+    origin: `A${summaryStartRow}`,
+  });
 
   const colWidths = headers.map((h) => ({ wch: Math.max(h.length, 15) }));
   worksheet["!cols"] = colWidths;
 
   XLSX.utils.book_append_sheet(workbook, worksheet, "Obsolescencia");
-  XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split("T")[0]}.xlsx`);
+  XLSX.writeFile(
+    workbook,
+    `${fileName}_${new Date().toISOString().split("T")[0]}.xlsx`
+  );
 };

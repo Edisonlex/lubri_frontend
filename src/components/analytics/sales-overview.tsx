@@ -21,6 +21,7 @@ import {
   Cell,
 } from "recharts";
 import { DollarSign, Package, Users, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile"; // Ajusta la ruta según tu estructura
 
 interface SalesData {
@@ -80,7 +81,7 @@ export function SalesOverview({
             </CardHeader>
             <CardContent className={`${cardPadding} pt-0`}>
               <div className={`${valueSize} font-bold`}>
-                ${analyticsData?.totalRevenue?.toLocaleString() || "0"}
+                {formatCurrency(analyticsData?.totalRevenue || 0)}
               </div>
               <p
                 className={`${descriptionSize} text-muted-foreground flex items-center gap-1`}
@@ -136,7 +137,7 @@ export function SalesOverview({
             </CardHeader>
             <CardContent className={`${cardPadding} pt-0`}>
               <div className={`${valueSize} font-bold`}>
-                ${analyticsData?.averageTicket?.toFixed(2) || "0.00"}
+                {formatCurrency(analyticsData?.averageTicket || 0)}
               </div>
               <p
                 className={`${descriptionSize} text-muted-foreground flex items-center gap-1`}
@@ -253,10 +254,7 @@ export function SalesOverview({
                         fill: "hsl(var(--muted))",
                         fillOpacity: 0.3,
                       }}
-                      formatter={(value) => [
-                        `$${value.toLocaleString()}`,
-                        "Ventas",
-                      ]}
+                      formatter={(value) => [formatCurrency(Number(value)), "Ventas"]}
                     />
                     <Bar
                       dataKey="ventas"

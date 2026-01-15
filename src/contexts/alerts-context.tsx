@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import { StockAlert, api, Product } from "@/lib/api";
+import { alertsService } from "@/lib/alerts-service";
 import type { UserRole } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { usePreferences } from "@/contexts/preferences-context";
@@ -19,11 +20,11 @@ interface AlertContextType {
   loading: boolean;
   refreshAlerts: () => Promise<void>;
   markAlertAsResolved: (alertId: string) => void;
-  markAlertAsViewed: (alertId: string) => void;
+  markAlertAsViewed: (alertId: string) => Promise<void>;
   hasNewAlerts: boolean;
   clearNewAlertsFlag: () => void;
   resolvedAlerts: Set<string>;
-  checkAndCreateAlerts: (products: Product[]) => void;
+  checkAndCreateAlerts: (products: Product[]) => Promise<void>;
   getAlertsForRole: (role: UserRole) => StockAlert[];
 }
 
@@ -46,7 +47,9 @@ export function AlertProvider({ children }: AlertProviderProps) {
   const loadAlerts = async () => {
     try {
       setLoading(true);
-      const stockAlerts = await api.getStockAlerts();
+      
+      // Usar el servicio con fallback
+      const stockAlerts = await alertsService.getAlerts();
 
       // Filtrar alertas que no estén resueltas
       const activeAlerts = stockAlerts.filter(
@@ -94,28 +97,60 @@ export function AlertProvider({ children }: AlertProviderProps) {
     await loadAlerts();
   };
 
-  const markAlertAsResolved = (alertId: string) => {
-    setResolvedAlerts((prev) => new Set(prev).add(alertId));
-    setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+  const markAlertAsResolved = async (alertId: string) => {
+    try {
+      // Intentar resolver en el backend primero
+      await alertsService.resolveAlert(alertId);
+      
+      // Si el backend responde exitosamente, actualizar el estado local
+      setResolvedAlerts((prev) => new Set(prev).add(alertId));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+    } catch (error) {
+      console.error("Error resolviendo alerta:", error);
+      
+      // Si falla el backend, solo actualizar localmente
+      // Esto permite que el usuario siga trabajando aunque el backend esté caído
+      setResolvedAlerts((prev) => new Set(prev).add(alertId));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+    }
   };
 
-  const markAlertAsViewed = (alertId: string) => {
-    setResolvedAlerts((prev) => new Set(prev).add(alertId));
-    setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+  const markAlertAsViewed = async (alertId: string) => {
+    try {
+      // Intentar resolver en el backend primero
+      await alertsService.resolveAlert(alertId);
+      
+      // Si el backend responde exitosamente, actualizar el estado local
+      setResolvedAlerts((prev) => new Set(prev).add(alertId));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+    } catch (error) {
+      console.error("Error marcando alerta como vista:", error);
+      
+      // Si falla el backend, solo actualizar localmente
+      // Esto permite que el usuario siga trabajando aunque el backend esté caído
+      setResolvedAlerts((prev) => new Set(prev).add(alertId));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+    }
   };
 
-  const checkAndCreateAlerts = (products: Product[]) => {
-    // Esta función verifica los productos y crea alertas si es necesario
-    // En una implementación real, esto se haría en el backend
-    products.forEach((product) => {
-      if (product.stock === 0) {
-        // Crear alerta para producto sin stock
-        console.log(`Alerta creada para ${product.name} - Sin stock`);
-      } else if (product.stock < product.minStock) {
-        // Crear alerta para stock bajo
-        console.log(`Alerta creada para ${product.name} - Stock bajo`);
-      }
-    });
+  const checkAndCreateAlerts = async (products: Product[]) => {
+    try {
+      // Usar el servicio de alertas para verificar y crear alertas
+      await alertsService.checkStockAlerts(products);
+    } catch (error) {
+      console.error("Error verificando y creando alertas:", error);
+      
+      // Fallback local si falla el backend
+      products.forEach((product) => {
+        if (product.stock === 0) {
+          // Crear alerta para producto sin stock
+          console.log(`Alerta creada para ${product.name} - Sin stock`);
+        } else if (product.stock < product.minStock) {
+          // Crear alerta para stock bajo
+          console.log(`Alerta creada para ${product.name} - Stock bajo`);
+        }
+      });
+    }
   };
 
   const clearNewAlertsFlag = () => {

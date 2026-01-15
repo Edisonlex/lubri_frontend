@@ -15,23 +15,43 @@ import {
   X,
   CreditCard,
   Package,
+  Search,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { usePOS } from "@/contexts/pos-context";
 import { generateInvoicePDF, generateInvoiceNumber } from "./invoice-generator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ShoppingCartProps {
   onCheckout: () => void;
 }
 
 export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
-  const { cartItems, updateQuantity, clearCart, cartTotal, selectedCustomer } =
-    usePOS();
+  const {
+    cartItems,
+    updateQuantity,
+    clearCart,
+    cartTotal,
+    selectedCustomer,
+    setSelectedCustomer,
+    customers,
+  } = usePOS();
   const isMobile = useIsMobile();
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const canCheckout = cartItems.length > 0 && selectedCustomer;
+  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery) ||
+      customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -233,7 +253,15 @@ export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className={"rounded-lg border p-3 flex items-center gap-2 " + (selectedCustomer ? "bg-green-50 dark:bg-green-950/20" : "bg-amber-50 dark:bg-amber-950/20")}> 
+            <div
+              className={
+                "rounded-lg border p-3 flex items-center gap-2 " +
+                (selectedCustomer
+                  ? "bg-green-50 dark:bg-green-950/20"
+                  : "bg-amber-50 dark:bg-amber-950/20")
+              }
+              onClick={() => setShowCustomerList(true)}
+            >
               <User className={"h-4 w-4 " + (selectedCustomer ? "text-green-700 dark:text-green-300" : "text-amber-600 dark:text-amber-400")} />
               <div className="text-xs">
                 <p className="font-semibold">Cliente</p>
@@ -319,6 +347,121 @@ export function ShoppingCart({ onCheckout }: ShoppingCartProps) {
           </div>
         </>
       )}
+      <Dialog open={showCustomerList} onOpenChange={setShowCustomerList}>
+        <DialogContent className={`${isMobile ? "w-[95vw] max-w-md" : "sm:max-w-lg"}`}>
+          <DialogHeader>
+            <DialogTitle className="text-lg">Seleccionar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nombre, teléfono o email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto space-y-2">
+              <AnimatePresence>
+                {("consumidor final cf".includes(searchQuery.toLowerCase()) || searchQuery.trim() === "") && (
+                  <motion.div
+                    key="cf-item"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent hover:border-accent-foreground/20 transition-all duration-200 group"
+                    onClick={() => {
+                      setSelectedCustomer({
+                        id: "CF",
+                        name: "Consumidor Final",
+                        email: "",
+                        phone: "",
+                        address: "",
+                        city: "",
+                        idNumber: "9999999999",
+                        customerType: "individual",
+                        vehicles: [],
+                        totalPurchases: 0,
+                        lastPurchase: "",
+                        registrationDate: new Date().toISOString().split("T")[0],
+                        status: "active",
+                        notes: "",
+                        preferredContact: "phone",
+                      });
+                      setShowCustomerList(false);
+                      setSearchQuery("");
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-foreground truncate">
+                            Consumidor Final
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            Individual
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Usar sin datos del cliente
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                {filteredCustomers.map((customer) => (
+                  <motion.div
+                    key={customer.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent hover:border-accent-foreground/20 transition-all duration-200 group"
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setShowCustomerList(false);
+                      setSearchQuery("");
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-foreground truncate">
+                            {customer.name}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {customer.customerType === "business" ? "Empresa" : "Individual"}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {customer.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {customer.phone}
+                            </span>
+                          )}
+                          {customer.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {customer.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

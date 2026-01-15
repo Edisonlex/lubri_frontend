@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supplierFormSchema } from "@/lib/validation";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
 import {
   SupplierFormData,
   supplierCategories,
@@ -66,42 +67,35 @@ export function SupplierForm({
   initialData = initialFormData,
   isLoading = false,
 }: SupplierFormProps) {
-  const [formData, setFormData] = useState<SupplierFormData>(initialData);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const form = useZodLiveForm(supplierFormSchema, initialData);
 
   // Actualizar los datos del formulario cuando cambie initialData o se abra el diálogo
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialData);
+      form.setData(initialData);
     }
   }, [initialData, isOpen]);
 
   const validateForm = (): boolean => {
-    const result = supplierFormSchema.safeParse(formData);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        const key = String(err.path[0] ?? "general");
-        fieldErrors[key] = err.message;
-      });
-      setErrors(fieldErrors);
+    const res = form.validate();
+    if (!res.ok) {
       toast.error("Revisa los campos marcados en rojo");
       return false;
     }
-    setErrors({});
     return true;
   };
+
+  useEffect(() => {}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    await onSubmit(formData);
+    await onSubmit(form.data);
   };
 
   const handleClose = () => {
-    // Restaurar al initialData para que al volver a abrir, se prellene correctamente
-    setFormData(initialData);
+    form.reset(initialData);
     onClose();
   };
 
@@ -123,35 +117,48 @@ export function SupplierForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre del proveedor *</Label>
+                <p className="text-muted-foreground text-xs">
+                  Mínimo 2 caracteres
+                </p>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value.trim() })
-                  }
+                  value={form.data.name}
+                  onChange={(e) => form.setField("name", e.target.value.trim())}
                   placeholder="Nombre del proveedor"
                   required
+                  aria-invalid={Boolean(form.errors.name)}
+                  aria-describedby="name-help"
                 />
-                {errors.name && (
-                  <p className="text-destructive text-sm">{errors.name}</p>
+                <span id="name-help" className="sr-only">
+                  Nombre mínimo 2 caracteres
+                </span>
+                {form.errors.name && (
+                  <p className="text-destructive text-sm">{form.errors.name}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Persona de contacto *</Label>
+                <p className="text-muted-foreground text-xs">
+                  Nombre del contacto principal
+                </p>
                 <Input
                   id="contactPerson"
-                  value={formData.contactPerson}
+                  value={form.data.contactPerson}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contactPerson: e.target.value.trim(),
-                    })
+                    form.setField("contactPerson", e.target.value.trim())
                   }
                   placeholder="Nombre del contacto principal"
                   required
+                  aria-invalid={Boolean(form.errors.contactPerson)}
+                  aria-describedby="contactPerson-help"
                 />
-                {errors.contactPerson && (
-                  <p className="text-destructive text-sm">{errors.contactPerson}</p>
+                <span id="contactPerson-help" className="sr-only">
+                  Persona de contacto requerida
+                </span>
+                {form.errors.contactPerson && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.contactPerson}
+                  </p>
                 )}
               </div>
             </div>
@@ -159,36 +166,53 @@ export function SupplierForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
+                <p className="text-muted-foreground text-xs">
+                  Formato de correo válido
+                </p>
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
+                  value={form.data.email}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value.trim() })
+                    form.setField("email", e.target.value.trim())
                   }
                   placeholder="proveedor@ejemplo.com"
                   required
+                  aria-invalid={Boolean(form.errors.email)}
+                  aria-describedby="email-help"
                 />
-                {errors.email && (
-                  <p className="text-destructive text-sm">{errors.email}</p>
+                <span id="email-help" className="sr-only">
+                  Email válido requerido
+                </span>
+                {form.errors.email && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.email}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono *</Label>
+                <p className="text-muted-foreground text-xs">
+                  Solo dígitos, código local o +593
+                </p>
                 <Input
                   id="phone"
-                  value={formData.phone}
+                  value={form.data.phone}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      phone: e.target.value.replace(/\D/g, ""),
-                    })
+                    form.setField("phone", e.target.value.replace(/\D/g, ""))
                   }
                   placeholder="0987654321"
                   required
+                  aria-invalid={Boolean(form.errors.phone)}
+                  aria-describedby="phone-help"
                 />
-                {errors.phone && (
-                  <p className="text-destructive text-sm">{errors.phone}</p>
+                <span id="phone-help" className="sr-only">
+                  Teléfono ecuatoriano válido requerido
+                </span>
+                {form.errors.phone && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.phone}
+                  </p>
                 )}
               </div>
             </div>
@@ -198,31 +222,40 @@ export function SupplierForm({
                 <Label htmlFor="businessName">Razón Social</Label>
                 <Input
                   id="businessName"
-                  value={formData.businessName}
+                  value={form.data.businessName}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      businessName: e.target.value,
-                    })
+                    form.setField("businessName", e.target.value)
                   }
                   placeholder="Razón social de la empresa"
                 />
-                {errors.businessName && (
-                  <p className="text-destructive text-sm">{errors.businessName}</p>
+                {form.errors.businessName && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.businessName}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="taxId">RUC</Label>
+                <p className="text-muted-foreground text-xs">
+                  Debe ser un RUC ecuatoriano válido
+                </p>
                 <Input
                   id="taxId"
-                  value={formData.taxId}
+                  value={form.data.taxId}
                   onChange={(e) =>
-                    setFormData({ ...formData, taxId: e.target.value.trim() })
+                    form.setField("taxId", e.target.value.trim())
                   }
                   placeholder="1234567890001"
+                  aria-invalid={Boolean(form.errors.taxId)}
+                  aria-describedby="taxId-help"
                 />
-                {errors.taxId && (
-                  <p className="text-destructive text-sm">{errors.taxId}</p>
+                <span id="taxId-help" className="sr-only">
+                  RUC ecuatoriano válido
+                </span>
+                {form.errors.taxId && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.taxId}
+                  </p>
                 )}
               </div>
             </div>
@@ -231,10 +264,8 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="city">Ciudad</Label>
                 <Select
-                  value={formData.city}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, city: value })
-                  }
+                  value={form.data.city}
+                  onValueChange={(value) => form.setField("city", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una ciudad" />
@@ -247,17 +278,15 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.city && (
-                  <p className="text-destructive text-sm">{errors.city}</p>
+                {form.errors.city && (
+                  <p className="text-destructive text-sm">{form.errors.city}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
+                  value={form.data.category}
+                  onValueChange={(value) => form.setField("category", value)}
                   required
                 >
                   <SelectTrigger>
@@ -271,26 +300,28 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.category && (
-                  <p className="text-destructive text-sm">{errors.category}</p>
+                {form.errors.category && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.category}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="address">Dirección</Label>
-                <Textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  placeholder="Dirección completa del proveedor"
-                  rows={2}
-                />
-                {errors.address && (
-                  <p className="text-destructive text-sm">{errors.address}</p>
-                )}
+              <Label htmlFor="address">Dirección</Label>
+              <Textarea
+                id="address"
+                value={form.data.address}
+                onChange={(e) => form.setField("address", e.target.value)}
+                placeholder="Dirección completa del proveedor"
+                rows={2}
+              />
+              {form.errors.address && (
+                <p className="text-destructive text-sm">
+                  {form.errors.address}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -300,31 +331,43 @@ export function SupplierForm({
                 </Label>
                 <Input
                   id="contactPhone"
-                  value={formData.contactPhone}
+                  value={form.data.contactPhone}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contactPhone: e.target.value.replace(/\D/g, ""),
-                    })
+                    form.setField(
+                      "contactPhone",
+                      e.target.value.replace(/\D/g, "")
+                    )
                   }
                   placeholder="0987654321"
                 />
-                {errors.contactPhone && (
-                  <p className="text-destructive text-sm">{errors.contactPhone}</p>
+                {form.errors.contactPhone && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.contactPhone}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="website">Sitio web</Label>
+                <p className="text-muted-foreground text-xs">
+                  Debe comenzar con http:// o https://
+                </p>
                 <Input
                   id="website"
-                  value={formData.website}
+                  value={form.data.website}
                   onChange={(e) =>
-                    setFormData({ ...formData, website: e.target.value.trim() })
+                    form.setField("website", e.target.value.trim())
                   }
                   placeholder="https://www.ejemplo.com"
+                  aria-invalid={Boolean(form.errors.website)}
+                  aria-describedby="website-help"
                 />
-                {errors.website && (
-                  <p className="text-destructive text-sm">{errors.website}</p>
+                <span id="website-help" className="sr-only">
+                  URL debe comenzar con http:// o https://
+                </span>
+                {form.errors.website && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.website}
+                  </p>
                 )}
               </div>
             </div>
@@ -333,9 +376,9 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="paymentTerms">Términos de pago</Label>
                 <Select
-                  value={formData.paymentTerms}
+                  value={form.data.paymentTerms}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, paymentTerms: value })
+                    form.setField("paymentTerms", value)
                   }
                 >
                   <SelectTrigger>
@@ -349,45 +392,56 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.paymentTerms && (
-                  <p className="text-destructive text-sm">{errors.paymentTerms}</p>
+                {form.errors.paymentTerms && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.paymentTerms}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deliveryTime">Tiempo de entrega</Label>
                 <Input
                   id="deliveryTime"
-                  value={formData.deliveryTime}
+                  value={form.data.deliveryTime}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      deliveryTime: e.target.value.trim(),
-                    })
+                    form.setField("deliveryTime", e.target.value.trim())
                   }
                   placeholder="ej: 3-5 días"
                 />
-                {errors.deliveryTime && (
-                  <p className="text-destructive text-sm">{errors.deliveryTime}</p>
+                {form.errors.deliveryTime && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.deliveryTime}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="minimumOrder">Pedido mínimo ($)</Label>
+                <p className="text-muted-foreground text-xs">
+                  Solo números, mínimo 0
+                </p>
                 <Input
                   id="minimumOrder"
                   type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.minimumOrder}
+                  min={0}
+                  step={0.01}
+                  value={form.data.minimumOrder}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      minimumOrder: parseFloat(e.target.value) || 0,
-                    })
+                    form.setField(
+                      "minimumOrder",
+                      Math.max(0, parseFloat(e.target.value) || 0)
+                    )
                   }
                   placeholder="0.00"
+                  aria-invalid={Boolean(form.errors.minimumOrder)}
+                  aria-describedby="minimumOrder-help"
                 />
-                {errors.minimumOrder && (
-                  <p className="text-destructive text-sm">{errors.minimumOrder}</p>
+                <span id="minimumOrder-help" className="sr-only">
+                  Pedido mínimo debe ser ≥ 0
+                </span>
+                {form.errors.minimumOrder && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.minimumOrder}
+                  </p>
                 )}
               </div>
             </div>
@@ -395,10 +449,13 @@ export function SupplierForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="rating">Calificación (1-5)</Label>
+                <p className="text-muted-foreground text-xs">
+                  Selecciona un valor entre 1 y 5
+                </p>
                 <Select
-                  value={formData.rating?.toString() || "5"}
+                  value={form.data.rating?.toString() || "5"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, rating: parseInt(value) })
+                    form.setField("rating", parseInt(value))
                   }
                 >
                   <SelectTrigger>
@@ -412,16 +469,18 @@ export function SupplierForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.rating && (
-                  <p className="text-destructive text-sm">{errors.rating}</p>
+                {form.errors.rating && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.rating}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
                 <Select
-                  value={formData.status}
+                  value={form.data.status}
                   onValueChange={(value: string) =>
-                    setFormData({ ...formData, status: value })
+                    form.setField("status", value)
                   }
                 >
                   <SelectTrigger>
@@ -432,8 +491,10 @@ export function SupplierForm({
                     <SelectItem value="inactive">Inactivo</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.status && (
-                  <p className="text-destructive text-sm">{errors.status}</p>
+                {form.errors.status && (
+                  <p className="text-destructive text-sm">
+                    {form.errors.status}
+                  </p>
                 )}
               </div>
             </div>
@@ -442,15 +503,13 @@ export function SupplierForm({
               <Label htmlFor="notes">Notas adicionales</Label>
               <Textarea
                 id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
+                value={form.data.notes}
+                onChange={(e) => form.setField("notes", e.target.value)}
                 placeholder="Información adicional sobre el proveedor"
                 rows={3}
               />
-              {errors.notes && (
-                <p className="text-destructive text-sm">{errors.notes}</p>
+              {form.errors.notes && (
+                <p className="text-destructive text-sm">{form.errors.notes}</p>
               )}
             </div>
           </div>

@@ -9,6 +9,7 @@ import { Package, Calendar, DollarSign, AlertTriangle, RefreshCw, Settings, Tren
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api, type Product, type Sale } from "@/lib/api";
+import { reportsService } from "@/lib/reports-service";
 import { exportToExcel, exportToPDF, exportObsolescenceHistoryToPDF, exportObsolescenceHistoryToExcel } from "@/lib/export-utils";
 import { useAlerts } from "@/contexts/alerts-context";
 import { toast } from "sonner";
@@ -32,11 +33,11 @@ export function ObsolescenceTab() {
     const load = async () => {
       try {
         setLoading(true);
-        const [data, salesData] = await Promise.all([
+        const [productsData, salesData] = await Promise.all([
           api.getProducts(),
           api.getSales(),
         ]);
-        setProducts(data);
+        setProducts(productsData);
         setSales(salesData);
       } catch (e) {
         console.error("Error loading products", e);

@@ -10,6 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowUpCircle,
   ArrowDownCircle,
@@ -20,7 +28,8 @@ import {
   MessageSquare,
   User,
 } from "lucide-react";
-import { api, type StockMovement } from "@/lib/api";
+import { api, type StockMovement, type Product } from "@/lib/api";
+import { inventoryService } from "@/lib/inventory-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -49,31 +58,40 @@ export function StockMovementHistory({
   );
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
+  const [selectedType, setSelectedType] = useState<"all" | "entrada" | "salida" | "ajuste">("all");
+  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(productId);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const movements = externalMovements || internalMovements;
+  const totalPages = Math.max(1, Math.ceil(movements.length / pageSize));
+  const startIndex = (page - 1) * pageSize;
+  const visibleMovements = movements.slice(startIndex, startIndex + pageSize);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const list = await api.getProducts();
+        setProducts(list);
+      } catch {}
+    };
+    loadProducts();
+  }, []);
 
   useEffect(() => {
     if (!externalMovements) {
       const fetchMovements = async () => {
         setIsLoading(true);
         try {
-          let data = await api.getStockMovements(productId);
+          let data = await inventoryService.getStockMovements(selectedProductId);
 
-          if (movementType && movementType !== "all") {
-            const typeMap: Record<string, string> = {
-              entry: "entrada",
-              sale: "salida",
-              adjustment: "ajuste",
-            };
-
-            if (typeMap[movementType]) {
-              data = data.filter(
-                (movement) => movement.type === typeMap[movementType]
-              );
-            }
+          if (selectedType !== "all") {
+            data = data.filter((movement) => movement.type === selectedType);
           }
 
           setInternalMovements(data);
+          setPage(1);
         } catch (error) {
           console.error("Error fetching stock movements:", error);
         } finally {
@@ -85,7 +103,7 @@ export function StockMovementHistory({
     } else {
       setIsLoading(false);
     }
-  }, [productId, movementType, externalMovements]);
+  }, [selectedProductId, selectedType, externalMovements]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -141,7 +159,7 @@ export function StockMovementHistory({
   // Vista para móviles - Tarjetas individuales
   const MobileView = () => (
     <div className="space-y-3">
-      {movements.map((movement) => (
+      {visibleMovements.map((movement) => (
         <Card key={movement.id} className="p-3">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
@@ -219,7 +237,7 @@ export function StockMovementHistory({
   const TabletView = () => (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 bg-background z-10">
           <TableRow>
             <TableHead className="w-[100px]">Fecha</TableHead>
             <TableHead className="w-[100px]">Tipo</TableHead>
@@ -230,7 +248,7 @@ export function StockMovementHistory({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {movements.map((movement) => (
+          {visibleMovements.map((movement) => (
             <TableRow key={movement.id}>
               <TableCell className="text-sm py-3">
                 {new Date(movement.date).toLocaleDateString("es-ES", {
@@ -295,7 +313,7 @@ export function StockMovementHistory({
   const DesktopView = () => (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 bg-background z-10">
           <TableRow>
             <TableHead className="w-[120px]">Fecha y Hora</TableHead>
             <TableHead className="w-[120px]">Tipo</TableHead>
@@ -306,7 +324,7 @@ export function StockMovementHistory({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {movements.map((movement) => (
+          {visibleMovements.map((movement) => (
             <TableRow key={movement.id}>
               <TableCell>
                 <div className="flex flex-col">
@@ -416,6 +434,44 @@ export function StockMovementHistory({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="w-full sm:w-48">
+            <Select
+              value={selectedType}
+              onValueChange={(v) => setSelectedType(v as "all" | "entrada" | "salida" | "ajuste")}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="entrada">Entrada</SelectItem>
+                <SelectItem value="salida">Salida</SelectItem>
+                <SelectItem value="ajuste">Ajuste</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:flex-1">
+            <Select
+              value={selectedProductId || "all"}
+              onValueChange={(v) =>
+                setSelectedProductId(v === "all" ? undefined : v)
+              }
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Producto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los productos</SelectItem>
+                {products.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.sku ? `${p.sku} — ${p.name}` : p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         {movements.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
@@ -439,6 +495,51 @@ export function StockMovementHistory({
                 ← Desliza horizontalmente para ver más información →
               </div>
             )}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm">
+                  Página {page} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={page >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Filas</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => {
+                    const size = parseInt(v, 10);
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </>
         )}
       </CardContent>

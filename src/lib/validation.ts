@@ -95,7 +95,19 @@ export const userFormSchema = (opts: { requirePassword: boolean }) =>
 export const supplierFormSchema = z.object({
   name: z.string().min(2, "Nombre requerido"),
   contactPerson: z.string().min(2, "Contacto requerido"),
-  email: z.string().email("Email inválido"),
+  email: z
+    .string()
+    .email("Email inválido")
+    .refine(
+      (v) => {
+        const [, domain] = v.split("@");
+        if (!domain) return false;
+        const parts = domain.split(".");
+        const tld = parts[parts.length - 1];
+        return parts.length >= 2 && /^[a-zA-Z]{2,24}$/.test(tld);
+      },
+      { message: "Dominio de email inválido" }
+    ),
   phone: z.string().refine(isValidEcuadorPhone, {
     message: "Teléfono ecuatoriano inválido",
   }),
@@ -153,7 +165,19 @@ export const vehicleSchema = z.object({
 export const customerFormSchema = z
   .object({
     name: z.string().min(2, "Nombre requerido"),
-    email: z.string().email("Email inválido"),
+    email: z
+      .string()
+      .email("Email inválido")
+      .refine(
+        (v) => {
+          const [, domain] = v.split("@");
+          if (!domain) return false;
+          const parts = domain.split(".");
+          const tld = parts[parts.length - 1];
+          return parts.length >= 2 && /^[a-zA-Z]{2,24}$/.test(tld);
+        },
+        { message: "Dominio de email inválido" }
+      ),
     phone: z.string().refine(isValidEcuadorPhone, {
       message: "Teléfono ecuatoriano inválido",
     }),
@@ -208,6 +232,55 @@ export type ProfileSchema = z.infer<typeof profileSchema>;
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Contraseña mínima de 6 caracteres"),
+});
+
+const luhnCheck = (num: string) => {
+  const digits = num.replace(/\D/g, "");
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = parseInt(digits.charAt(i), 10);
+    if (alt) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0 && /^\d{13,19}$/.test(digits);
+};
+
+export const cardPaymentSchema = z.object({
+  number: z
+    .string()
+    .refine((v) => luhnCheck(v), { message: "Tarjeta inválida" }),
+  expiry: z
+    .string()
+    .refine((v) => /^\d{2}\/\d{2}$/.test(v), { message: "Formato MM/AA" })
+    .refine((v) => {
+      const [mm, yy] = v.split("/");
+      const month = parseInt(mm, 10);
+      if (month < 1 || month > 12) return false;
+      const year = 2000 + parseInt(yy, 10);
+      const now = new Date();
+      const exp = new Date(year, month);
+      return exp > now;
+    }, { message: "Tarjeta expirada" }),
+  cvv: z.string().refine((v) => /^\d{3,4}$/.test(v), { message: "CVV inválido" }),
+  holder: z.string().min(2, "Titular requerido"),
+});
+
+export const transferPaymentSchema = z.object({
+  bank: z.string().min(2, "Banco requerido"),
+  reference: z.string().refine((v) => /^[A-Za-z0-9\-]{8,20}$/.test(v), {
+    message: "Referencia inválida",
+  }),
+  dunaCode: z
+    .string()
+    .optional()
+    .refine((v) => !v || v.includes("TRF") || v.includes("BANK"), {
+      message: "Código de escaneo inválido",
+    }),
 });
 
 export const productSchema = z

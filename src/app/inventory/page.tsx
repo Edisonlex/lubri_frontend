@@ -38,6 +38,8 @@ import { toast } from "sonner";
 import type { InventoryFilters as InventoryFiltersType } from "@/lib/validation";
 import type { Sale } from "@/lib/api";
 import { useScrollIndicator } from "@/hooks/use-scroll-indicator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StockMovementHistory } from "@/components/inventory/stock-movement-history";
 
 export default function InventoryPage() {
   const router = useRouter();
@@ -68,6 +70,7 @@ export default function InventoryPage() {
   // Estados para controlar la visibilidad de los modales en móvil
   const [showExportModal, setShowExportModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showMovementHistory, setShowMovementHistory] = useState(false);
 
   const loadProducts = async () => {
     try {
@@ -146,7 +149,7 @@ export default function InventoryPage() {
           <BarChart2 className="h-4 w-4 mr-2" />
           Análisis
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/inventory/movements")}>
+        <DropdownMenuItem onClick={() => setShowMovementHistory(true)}>
           <History className="h-4 w-4 mr-2" />
           Movimientos
         </DropdownMenuItem>
@@ -189,15 +192,7 @@ export default function InventoryPage() {
 
       <AnalyticsModal products={products} />
 
-      <Button
-        variant="outline"
-        className="bg-transparent h-8 sm:h-10 text-xs sm:text-sm px-2 sm:px-4"
-        size="sm"
-        onClick={() => router.push("/inventory/movements")}
-      >
-        <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-        Movimientos
-      </Button>
+     
     </div>
   );
 
@@ -239,13 +234,16 @@ export default function InventoryPage() {
       >
         <TabsList 
           ref={scrollRef}
-          className={`w-full overflow-x-auto flex gap-2 min-w-max mb-4 h-10 sm:grid sm:grid-cols-2 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
+          className={`w-full overflow-x-auto flex gap-2 min-w-max mb-4 h-10 sm:grid sm:grid-cols-3 ${canScroll ? 'can-scroll' : ''} ${isScrolledLeft ? 'scrolled-left' : ''}`}
         >
           <TabsTrigger value="inventory" className="text-xs sm:text-sm">
             Inventario
           </TabsTrigger>
           <TabsTrigger value="realtime" className="text-xs sm:text-sm">
             Tiempo Real
+          </TabsTrigger>
+          <TabsTrigger value="movements" className="text-xs sm:text-sm">
+            Movimientos
           </TabsTrigger>
         </TabsList>
 
@@ -320,6 +318,9 @@ export default function InventoryPage() {
           <div className="overflow-hidden">
             <RealTimeInventory />
           </div>
+        </TabsContent>
+        <TabsContent value="movements" className="space-y-4">
+          <StockMovementHistory />
         </TabsContent>
       </Tabs>
 

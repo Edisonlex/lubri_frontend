@@ -60,14 +60,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={refreshDashboardData}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Actualizar
-            </Button>
+            
             <Button
               variant="outline"
               onClick={() => router.push("/obsolescence")}

@@ -1,6 +1,7 @@
 // hooks/use-stock-management.ts
 import { useAlerts } from "@/contexts/alerts-context";
 import { api, Product } from "@/lib/api";
+import { inventoryService } from "@/lib/inventory-service";
 import { toast } from "sonner";
 
 export function useStockManagement() {
@@ -29,21 +30,18 @@ export function useStockManagement() {
     productId: string,
     type: "entrada" | "salida" | "ajuste",
     quantity: number,
-    reason: string,
-    minStock: number,
-    newStock: number
+    reason: string
   ) => {
     try {
-      // Registrar movimiento en la API
-      await api.createStockMovement({
+      // Registrar movimiento en la API usando el servicio de inventario
+      await inventoryService.createStockMovement(
         productId,
         type,
         quantity,
         reason,
-        date: new Date().toISOString(),
-        userId: "current-user-id",
-        documentRef: `MOV-${Date.now()}`,
-      });
+        "current-user-id",
+        `MOV-${Date.now()}`
+      );
 
       // Refrescar alertas
       await refreshAlerts();

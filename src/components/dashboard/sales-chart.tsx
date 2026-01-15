@@ -24,12 +24,18 @@ import { SaleDetails } from "@/components/sales/sale-details";
 import { generateInvoicePDF } from "@/components/pos/invoice-generator";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { exportSalesToPDF, exportSalesToExcel } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/utils";
 
 function getWeekdayShort(date: Date) {
   const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -50,17 +56,17 @@ interface DaySalesTooltipProps {
   handlePrintInvoice: (sale: any) => void;
 }
 
-function DaySalesTooltip({ 
-  active, 
-  payload, 
-  sales, 
-  setSelectedSale, 
-  setIsDetailsOpen, 
-  setSelectedDay, 
-  setDaySales, 
-  setIsDayOpen, 
-  handleDownloadInvoice, 
-  handlePrintInvoice 
+function DaySalesTooltip({
+  active,
+  payload,
+  sales,
+  setSelectedSale,
+  setIsDetailsOpen,
+  setSelectedDay,
+  setDaySales,
+  setIsDayOpen,
+  handleDownloadInvoice,
+  handlePrintInvoice,
 }: DaySalesTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   const point = payload[0].payload;
@@ -69,32 +75,36 @@ function DaySalesTooltip({
     (s) => new Date(s.date).toDateString() === pointDate.toDateString()
   );
   const totalSales = daySales.reduce((sum, sale) => sum + sale.total, 0);
-  
+
   return (
     <div className="p-3 space-y-2 bg-card text-card-foreground border rounded-lg shadow-lg">
       <div className="flex justify-between items-center">
         <p className="font-semibold text-sm">
           {format(pointDate, "EEEE dd/MM", { locale: es })}
         </p>
-        <p className="font-bold text-primary">
-          ${totalSales.toFixed(2)}
-        </p>
+        <p className="font-bold text-primary">${totalSales.toFixed(2)}</p>
       </div>
       {daySales.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sin ventas registradas</p>
       ) : (
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
-            {daySales.length} venta{daySales.length !== 1 ? 's' : ''} registrada{daySales.length !== 1 ? 's' : ''}
+            {daySales.length} venta{daySales.length !== 1 ? "s" : ""} registrada
+            {daySales.length !== 1 ? "s" : ""}
           </p>
           {daySales.slice(0, 3).map((s) => (
-            <div key={s.id} className="flex justify-between items-center text-xs py-1 border-b border-border/50 last:border-0">
-              <span className="truncate max-w-[120px]">{s.customerName || "Cliente"}</span>
-              <span className="font-medium">${s.total.toFixed(2)}</span>
+            <div
+              key={s.id}
+              className="flex justify-between items-center text-xs py-1 border-b border-border/50 last:border-0"
+            >
+              <span className="truncate max-w-[120px]">
+                {s.customerName || "Cliente"}
+              </span>
+                      <span className="font-medium">{formatCurrency(s.total)}</span>
             </div>
           ))}
           {daySales.length > 3 && (
-            <button 
+            <button
               className="text-xs text-primary hover:text-primary/80 underline"
               onClick={() => {
                 setSelectedDay(pointDate);
@@ -125,7 +135,9 @@ export function SalesChart() {
     const list = daySales.filter((s) => {
       if (!q) return true;
       const customer = (s.customerName || "").toLowerCase();
-      const products = s.items.map((i) => i.productName.toLowerCase()).join(", ");
+      const products = s.items
+        .map((i) => i.productName.toLowerCase())
+        .join(", ");
       return customer.includes(q) || products.includes(q);
     });
     const subtotal = list.reduce((sum, s) => sum + s.subtotal, 0);
@@ -247,7 +259,8 @@ export function SalesChart() {
       tax: sale.tax,
       total: sale.total,
       paymentMethod:
-        sale.paymentMethod.charAt(0).toUpperCase() + sale.paymentMethod.slice(1),
+        sale.paymentMethod.charAt(0).toUpperCase() +
+        sale.paymentMethod.slice(1),
       cashReceived: undefined,
       change: undefined,
     };
@@ -263,11 +276,23 @@ export function SalesChart() {
     generateInvoicePDF(data, { action: "print" });
   };
 
-  const handlePointClick = (index: number) => {
+  const handleChartClick = (chartState: any) => {
+    if (chartState?.activePayload?.length) {
+      const dataPoint = chartState.activePayload[0].payload;
+      const index = salesData.findIndex((d) => d.fullDate === dataPoint.fullDate);
+      if (index !== -1) {
+        handlePointClick(dataPoint, index);
+      }
+    }
+  };
+
+  const handlePointClick = (data: any, index: number) => {
     const today = new Date();
     const dayMs = 24 * 60 * 60 * 1000;
     const d = new Date(today.getTime() - (6 - index) * dayMs);
-    const matched = sales.filter((s) => new Date(s.date).toDateString() === d.toDateString());
+    const matched = sales.filter(
+      (s) => new Date(s.date).toDateString() === d.toDateString()
+    );
     setSelectedDay(d);
     setDaySales(matched);
     setDaySearch("");
@@ -282,7 +307,9 @@ export function SalesChart() {
     >
       <Card>
         <CardHeader className="pb-3 sm:pb-5 px-3 sm:px-6 pt-3 sm:pt-6">
-          <CardTitle className="text-base sm:text-lg">Tendencia de Ventas</CardTitle>
+          <CardTitle className="text-base sm:text-lg">
+            Tendencia de Ventas
+          </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Tendencia de ventas diarias - últimos 7 días
           </CardDescription>
@@ -290,11 +317,15 @@ export function SalesChart() {
         <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
           <div className="h-64 sm:h-72 md:h-80 lg:h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+              <AreaChart
+                data={salesData}
+                margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+                onClick={handleChartClick}
+              >
                 <defs>
                   <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -322,12 +353,13 @@ export function SalesChart() {
                   axisLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   tickLine={{ stroke: "hsl(214.3 31.8% 91.4%)" }}
                   className="dark:[fill:hsl(0_0%_90%)] dark:[&_line]:stroke-gray-500"
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => formatCurrency(Number(value))}
+                  domain={[0, (dataMax: number) => dataMax * 1.15]}
                 />
                 <Tooltip
                   content={(props) => (
-                    <DaySalesTooltip 
-                      {...props} 
+                    <DaySalesTooltip
+                      {...props}
                       sales={sales}
                       setSelectedSale={setSelectedSale}
                       setIsDetailsOpen={setIsDetailsOpen}
@@ -351,7 +383,7 @@ export function SalesChart() {
                   strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorVentas)"
-                  onClick={(_, index) => handlePointClick(index)}
+                  
                   name="Ventas"
                 />
               </AreaChart>
@@ -371,12 +403,17 @@ export function SalesChart() {
                   >
                     <div className="flex justify-between items-center">
                       <span className="text-sm">
-                        {sale.customerName || "Cliente"} · {sale.items[0]?.productName}
+                        {sale.customerName || "Cliente"} ·{" "}
+                        {sale.items[0]?.productName}
                       </span>
-                      <span className="font-semibold">${sale.total.toFixed(2)}</span>
+                      <span className="font-semibold">
+                        ${sale.total.toFixed(2)}
+                      </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {format(parseISO(sale.date), "dd/MM/yyyy HH:mm", { locale: es })}
+                      {format(parseISO(sale.date), "dd/MM/yyyy HH:mm", {
+                        locale: es,
+                      })}
                     </span>
                   </button>
                 ))}
@@ -389,7 +426,10 @@ export function SalesChart() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Ventas del {selectedDay ? format(selectedDay, "dd/MM/yyyy", { locale: es }) : "día"}
+              Ventas del{" "}
+              {selectedDay
+                ? format(selectedDay, "dd/MM/yyyy", { locale: es })
+                : "día"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -399,15 +439,27 @@ export function SalesChart() {
               onChange={(e) => setDaySearch(e.target.value)}
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => handleExportDay("pdf")}>Exportar PDF</Button>
-              <Button size="sm" variant="outline" onClick={() => handleExportDay("excel")}>Exportar Excel</Button>
+              <Button size="sm" onClick={() => handleExportDay("pdf")}>
+                Exportar PDF
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExportDay("excel")}
+              >
+                Exportar Excel
+              </Button>
             </div>
             {daySales.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay ventas registradas para este día.</p>
+              <p className="text-sm text-muted-foreground">
+                No hay ventas registradas para este día.
+              </p>
             ) : (
               <>
                 {dayView.count === 0 ? (
-                  <p className="text-sm text-muted-foreground">No hay resultados para la búsqueda.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No hay resultados para la búsqueda.
+                  </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="p-2 border rounded-lg">
@@ -416,7 +468,9 @@ export function SalesChart() {
                     </div>
                     <div className="p-2 border rounded-lg">
                       <p className="text-xs text-muted-foreground">Subtotal</p>
-                      <p className="font-semibold">${dayView.subtotal.toFixed(2)}</p>
+                      <p className="font-semibold">
+                        ${dayView.subtotal.toFixed(2)}
+                      </p>
                     </div>
                     <div className="p-2 border rounded-lg">
                       <p className="text-xs text-muted-foreground">IVA</p>
@@ -424,36 +478,63 @@ export function SalesChart() {
                     </div>
                     <div className="p-2 border rounded-lg">
                       <p className="text-xs text-muted-foreground">Total</p>
-                      <p className="font-semibold text-primary">${dayView.total.toFixed(2)}</p>
+                      <p className="font-semibold text-primary">
+                        ${dayView.total.toFixed(2)}
+                      </p>
                     </div>
                   </div>
                 )}
                 {dayView.list.map((s) => (
-                <div key={s.id} className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{s.customerName || "Cliente"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.items.map((i) => i.productName).join(", ")}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-bold">${s.total.toFixed(2)}</span>
-                      <div className="mt-1">
-                        <Badge variant="outline" className="capitalize text-xs">{s.paymentMethod}</Badge>
+                  <div key={s.id} className="p-3 border rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">
+                          {s.customerName || "Cliente"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {s.items.map((i) => i.productName).join(", ")}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold">${s.total.toFixed(2)}</span>
+                        <div className="mt-1">
+                          <Badge
+                            variant="outline"
+                            className="capitalize text-xs"
+                          >
+                            {s.paymentMethod}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
+                    <Separator className="my-2" />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedSale(s);
+                          setIsDetailsOpen(true);
+                        }}
+                      >
+                        Ver detalle
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadInvoice(s)}
+                      >
+                        Descargar
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handlePrintInvoice(s)}
+                      >
+                        Imprimir
+                      </Button>
+                    </div>
                   </div>
-                  <Separator className="my-2" />
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setSelectedSale(s); setIsDetailsOpen(true); }}>
-                      Ver detalle
-                    </Button>
-                    <Button size="sm" onClick={() => handleDownloadInvoice(s)}>Descargar</Button>
-                    <Button variant="secondary" size="sm" onClick={() => handlePrintInvoice(s)}>Imprimir</Button>
-                  </div>
-                </div>
-              ))}
+                ))}
               </>
             )}
           </div>

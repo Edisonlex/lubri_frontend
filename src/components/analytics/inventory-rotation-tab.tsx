@@ -19,6 +19,7 @@ import {
   Legend,
 } from "recharts";
 import { api } from "@/lib/api";
+import { reportsService } from "@/lib/reports-service";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -35,8 +36,8 @@ export function InventoryRotationTab({ customers }: InventoryRotationTabProps) {
     const loadData = async () => {
       try {
         const [productsData] = await Promise.all([
-          api.getProducts(),
-          api.getProductClassification(),
+          reportsService.getProducts(),
+          reportsService.getProductClassification(),
         ]);
         setProducts(productsData);
       } catch (error) {
@@ -58,12 +59,29 @@ export function InventoryRotationTab({ customers }: InventoryRotationTabProps) {
     );
   }
 
-  const rotationData = [
-    { category: "Aceites", rotation: 8.5, optimal: 6 },
-    { category: "Filtros", rotation: 12.3, optimal: 10 },
-    { category: "Lubricantes", rotation: 4.2, optimal: 5 },
-    { category: "Aditivos", rotation: 3.1, optimal: 4 },
-  ];
+  const rotationData = (() => {
+    const byCategory: Record<string, number[]> = {};
+    for (const p of products) {
+      const cat = p.category || "Sin categoría";
+      const r = typeof p.rotationRate === "number" ? p.rotationRate : 0;
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(r);
+    }
+    const entries = Object.entries(byCategory).map(([category, rates]) => {
+      const avg = rates.reduce((s, v) => s + v, 0) / (rates.length || 1);
+      const sorted = [...rates].sort((a, b) => a - b);
+      const p75Index = Math.max(0, Math.floor(0.75 * (sorted.length - 1)));
+      const p75 = sorted.length > 0 ? sorted[p75Index] : avg;
+      return {
+        category,
+        rotation: Number((avg * 100).toFixed(1)),
+        optimal: Number((p75 * 100).toFixed(1)),
+      };
+    });
+    return entries.length > 0
+      ? entries.sort((a, b) => b.rotation - a.rotation).slice(0, 8)
+      : [{ category: "Sin datos", rotation: 0, optimal: 0 }];
+  })();
 
   return (
     <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">

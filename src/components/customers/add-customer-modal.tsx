@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { Customer, Vehicle } from "@/lib/api";
 import { usePOS } from "@/contexts/pos-context";
 import { customerFormSchema, plateRegex } from "@/lib/validation";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export function AddCustomerModal({
   onSave,
 }: AddCustomerModalProps) {
   const { addCustomer, updateCustomer } = usePOS();
-  const [customerData, setCustomerData] = useState({
+  const initialCustomerData = {
     name: "",
     email: "",
     phone: "",
@@ -57,15 +58,16 @@ export function AddCustomerModal({
     notes: "",
     preferredContact: "phone" as "phone" | "email" | "whatsapp",
     status: "active" as "active" | "inactive",
-  });
+    vehicles: [] as Omit<Vehicle, "id">[],
+  };
+  const customerForm = useZodLiveForm(customerFormSchema, initialCustomerData);
 
   const [vehicles, setVehicles] = useState<Omit<Vehicle, "id">[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (customer) {
-      setCustomerData({
+      customerForm.setData({
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
@@ -78,26 +80,33 @@ export function AddCustomerModal({
         notes: customer.notes,
         preferredContact: customer.preferredContact,
         status: customer.status,
+        vehicles: customer.vehicles.map(({ id, ...vehicle }) => vehicle),
       });
       setVehicles(customer.vehicles.map(({ id, ...vehicle }) => vehicle));
     } else {
-      setCustomerData({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        idNumber: "",
-        customerType: "individual",
-        businessName: "",
-        ruc: "",
-        notes: "",
-        preferredContact: "phone",
-        status: "active",
-      });
+      customerForm.reset(initialCustomerData);
       setVehicles([]);
     }
   }, [customer]);
+
+  useEffect(() => {
+    customerForm.validate({
+      ...customerForm.data,
+      vehicles: vehicles.map((v) => ({
+        brand: v.brand,
+        model: v.model,
+        year: v.year,
+        plate: v.plate,
+        engine: v.engine || "",
+        mileage: v.mileage || 0,
+        lastService: v.lastService || "",
+        nextService: v.nextService || "",
+        oilType: v.oilType || "",
+        filterType: v.filterType || "",
+        color: v.color || "",
+      })),
+    });
+  }, [customerForm.data, vehicles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +114,7 @@ export function AddCustomerModal({
 
     try {
       const result = customerFormSchema.safeParse({
-        ...customerData,
+        ...customerForm.data,
         vehicles: vehicles.map((v) => ({
           brand: v.brand,
           model: v.model,
@@ -121,16 +130,9 @@ export function AddCustomerModal({
         })),
       });
       if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          const key = String(err.path.join(".") || "general");
-          fieldErrors[key] = err.message;
-        });
-        setErrors(fieldErrors);
         toast.error("Revisa los campos marcados y corrige los datos");
         return;
       }
-      setErrors({});
       if (customer) {
         // Actualización de cliente existente
         const updatedVehicles = vehicles.map((vehicle, index) => ({
@@ -138,7 +140,7 @@ export function AddCustomerModal({
           ...vehicle,
         }));
         const updatedCustomer: Partial<Customer> = {
-          ...customerData,
+          ...customerForm.data,
           vehicles: updatedVehicles,
         };
         const result = await updateCustomer(customer.id, updatedCustomer);
@@ -243,15 +245,12 @@ export function AddCustomerModal({
                   <Button
                     type="button"
                     variant={
-                      customerData.customerType === "individual"
+                      customerForm.data.customerType === "individual"
                         ? "default"
                         : "outline"
                     }
                     onClick={() =>
-                      setCustomerData({
-                        ...customerData,
-                        customerType: "individual",
-                      })
+                      customerForm.setField("customerType", "individual")
                     }
                     className="h-12 sm:h-14 flex flex-col gap-1 text-xs sm:text-sm py-2"
                   >
@@ -261,15 +260,12 @@ export function AddCustomerModal({
                   <Button
                     type="button"
                     variant={
-                      customerData.customerType === "business"
+                      customerForm.data.customerType === "business"
                         ? "default"
                         : "outline"
                     }
                     onClick={() =>
-                      setCustomerData({
-                        ...customerData,
-                        customerType: "business",
-                      })
+                      customerForm.setField("customerType", "business")
                     }
                     className="h-12 sm:h-14 flex flex-col gap-1 text-xs sm:text-sm py-2"
                   >
@@ -289,61 +285,74 @@ export function AddCustomerModal({
                 <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-xs sm:text-sm">
-                      {customerData.customerType === "individual"
+                      {customerForm.data.customerType === "individual"
                         ? "Nombre Completo"
                         : "Razón Social"}{" "}
                       *
                     </Label>
+                    <p id="name-help" className="text-muted-foreground text-xs">
+                      Mínimo 2 caracteres
+                    </p>
                     <Input
+                      value={customerForm.data.name}
                       id="name"
-                      value={customerData.name}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          name: e.target.value,
-                        })
+                        customerForm.setField("name", e.target.value)
                       }
                       placeholder={
-                        customerData.customerType === "individual"
+                        customerForm.data.customerType === "individual"
                           ? "Juan Pérez"
                           : "Empresa de Transportes S.A."
                       }
-                      required
+                      aria-invalid={Boolean(customerForm.errors.name)}
                       className="h-9 sm:h-10 text-sm"
                     />
-                    {errors.name && (
-                      <p className="text-destructive text-sm">{errors.name}</p>
+                    {customerForm.errors.name && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.name}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="idNumber" className="text-xs sm:text-sm">
-                      {customerData.customerType === "individual"
+                      {customerForm.data.customerType === "individual"
                         ? "Cédula"
                         : "RUC"}{" "}
                       *
                     </Label>
+                    <p
+                      id="idNumber-help"
+                      className="text-muted-foreground text-xs"
+                    >
+                      {customerForm.data.customerType === "individual"
+                        ? "Solo dígitos, 10 caracteres"
+                        : "Solo dígitos, 13 caracteres"}
+                    </p>
                     <Input
+                      value={customerForm.data.idNumber}
+                      inputMode="numeric"
                       id="idNumber"
-                      value={customerData.idNumber}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          idNumber: e.target.value.replace(/\D/g, ""),
-                        })
+                        customerForm.setField(
+                          "idNumber",
+                          e.target.value.replace(/\D/g, "")
+                        )
                       }
                       placeholder={
-                        customerData.customerType === "individual"
+                        customerForm.data.customerType === "individual"
                           ? "1712345678"
                           : "1792345678001"
                       }
-                      required
+                      aria-invalid={Boolean(customerForm.errors.idNumber)}
                       className="h-9 sm:h-10 text-sm"
                     />
-                    {errors.idNumber && (
-                      <p className="text-destructive text-sm">{errors.idNumber}</p>
+                    {customerForm.errors.idNumber && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.idNumber}
+                      </p>
                     )}
                   </div>
-                  {customerData.customerType === "business" && (
+                  {customerForm.data.customerType === "business" && (
                     <>
                       <div className="space-y-2">
                         <Label
@@ -352,14 +361,17 @@ export function AddCustomerModal({
                         >
                           Nombre Comercial
                         </Label>
+                        <p className="text-muted-foreground text-xs">
+                          Opcional
+                        </p>
                         <Input
+                          value={customerForm.data.businessName}
                           id="businessName"
-                          value={customerData.businessName}
                           onChange={(e) =>
-                            setCustomerData({
-                              ...customerData,
-                              businessName: e.target.value,
-                            })
+                            customerForm.setField(
+                              "businessName",
+                              e.target.value
+                            )
                           }
                           placeholder="Transportes García"
                           className="h-9 sm:h-10 text-sm"
@@ -369,21 +381,27 @@ export function AddCustomerModal({
                         <Label htmlFor="ruc" className="text-xs sm:text-sm">
                           RUC
                         </Label>
-                      <Input
-                        id="ruc"
-                        value={customerData.ruc}
+                        <p className="text-muted-foreground text-xs">
+                          13 dígitos, solo números
+                        </p>
+                        <Input
+                          value={customerForm.data.ruc}
+                          inputMode="numeric"
+                          id="ruc"
                           onChange={(e) =>
-                            setCustomerData({
-                              ...customerData,
-                              ruc: e.target.value.replace(/\D/g, ""),
-                            })
+                            customerForm.setField(
+                              "ruc",
+                              e.target.value.replace(/\D/g, "")
+                            )
                           }
-                          placeholder="1792345678001"
-                        className="h-9 sm:h-10 text-sm"
-                      />
-                      {errors.ruc && (
-                        <p className="text-destructive text-sm">{errors.ruc}</p>
-                      )}
+                          aria-invalid={Boolean(customerForm.errors.ruc)}
+                          className="h-9 sm:h-10 text-sm"
+                        />
+                        {customerForm.errors.ruc && (
+                          <p className="text-destructive text-sm">
+                            {customerForm.errors.ruc}
+                          </p>
+                        )}
                       </div>
                     </>
                   )}
@@ -402,86 +420,107 @@ export function AddCustomerModal({
                     <Label htmlFor="phone" className="text-xs sm:text-sm">
                       Teléfono *
                     </Label>
+                    <p
+                      id="phone-help"
+                      className="text-muted-foreground text-xs"
+                    >
+                      10 dígitos, solo números
+                    </p>
                     <Input
+                      value={customerForm.data.phone}
+                      inputMode="numeric"
                       id="phone"
-                      value={customerData.phone}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          phone: e.target.value.replace(/\D/g, ""),
-                        })
+                        customerForm.setField(
+                          "phone",
+                          e.target.value.replace(/\D/g, "")
+                        )
                       }
                       placeholder="+593 99 123 4567"
-                      required
+                      aria-invalid={Boolean(customerForm.errors.phone)}
                       className="h-9 sm:h-10 text-sm"
                     />
-                    {errors.phone && (
-                      <p className="text-destructive text-sm">{errors.phone}</p>
+                    {customerForm.errors.phone && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.phone}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs sm:text-sm">
                       Email *
                     </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Dirección válida
+                    </p>
                     <Input
+                      value={customerForm.data.email}
                       id="email"
                       type="email"
-                      value={customerData.email}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          email: e.target.value.trim(),
-                        })
+                        customerForm.setField("email", e.target.value.trim())
                       }
                       placeholder="cliente@email.com"
-                      required
+                      aria-invalid={Boolean(customerForm.errors.email)}
                       className="h-9 sm:h-10 text-sm"
                     />
-                    {errors.email && (
-                      <p className="text-destructive text-sm">{errors.email}</p>
+                    {customerForm.errors.email && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.email}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-xs sm:text-sm">
                       Dirección *
                     </Label>
+                    <p
+                      id="address-help"
+                      className="text-muted-foreground text-xs"
+                    >
+                      Mínimo 4 caracteres
+                    </p>
                     <Input
+                      value={customerForm.data.address}
                       id="address"
-                      value={customerData.address}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          address: e.target.value,
-                        })
+                        customerForm.setField("address", e.target.value)
                       }
                       placeholder="Av. Amazonas 123"
-                      required
+                      aria-invalid={Boolean(customerForm.errors.address)}
                       className="h-9 sm:h-10 text-sm"
                     />
-                    {errors.address && (
-                      <p className="text-destructive text-sm">{errors.address}</p>
+                    {customerForm.errors.address && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.address}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-xs sm:text-sm">
                       Ciudad *
                     </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Capitalizada automáticamente
+                    </p>
                     <Input
                       id="city"
-                      value={customerData.city}
+                      value={customerForm.data.city}
                       onChange={(e) => {
                         const raw = e.target.value;
                         const value = raw
-                          ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+                          ? raw.charAt(0).toUpperCase() +
+                            raw.slice(1).toLowerCase()
                           : "";
-                        setCustomerData({ ...customerData, city: value });
+                        customerForm.setField("city", value);
                       }}
-                      placeholder="La Maná"
-                      required
                       className="h-9 sm:h-10 text-sm"
+                      aria-invalid={Boolean(customerForm.errors.city)}
                     />
-                    {errors.city && (
-                      <p className="text-destructive text-sm">{errors.city}</p>
+                    {customerForm.errors.city && (
+                      <p className="text-destructive text-sm">
+                        {customerForm.errors.city}
+                      </p>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -492,16 +531,14 @@ export function AddCustomerModal({
                       >
                         Contacto Preferido
                       </Label>
+                      <p className="text-muted-foreground text-xs">
+                        Elige el canal de contacto
+                      </p>
                       <Select
-                        value={customerData.preferredContact}
+                        value={customerForm.data.preferredContact}
                         onValueChange={(
                           value: "phone" | "email" | "whatsapp"
-                        ) =>
-                          setCustomerData({
-                            ...customerData,
-                            preferredContact: value,
-                          })
-                        }
+                        ) => customerForm.setField("preferredContact", value)}
                       >
                         <SelectTrigger className="h-9 sm:h-10 text-sm">
                           <SelectValue />
@@ -517,10 +554,13 @@ export function AddCustomerModal({
                       <Label htmlFor="status" className="text-xs sm:text-sm">
                         Estado
                       </Label>
+                      <p className="text-muted-foreground text-xs">
+                        Activo o Inactivo
+                      </p>
                       <Select
-                        value={customerData.status}
+                        value={customerForm.data.status}
                         onValueChange={(value: "active" | "inactive") =>
-                          setCustomerData({ ...customerData, status: value })
+                          customerForm.setField("status", value)
                         }
                       >
                         <SelectTrigger className="h-9 sm:h-10 text-sm">
@@ -537,14 +577,14 @@ export function AddCustomerModal({
                     <Label htmlFor="notes" className="text-xs sm:text-sm">
                       Notas
                     </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Información adicional (opcional)
+                    </p>
                     <Textarea
                       id="notes"
-                      value={customerData.notes}
+                      value={customerForm.data.notes}
                       onChange={(e) =>
-                        setCustomerData({
-                          ...customerData,
-                          notes: e.target.value,
-                        })
+                        customerForm.setField("notes", e.target.value)
                       }
                       placeholder="Información adicional sobre el cliente..."
                       rows={3}
@@ -607,6 +647,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Marca *
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Obligatorio
+                              </p>
                               <Input
                                 value={vehicle.brand}
                                 onChange={(e) =>
@@ -616,14 +659,14 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
-                              {errors[`vehicles.${index}.brand`] && (
-                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.brand`]}</p>
-                              )}
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs sm:text-sm">
                                 Modelo *
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Obligatorio
+                              </p>
                               <Input
                                 value={vehicle.model}
                                 onChange={(e) =>
@@ -633,9 +676,6 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
-                              {errors[`vehicles.${index}.model`] && (
-                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.model`]}</p>
-                              )}
                             </div>
                           </div>
 
@@ -644,8 +684,13 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Año *
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                1900–{new Date().getFullYear() + 1}
+                              </p>
                               <Input
                                 type="number"
+                                min={1900}
+                                max={new Date().getFullYear() + 1}
                                 value={vehicle.year}
                                 onChange={(e) =>
                                   updateVehicle(
@@ -659,14 +704,14 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
-                              {errors[`vehicles.${index}.year`] && (
-                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.year`]}</p>
-                              )}
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs sm:text-sm">
                                 Placa *
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Formato AAA-1234 (Ecuador)
+                              </p>
                               <Input
                                 value={vehicle.plate}
                                 onChange={(e) =>
@@ -680,9 +725,6 @@ export function AddCustomerModal({
                                 required
                                 className="h-8 sm:h-9 text-sm"
                               />
-                              {errors[`vehicles.${index}.plate`] && (
-                                <p className="text-destructive text-sm">{errors[`vehicles.${index}.plate`]}</p>
-                              )}
                             </div>
                           </div>
 
@@ -691,6 +733,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Motor
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Opcional
+                              </p>
                               <Input
                                 value={vehicle.engine}
                                 onChange={(e) =>
@@ -704,8 +749,13 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Kilometraje
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Solo números, mínimo 0
+                              </p>
                               <Input
                                 type="number"
+                                min={0}
+                                step={1}
                                 value={vehicle.mileage}
                                 onChange={(e) =>
                                   updateVehicle(
@@ -725,6 +775,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Tipo de Aceite
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Opcional
+                              </p>
                               <Input
                                 value={vehicle.oilType}
                                 onChange={(e) =>
@@ -742,6 +795,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Tipo de Filtro
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Opcional
+                              </p>
                               <Input
                                 value={vehicle.filterType}
                                 onChange={(e) =>
@@ -762,6 +818,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Último Servicio
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Fecha opcional
+                              </p>
                               <Input
                                 type="date"
                                 value={vehicle.lastService}
@@ -779,6 +838,9 @@ export function AddCustomerModal({
                               <Label className="text-xs sm:text-sm">
                                 Próximo Servicio
                               </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Fecha opcional
+                              </p>
                               <Input
                                 type="date"
                                 value={vehicle.nextService}

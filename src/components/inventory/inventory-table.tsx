@@ -32,6 +32,7 @@ import type { Product } from "@/lib/api";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import type { InventoryFilters } from "@/lib/validation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 // Mock inventory data
 const mockProducts: Product[] = [
@@ -296,20 +297,21 @@ export function InventoryTable({
                 <Edit className="h-3 w-3 mr-2" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onAdjustStock(product)}
-                className="text-xs"
-              >
-                <Settings className="h-3 w-3 mr-2" />
-                Ajustar Stock
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onRegisterMovement(product)}
-                className="text-xs"
-              >
-                <Package className="h-3 w-3 mr-2" />
-                Registrar Movimiento
-              </DropdownMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem
+                    onClick={() => onAdjustStock(product)}
+                    className="text-xs"
+                  >
+                    <Settings className="h-3 w-3 mr-2" />
+                    Ajustar Stock
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent side="left" sideOffset={8}>
+                  Registra entradas, salidas y ajustes
+                </TooltipContent>
+              </Tooltip>
+              
               
             </DropdownMenuContent>
           </DropdownMenu>
@@ -329,25 +331,25 @@ export function InventoryTable({
         )}
 
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <div>
-            <span className="text-muted-foreground">Stock:</span>
-            <div className="flex items-center gap-1 mt-1">
-              <span
-                className={
-                  stockStatus.status === "out"
-                    ? "text-destructive font-medium"
-                    : ""
-                }
-              >
-                {product.stock}/{product.maxStock}
-              </span>
-              {product.stock > product.minStock ? (
-                <TrendingUp className="h-3 w-3 text-green-500" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500" />
-              )}
-            </div>
-          </div>
+              <div>
+                <span className="text-muted-foreground">Stock:</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span
+                    className={
+                      stockStatus.status === "out"
+                        ? "text-destructive font-medium"
+                        : ""
+                    }
+                  >
+                    {product.stock}
+                  </span>
+                  {product.stock > product.minStock ? (
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-500" />
+                  )}
+                </div>
+              </div>
           <div>
             <span className="text-muted-foreground">Precio:</span>
             <div className="font-medium mt-1">${product.price}</div>
@@ -570,9 +572,6 @@ export function InventoryTable({
                             >
                               {product.stock}
                             </span>
-                            <span className="text-muted-foreground text-sm">
-                              / {product.maxStock}
-                            </span>
                             {product.stock > product.minStock ? (
                               <TrendingUp className="h-4 w-4 text-green-500" />
                             ) : (
@@ -616,18 +615,20 @@ export function InventoryTable({
               <Edit className="h-4 w-4 mr-2" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onAdjustStock(product)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Ajustar Stock
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onRegisterMovement(product)}
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Registrar Movimiento
-            </DropdownMenuItem>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuItem
+                  onClick={() => onAdjustStock(product)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Ajustar Stock
+                </DropdownMenuItem>
+              </TooltipTrigger>
+              <TooltipContent side="left" sideOffset={8}>
+                Registra entradas, salidas y ajustes
+              </TooltipContent>
+            </Tooltip>
+            
             
           </DropdownMenuContent>
                           </DropdownMenu>

@@ -9,8 +9,188 @@ import React, {
   useCallback,
 } from "react";
 import { api } from "@/lib/api";
+import { backendApi, isBackendEnabled } from "@/lib/backend-api";
 import { generateInvoiceNumber } from "@/components/pos/invoice-generator";
 import type { Supplier } from "@/lib/api";
+
+// ===== FUNCIONES DE CONVERSIÓN ENTRE BACKEND Y CONTEXT =====
+
+// Convertir Product del backend al formato del contexto
+const convertBackendProductToContext = (backendProduct: any): Product => {
+  return {
+    id: backendProduct.id,
+    name: backendProduct.name,
+    brand: backendProduct.brand,
+    category: backendProduct.category,
+    price: backendProduct.price,
+    cost: backendProduct.cost,
+    stock: backendProduct.stock,
+    minStock: backendProduct.minStock,
+    maxStock: backendProduct.maxStock,
+    sku: backendProduct.sku,
+    barcode: backendProduct.barcode,
+    supplier: backendProduct.supplier,
+    location: backendProduct.location,
+    lastUpdated: backendProduct.lastUpdated,
+    status: backendProduct.status,
+    rotationRate: backendProduct.rotationRate,
+    profitMargin: backendProduct.profitMargin,
+    imageUrl: backendProduct.imageUrl,
+  };
+};
+
+// Convertir Customer del backend al formato del contexto
+const convertBackendCustomerToContext = (backendCustomer: any): Customer => {
+  return {
+    id: backendCustomer.id,
+    name: backendCustomer.name,
+    email: backendCustomer.email,
+    phone: backendCustomer.phone,
+    address: backendCustomer.address,
+    city: backendCustomer.city,
+    idNumber: backendCustomer.idNumber,
+    customerType: backendCustomer.customerType,
+    businessName: backendCustomer.businessName,
+    ruc: backendCustomer.ruc,
+    vehicles: backendCustomer.vehicles || [],
+    totalPurchases: backendCustomer.totalPurchases || 0,
+    lastPurchase: backendCustomer.lastPurchase || "",
+    registrationDate: backendCustomer.registrationDate,
+    status: backendCustomer.status,
+    notes: backendCustomer.notes || "",
+    preferredContact: backendCustomer.preferredContact,
+  };
+};
+
+// Convertir Sale del backend al formato del contexto
+const convertBackendSaleToContext = (backendSale: any): Sale => {
+  return {
+    id: backendSale.id,
+    date: backendSale.date,
+    customerId: backendSale.customerId,
+    customerName: backendSale.customerName,
+    items: backendSale.items || [],
+    subtotal: backendSale.subtotal,
+    tax: backendSale.tax,
+    total: backendSale.total,
+    paymentMethod: backendSale.paymentMethod,
+    status: backendSale.status,
+    userId: backendSale.userId,
+    invoiceNumber: backendSale.invoiceNumber,
+    notes: backendSale.notes,
+  };
+};
+
+// Convertir datos del contexto al formato del backend para crear producto
+const convertContextProductToBackend = (
+  contextProduct: Omit<Product, "id">
+): any => {
+  return {
+    name: contextProduct.name,
+    brand: contextProduct.brand,
+    category: contextProduct.category,
+    price: contextProduct.price,
+    cost: contextProduct.cost,
+    stock: contextProduct.stock,
+    minStock: contextProduct.minStock,
+    maxStock: contextProduct.maxStock,
+    sku: contextProduct.sku,
+    barcode: contextProduct.barcode,
+    supplier: contextProduct.supplier,
+    location: contextProduct.location,
+    status: contextProduct.status || "active",
+    imageUrl: contextProduct.imageUrl,
+  };
+};
+
+// Convertir datos del contexto al formato del backend para crear cliente
+const convertContextCustomerToBackend = (
+  contextCustomer: Omit<Customer, "id">
+): any => {
+  return {
+    name: contextCustomer.name,
+    email: contextCustomer.email,
+    phone: contextCustomer.phone,
+    address: contextCustomer.address,
+    city: contextCustomer.city,
+    idNumber: contextCustomer.idNumber,
+    customerType: contextCustomer.customerType,
+    businessName: contextCustomer.businessName,
+    ruc: contextCustomer.ruc,
+    vehicles: contextCustomer.vehicles,
+    notes: contextCustomer.notes,
+    preferredContact: contextCustomer.preferredContact,
+  };
+};
+
+// Convertir datos del contexto al formato del backend para crear venta
+const convertContextSaleToBackend = (contextSale: Omit<Sale, "id">): any => {
+  return {
+    customerId: contextSale.customerId,
+    customerName: contextSale.customerName,
+    items: contextSale.items,
+    subtotal: contextSale.subtotal,
+    tax: contextSale.tax,
+    total: contextSale.total,
+    paymentMethod: contextSale.paymentMethod,
+    status: contextSale.status,
+    userId: contextSale.userId,
+    notes: contextSale.notes,
+  };
+};
+
+// Convertir Supplier del backend al formato del contexto
+const convertBackendSupplierToContext = (backendSupplier: any): Supplier => {
+  return {
+    id: backendSupplier.id,
+    name: backendSupplier.name,
+    contactPerson: backendSupplier.contactPerson,
+    email: backendSupplier.email,
+    phone: backendSupplier.phone,
+    address: backendSupplier.address,
+    category: backendSupplier.category,
+    status: backendSupplier.status,
+    notes: backendSupplier.notes,
+  };
+};
+
+// Convertir datos del contexto al formato del backend para crear proveedor
+const convertContextSupplierToBackend = (
+  contextSupplier: Omit<Supplier, "id">
+): any => {
+  return {
+    name: contextSupplier.name,
+    contactPerson: contextSupplier.contactPerson,
+    email: contextSupplier.email,
+    phone: contextSupplier.phone,
+    address: contextSupplier.address,
+    category: contextSupplier.category,
+    status: contextSupplier.status || "active",
+    notes: contextSupplier.notes,
+  };
+};
+
+// ===== FUNCIÓN AUXILIAR PARA MANEJAR ERRORES DE BACKEND =====
+
+const handleBackendError = (error: unknown, context: string): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  const isBackendMissing =
+    message.includes("Respuesta no JSON del servidor") ||
+    message.includes(
+      "La operación falló. El backend puede no estar implementado"
+    ) ||
+    message.includes("Failed to fetch") ||
+    message.includes("NetworkError");
+
+  if (isBackendMissing) {
+    console.warn(
+      `Backend no disponible/implementado para ${context}, usando API local como fallback`
+    );
+    return true;
+  }
+  console.error(`Error en ${context}:`, error);
+  return false;
+};
 
 // Tipos de datos - Simplificados para que coincidan con la API
 export interface Product {
@@ -65,6 +245,7 @@ export interface Customer {
   preferredContact: "phone" | "email" | "whatsapp";
 }
 
+const BACKEND_ENABLED = isBackendEnabled();
 export interface Vehicle {
   id: string;
   plate: string;
@@ -146,7 +327,7 @@ interface POSContextType {
   ) => Promise<Customer>;
   deleteCustomer: (id: string) => Promise<void>;
   selectedCustomer: Customer | null;
-  setSelectedCustomer: (customer: Customer | null) => void;
+  setSelectedCustomer: React.Dispatch<React.SetStateAction<Customer | null>>;
 
   // Ventas
   sales: Sale[];
@@ -178,12 +359,12 @@ interface POSContextType {
 
   // Categoría seleccionada
   selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
+  setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
 
   // Nuevas propiedades agregadas
   cartItemCount: number;
   searchQuery: string;
-  setSearchQuery: (query: string) => void;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // Crear el contexto
@@ -293,6 +474,56 @@ const convertContextSaleToApiSale = (
   };
 };
 
+const convertBackendUserToContext = (backendUser: any): User => {
+  const roleMap: Record<string, "admin" | "cashier" | "manager"> = {
+    admin: "admin",
+    seller: "cashier",
+  };
+
+  return {
+    id: backendUser.id,
+    name: backendUser.name,
+    email: backendUser.email,
+    role: roleMap[backendUser.role] || "cashier",
+    status: "active",
+  };
+};
+
+const convertContextUserToBackend = (
+  contextUser: Omit<User, "id">
+): Omit<any, "id" | "createdAt" | "updatedAt"> => {
+  const roleMap: Record<string, "admin" | "seller"> = {
+    admin: "admin",
+    cashier: "seller",
+    manager: "seller",
+  };
+
+  return {
+    name: contextUser.name,
+    email: contextUser.email,
+    role: roleMap[contextUser.role] || "seller",
+  };
+};
+
+const convertPartialContextUserToBackend = (
+  contextUser: Partial<User>
+): Partial<any> => {
+  const roleMap: Record<string, "admin" | "seller"> = {
+    admin: "admin",
+    cashier: "seller",
+    manager: "seller",
+  };
+
+  return {
+    name: contextUser.name,
+    email: contextUser.email,
+    role: contextUser.role ? roleMap[contextUser.role] || "seller" : undefined,
+  };
+};
+
+// Exportar funciones de conversión para uso en otros servicios
+export { convertBackendUserToContext, convertContextUserToBackend };
+
 // Proveedor del contexto
 export function POSProvider({ children }: { children: ReactNode }) {
   // Estados para productos
@@ -345,12 +576,38 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const refreshProducts = useCallback(async () => {
     setLoadingProducts(true);
     setErrorProducts(null);
+    if (!BACKEND_ENABLED) {
+      try {
+        const localProducts = await api.getProducts();
+        setProducts(localProducts);
+      } finally {
+        setLoadingProducts(false);
+      }
+      return;
+    }
     try {
-      const data = await api.getProducts();
-      setProducts(data);
+      // Usar backend API en lugar de API local
+      const backendProducts = await backendApi.getProducts();
+      const contextProducts = backendProducts.data.map(
+        convertBackendProductToContext
+      );
+      setProducts(contextProducts);
     } catch (error) {
-      console.error("Error cargando productos:", error);
-      setErrorProducts("Error al cargar los productos");
+      // Manejar error de backend no implementado
+      const isBackendNotImplemented = handleBackendError(
+        error,
+        "cargar productos"
+      );
+      if (!isBackendNotImplemented) {
+        setErrorProducts("Error al cargar los productos");
+      }
+      // Fallback a API local si falla el backend
+      try {
+        const localProducts = await api.getProducts();
+        setProducts(localProducts);
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+      }
     } finally {
       setLoadingProducts(false);
     }
@@ -358,23 +615,44 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addProduct = useCallback(async (product: Omit<Product, "id">) => {
     try {
-      if (!product.name || !product.category || !product.brand) throw new Error("Datos inválidos");
-      if (product.price < 0 || product.cost < 0) throw new Error("Valores inválidos");
+      if (!product.name || !product.category || !product.brand)
+        throw new Error("Datos inválidos");
+      if (product.price < 0 || product.cost < 0)
+        throw new Error("Valores inválidos");
       if (!product.sku) throw new Error("SKU requerido");
-      const newProduct = await api.createProduct(product);
-      setProducts((prev) => [...prev, newProduct]);
-      return newProduct;
+
+      // Intentar crear con backend API primero
+      const backendProductData = convertContextProductToBackend(product);
+      const newBackendProduct = await backendApi.createProduct(
+        backendProductData
+      );
+      const contextProduct = convertBackendProductToContext(
+        newBackendProduct.data
+      );
+
+      setProducts((prev) => [...prev, contextProduct]);
+      return contextProduct;
     } catch (error) {
-      console.error("Error añadiendo producto:", error);
-      throw error;
+      console.error("Error añadiendo producto con backend:", error);
+      // Fallback a API local
+      try {
+        const newProduct = await api.createProduct(product);
+        setProducts((prev) => [...prev, newProduct]);
+        return newProduct;
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error;
+      }
     }
   }, []);
 
   const updateProduct = useCallback(
     async (id: string, product: Partial<Product>) => {
       try {
-        if (product.price !== undefined && product.price < 0) throw new Error("Precio inválido");
-        if (product.cost !== undefined && product.cost < 0) throw new Error("Costo inválido");
+        if (product.price !== undefined && product.price < 0)
+          throw new Error("Precio inválido");
+        if (product.cost !== undefined && product.cost < 0)
+          throw new Error("Costo inválido");
         const updatedProduct = await api.updateProduct(id, product);
         setProducts((prev) =>
           prev.map((p) => (p.id === id ? updatedProduct : p))
@@ -421,13 +699,44 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const refreshCustomers = useCallback(async () => {
     setLoadingCustomers(true);
     setErrorCustomers(null);
+    if (!BACKEND_ENABLED) {
+      try {
+        const data = await api.getCustomers();
+        const convertedCustomers = data.map(
+          convertApiCustomerToContextCustomer
+        );
+        setCustomers(convertedCustomers);
+      } finally {
+        setLoadingCustomers(false);
+      }
+      return;
+    }
     try {
-      const data = await api.getCustomers();
-      const convertedCustomers = data.map(convertApiCustomerToContextCustomer);
-      setCustomers(convertedCustomers);
+      // Usar backend API en lugar de API local
+      const backendCustomers = await backendApi.getCustomers();
+      const contextCustomers = backendCustomers.data.map(
+        convertBackendCustomerToContext
+      );
+      setCustomers(contextCustomers);
     } catch (error) {
-      console.error("Error cargando clientes:", error);
-      setErrorCustomers("Error al cargar los clientes");
+      // Manejar error de backend no implementado
+      const isBackendNotImplemented = handleBackendError(
+        error,
+        "cargar clientes"
+      );
+      if (!isBackendNotImplemented) {
+        setErrorCustomers("Error al cargar los clientes");
+      }
+      // Fallback a API local si falla el backend
+      try {
+        const data = await api.getCustomers();
+        const convertedCustomers = data.map(
+          convertApiCustomerToContextCustomer
+        );
+        setCustomers(convertedCustomers);
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+      }
     } finally {
       setLoadingCustomers(false);
     }
@@ -435,25 +744,56 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addCustomer = useCallback(async (customer: Omit<Customer, "id">) => {
     try {
-      if (!customer.name || !customer.idNumber) throw new Error("Datos inválidos");
-      if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error("Email inválido");
-      if (customer.phone && customer.phone.length < 7) throw new Error("Teléfono inválido");
+      if (!customer.name || !customer.idNumber)
+        throw new Error("Datos inválidos");
+      if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email))
+        throw new Error("Email inválido");
+      if (customer.phone && customer.phone.length < 7)
+        throw new Error("Teléfono inválido");
+
+      const BACKEND_ENABLED = isBackendEnabled();
+      if (BACKEND_ENABLED) {
+        const backendCustomerData = convertContextCustomerToBackend(customer);
+        const newBackendCustomer = await backendApi.createCustomer(
+          backendCustomerData
+        );
+        const contextCustomer = convertBackendCustomerToContext(
+          newBackendCustomer.data
+        );
+        setCustomers((prev) => [...prev, contextCustomer]);
+        return contextCustomer;
+      }
       const apiCustomer = convertContextCustomerToApiCustomer(customer);
       const newApiCustomer = await api.createCustomer(apiCustomer);
       const newCustomer = convertApiCustomerToContextCustomer(newApiCustomer);
       setCustomers((prev) => [...prev, newCustomer]);
       return newCustomer;
     } catch (error) {
-      console.error("Error añadiendo cliente:", error);
-      throw error;
+      console.error("Error añadiendo cliente con backend:", error);
+      // Fallback a API local
+      try {
+        const apiCustomer = convertContextCustomerToApiCustomer(customer);
+        const newApiCustomer = await api.createCustomer(apiCustomer);
+        const newCustomer = convertApiCustomerToContextCustomer(newApiCustomer);
+        setCustomers((prev) => [...prev, newCustomer]);
+        return newCustomer;
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error;
+      }
     }
   }, []);
 
   const updateCustomer = useCallback(
     async (id: string, customer: Partial<Customer>) => {
       try {
-        if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error("Email inválido");
-        if (customer.phone && customer.phone.length < 7) throw new Error("Teléfono inválido");
+        if (
+          customer.email &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)
+        )
+          throw new Error("Email inválido");
+        if (customer.phone && customer.phone.length < 7)
+          throw new Error("Teléfono inválido");
         const apiCustomer = convertContextCustomerToApiCustomer(
           customer as Omit<Customer, "id">
         );
@@ -497,13 +837,38 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const refreshSales = useCallback(async () => {
     setLoadingSales(true);
     setErrorSales(null);
+    if (!BACKEND_ENABLED) {
+      try {
+        const data = await api.getSales();
+        const convertedSales = data.map(convertApiSaleToContextSale);
+        setSales(convertedSales);
+      } finally {
+        setLoadingSales(false);
+      }
+      return;
+    }
     try {
-      const data = await api.getSales();
-      const convertedSales = data.map(convertApiSaleToContextSale);
-      setSales(convertedSales);
+      // Usar backend API en lugar de API local
+      const backendSales = await backendApi.getSales();
+      const contextSales = backendSales.data.map(convertBackendSaleToContext);
+      setSales(contextSales);
     } catch (error) {
-      console.error("Error cargando ventas:", error);
-      setErrorSales("Error al cargar las ventas");
+      // Manejar error de backend no implementado
+      const isBackendNotImplemented = handleBackendError(
+        error,
+        "cargar ventas"
+      );
+      if (!isBackendNotImplemented) {
+        setErrorSales("Error al cargar las ventas");
+      }
+      // Fallback a API local si falla el backend
+      try {
+        const data = await api.getSales();
+        const convertedSales = data.map(convertApiSaleToContextSale);
+        setSales(convertedSales);
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+      }
     } finally {
       setLoadingSales(false);
     }
@@ -512,25 +877,20 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const addSale = useCallback(
     async (sale: Omit<Sale, "id" | "date" | "invoiceNumber">) => {
       try {
-        if (!sale.items || sale.items.length === 0) throw new Error("Venta vacía");
+        if (!sale.items || sale.items.length === 0)
+          throw new Error("Venta vacía");
         if (sale.total < 0) throw new Error("Total inválido");
-        console.log("Iniciando addSale con datos:", sale);
+        const saleWithDetails = {
+          ...sale,
+          invoiceNumber: generateInvoiceNumber(),
+          date: new Date().toISOString(),
+        };
 
-        const apiSale = convertContextSaleToApiSale(sale);
-        console.log("Datos convertidos para API:", apiSale);
+        const backendSaleData = convertContextSaleToBackend(saleWithDetails);
+        const newBackendSale = await backendApi.createSale(backendSaleData);
+        const contextSale = convertBackendSaleToContext(newBackendSale.data);
 
-        const newApiSale = await api.createSale(apiSale);
-        console.log("Respuesta de API:", newApiSale);
-
-        const newSale = convertApiSaleToContextSale(newApiSale);
-        console.log("Venta convertida para contexto:", newSale);
-
-        // Actualizar el estado de ventas - AGREGAR AL INICIO del array
-        setSales((prev) => {
-          const newSales = [newSale, ...prev];
-          console.log("Nuevo estado de ventas:", newSales);
-          return newSales;
-        });
+        setSales((prev) => [contextSale, ...prev]);
 
         // Actualizar stock de productos
         for (const item of sale.items) {
@@ -545,11 +905,34 @@ export function POSProvider({ children }: { children: ReactNode }) {
         // Forzar actualización de productos también
         await refreshProducts();
 
-        console.log("Venta agregada exitosamente");
-        return newSale;
+        return contextSale;
       } catch (error) {
-        console.error("Error registrando venta:", error);
-        throw error;
+        console.error(
+          "Error registrando venta con backend, fallback a API local:",
+          error
+        );
+        try {
+          const apiSaleData = convertContextSaleToApiSale(sale);
+          const newSale = await api.createSale(apiSaleData);
+          const contextSale = convertApiSaleToContextSale(newSale);
+
+          setSales((prev) => [contextSale, ...prev]);
+
+          for (const item of sale.items) {
+            const product = products.find((p) => p.id === item.productId);
+            if (product) {
+              await updateProduct(item.productId, {
+                stock: product.stock - item.quantity,
+              });
+            }
+          }
+          await refreshProducts();
+
+          return contextSale;
+        } catch (localError) {
+          console.error("Error registrando venta con API local:", localError);
+          throw localError;
+        }
       }
     },
     [products, updateProduct, refreshProducts]
@@ -559,12 +942,37 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const refreshSuppliers = useCallback(async () => {
     setLoadingSuppliers(true);
     setErrorSuppliers(null);
+    if (!BACKEND_ENABLED) {
+      try {
+        const localSuppliers = await api.getSuppliers();
+        setSuppliers(localSuppliers);
+      } finally {
+        setLoadingSuppliers(false);
+      }
+      return;
+    }
     try {
-      const data = await api.getSuppliers();
-      setSuppliers(data);
+      const backendSuppliers = await backendApi.getSuppliers();
+      const contextSuppliers = backendSuppliers.data.map(
+        convertBackendSupplierToContext
+      );
+      setSuppliers(contextSuppliers);
     } catch (error) {
-      console.error("Error cargando proveedores:", error);
-      setErrorSuppliers("Error al cargar los proveedores");
+      // Manejar error de backend no implementado
+      const isBackendNotImplemented = handleBackendError(
+        error,
+        "cargar proveedores"
+      );
+      if (!isBackendNotImplemented) {
+        setErrorSuppliers("Error al cargar los proveedores");
+      }
+      // Fallback a API local si falla el backend
+      try {
+        const localSuppliers = await api.getSuppliers();
+        setSuppliers(localSuppliers);
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+      }
     } finally {
       setLoadingSuppliers(false);
     }
@@ -572,29 +980,73 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const addSupplier = useCallback(async (supplier: Omit<Supplier, "id">) => {
     try {
-      if (!supplier.name || !supplier.contactPerson || !supplier.email) throw new Error("Datos inválidos");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email)) throw new Error("Email inválido");
-      const newSupplier = await api.createSupplier(supplier);
-      setSuppliers((prev) => [...prev, newSupplier]);
-      return newSupplier;
+      if (!supplier.name || !supplier.contactPerson || !supplier.email)
+        throw new Error("Datos inválidos");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email))
+        throw new Error("Email inválido");
+
+      // Intentar crear con el backend primero
+      const backendSupplierData = convertContextSupplierToBackend(supplier);
+      const newBackendSupplier = await backendApi.createSupplier(
+        backendSupplierData
+      );
+      const contextSupplier = convertBackendSupplierToContext(
+        newBackendSupplier.data
+      );
+
+      setSuppliers((prev) => [...prev, contextSupplier]);
+      return contextSupplier;
     } catch (error) {
-      console.error("Error añadiendo proveedor:", error);
-      throw error;
+      console.error("Error añadiendo proveedor con backend:", error);
+
+      // Fallback a API local
+      try {
+        const localSupplier = await api.createSupplier(supplier);
+        setSuppliers((prev) => [...prev, localSupplier]);
+        return localSupplier;
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error; // Lanzar el error original del backend
+      }
     }
   }, []);
 
   const updateSupplier = useCallback(
     async (id: string, supplier: Partial<Supplier>) => {
       try {
-        if (supplier.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email)) throw new Error("Email inválido");
-        const updatedSupplier = await api.updateSupplier(id, supplier);
-        setSuppliers((prev) =>
-          prev.map((s) => (s.id === id ? updatedSupplier : s))
+        if (
+          supplier.email &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplier.email)
+        )
+          throw new Error("Email inválido");
+
+        // Intentar actualizar con el backend primero
+        const updatedBackendSupplier = await backendApi.updateSupplier(
+          id,
+          supplier
         );
-        return updatedSupplier;
+        const contextSupplier = convertBackendSupplierToContext(
+          updatedBackendSupplier.data
+        );
+
+        setSuppliers((prev) =>
+          prev.map((s) => (s.id === id ? contextSupplier : s))
+        );
+        return contextSupplier;
       } catch (error) {
-        console.error("Error actualizando proveedor:", error);
-        throw error;
+        console.error("Error actualizando proveedor con backend:", error);
+
+        // Fallback a API local
+        try {
+          const updatedLocalSupplier = await api.updateSupplier(id, supplier);
+          setSuppliers((prev) =>
+            prev.map((s) => (s.id === id ? updatedLocalSupplier : s))
+          );
+          return updatedLocalSupplier;
+        } catch (localError) {
+          console.error("Error con API local también:", localError);
+          throw error; // Lanzar el error original del backend
+        }
       }
     },
     []
@@ -602,11 +1054,20 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const deleteSupplier = useCallback(async (id: string) => {
     try {
-      await api.deleteSupplier(id);
+      // Intentar eliminar con el backend primero
+      await backendApi.deleteSupplier(id);
       setSuppliers((prev) => prev.filter((s) => s.id !== id));
     } catch (error) {
-      console.error("Error eliminando proveedor:", error);
-      throw error;
+      console.error("Error eliminando proveedor con backend:", error);
+
+      // Fallback a API local
+      try {
+        await api.deleteSupplier(id);
+        setSuppliers((prev) => prev.filter((s) => s.id !== id));
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error; // Lanzar el error original del backend
+      }
     }
   }, []);
 
@@ -614,12 +1075,36 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const refreshUsers = useCallback(async () => {
     setLoadingUsers(true);
     setErrorUsers(null);
+    if (!BACKEND_ENABLED) {
+      try {
+        const localUsers = await api.getUsers();
+        setUsers(localUsers);
+      } finally {
+        setLoadingUsers(false);
+      }
+      return;
+    }
     try {
-      const data = await api.getUsers();
-      setUsers(data);
+      const backendUsers = await backendApi.getUsers();
+      const contextUsers = backendUsers.data.map(convertBackendUserToContext);
+      setUsers(contextUsers);
     } catch (error) {
-      console.error("Error cargando usuarios:", error);
-      setErrorUsers("Error al cargar los usuarios");
+      // Manejar error de backend no implementado
+      const isBackendNotImplemented = handleBackendError(
+        error,
+        "cargar usuarios"
+      );
+      if (!isBackendNotImplemented) {
+        setErrorUsers("Error al cargar los usuarios");
+      }
+
+      // Fallback a API local
+      try {
+        const localUsers = await api.getUsers();
+        setUsers(localUsers);
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+      }
     } finally {
       setLoadingUsers(false);
     }
@@ -628,35 +1113,79 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const addUser = useCallback(async (user: Omit<User, "id">) => {
     try {
       if (!user.name || !user.email) throw new Error("Datos inválidos");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) throw new Error("Email inválido");
-      const newUser = await api.createUser(user);
-      setUsers((prev) => [...prev, newUser]);
-      return newUser;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email))
+        throw new Error("Email inválido");
+
+      // Intentar crear con el backend primero
+      const newBackendUser = await backendApi.createUser(
+        convertContextUserToBackend(user)
+      );
+      const contextUser = convertBackendUserToContext(newBackendUser.data);
+
+      setUsers((prev) => [...prev, contextUser]);
+      return contextUser;
     } catch (error) {
-      console.error("Error añadiendo usuario:", error);
-      throw error;
+      console.error("Error añadiendo usuario con backend:", error);
+
+      // Fallback a API local
+      try {
+        const localUser = await api.createUser(user);
+        setUsers((prev) => [...prev, localUser]);
+        return localUser;
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error; // Lanzar el error original del backend
+      }
     }
   }, []);
 
   const updateUser = useCallback(async (id: string, user: Partial<User>) => {
     try {
-      if (user.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) throw new Error("Email inválido");
-      const updatedUser = await api.updateUser(id, user);
-      setUsers((prev) => prev.map((u) => (u.id === id ? updatedUser : u)));
-      return updatedUser;
+      if (user.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email))
+        throw new Error("Email inválido");
+
+      // Intentar actualizar con el backend primero
+      const updatedBackendUser = await backendApi.updateUser(
+        id,
+        convertPartialContextUserToBackend(user)
+      );
+      const contextUser = convertBackendUserToContext(updatedBackendUser.data);
+
+      setUsers((prev) => prev.map((u) => (u.id === id ? contextUser : u)));
+      return contextUser;
     } catch (error) {
-      console.error("Error actualizando usuario:", error);
-      throw error;
+      console.error("Error actualizando usuario con backend:", error);
+
+      // Fallback a API local
+      try {
+        const updatedLocalUser = await api.updateUser(id, user);
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? updatedLocalUser : u))
+        );
+        return updatedLocalUser;
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error; // Lanzar el error original del backend
+      }
     }
   }, []);
 
   const deleteUser = useCallback(async (id: string) => {
     try {
-      await api.deleteUser(id);
+      // Intentar eliminar con el backend primero
+      await backendApi.deleteUser(id);
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch (error) {
-      console.error("Error eliminando usuario:", error);
-      throw error;
+      console.error("Error eliminando usuario con backend:", error);
+
+      // Fallback a API local
+      try {
+        await api.deleteUser(id);
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      } catch (localError) {
+        console.error("Error con API local también:", localError);
+        throw error; // Lanzar el error original del backend
+      }
     }
   }, []);
 
