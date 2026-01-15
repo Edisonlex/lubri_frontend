@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,7 @@ export function UserForm({
   isLoading = false,
 }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
-  const schema = userFormSchema({ requirePassword: !editingUser });
+  const schema = useMemo(() => userFormSchema({ requirePassword: !editingUser }), [editingUser]);
   const form = useZodLiveForm(schema, initialFormData);
 
   useEffect(() => {

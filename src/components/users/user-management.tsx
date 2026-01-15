@@ -9,7 +9,7 @@ import { usePOS } from "@/contexts/pos-context";
 import { UserForm } from "./user-form";
 import { UserFilters } from "./user-filters";
 import { UserList } from "./user-list";
-import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { exportToPDF, exportToExcel, exportUsersToPDF } from "@/lib/export-utils";
 import {
   Dialog,
   DialogContent,
@@ -203,7 +203,7 @@ export function UserManagement() {
                       u.role,
                       u.status,
                     ]);
-                    exportToPDF({ headers, data, fileName: "Usuarios" });
+                    exportUsersToPDF({ headers, data, fileName: "Usuarios" });
                   }}
                   className="flex flex-col items-center justify-center h-24 gap-2"
                   variant="outline"

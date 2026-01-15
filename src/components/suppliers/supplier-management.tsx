@@ -13,7 +13,7 @@ import { SupplierDetail } from "./supplier-detail";
 import { SupplierFormData } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SupplierMap } from "@/components/gis/supplier-map";
-import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { exportToPDF, exportToExcel, exportSuppliersToPDF } from "@/lib/export-utils";
 
 import type { GeographicEntity } from "@/contexts/gis-context";
 
@@ -315,12 +315,19 @@ export function SupplierManagement() {
             variant="outline" 
             size="sm"
             onClick={() => {
-              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
+              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad"];
               const data = filteredSuppliers.map((s) => {
-                const city = getExtendedData(s).city || s.city || "";
-                return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
+                const extended = getExtendedData(s);
+                const city = extended.city || s.city || "";
+                return [
+                  s.name,
+                  extended.contactPerson || s.contactPerson || "",
+                  extended.email || s.email || "",
+                  extended.phone || s.phone || "",
+                  city
+                ];
               });
-              exportToPDF({ headers, data, fileName: "Proveedores" });
+              exportSuppliersToPDF({ headers, data, fileName: "Proveedores" });
             }}
             className="flex-1 sm:flex-none"
           >
@@ -333,8 +340,16 @@ export function SupplierManagement() {
             onClick={() => {
               const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
               const data = filteredSuppliers.map((s) => {
-                const city = getExtendedData(s).city || s.city || "";
-                return [s.name, getExtendedData(s).contactPerson || s.contactPerson || "", s.email || "", s.phone || "", city, s.status];
+                const extended = getExtendedData(s);
+                const city = extended.city || s.city || "";
+                return [
+                  s.name,
+                  extended.contactPerson || s.contactPerson || "",
+                  extended.email || s.email || "",
+                  extended.phone || s.phone || "",
+                  city,
+                  s.status
+                ];
               });
               exportToExcel({ headers, data, fileName: "Proveedores" });
             }}

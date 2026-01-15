@@ -14,7 +14,8 @@ import { Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { api, CompanySettings, Branch } from "@/lib/api";
 import { companySettingsSchema } from "@/lib/validation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
 
 interface CompanySettingsTabProps {
   companyData: CompanySettings;
@@ -29,21 +30,22 @@ export function CompanySettingsTab({
   branches,
   setBranches,
 }: CompanySettingsTabProps) {
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const form = useZodLiveForm(companySettingsSchema, companyData);
+
+  useEffect(() => {
+    form.setData(companyData);
+  }, [companyData]);
+
   const handleSaveCompany = async () => {
-    try {
-      const result = companySettingsSchema.safeParse(companyData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          const key = String(err.path[0] ?? "general");
-          fieldErrors[key] = err.message;
-        });
-        setErrors(fieldErrors);
+    const validation = form.validate();
+    if (!validation.ok) {
+        toast.error("Por favor corrige los errores en el formulario");
         return;
-      }
-      setErrors({});
-      await api.updateCompanySettings(result.data);
+    }
+
+    try {
+      await api.updateCompanySettings(validation.value);
+      setCompanyData(validation.value);
       toast.success("Información de empresa actualizada correctamente");
     } catch (error) {
       console.error("Error saving company:", error);
@@ -85,72 +87,84 @@ export function CompanySettingsTab({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="company-name">Nombre de la Empresa</Label>
+              <p className="text-muted-foreground text-xs">Mínimo 2 caracteres</p>
               <Input
                 id="company-name"
-                value={companyData.name}
+                value={form.data.name}
                 onChange={(e) =>
-                  setCompanyData({ ...companyData, name: e.target.value })
+                  form.setField("name", e.target.value)
                 }
+                {...form.ariaProps("name")}
               />
-              {errors.name && (
-                <p className="text-destructive text-sm">{errors.name}</p>
+              {form.errors.name && (
+                <p className="text-destructive text-sm">{form.errors.name}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="company-ruc">RUC</Label>
+              <p className="text-muted-foreground text-xs">RUC válido (13 dígitos)</p>
               <Input
                 id="company-ruc"
-                value={companyData.ruc}
+                value={form.data.ruc}
                 onChange={(e) =>
-                  setCompanyData({ ...companyData, ruc: e.target.value })
+                    form.setField("ruc", e.target.value.replace(/\D/g, ""))
                 }
+                maxLength={13}
+                {...form.ariaProps("ruc")}
               />
-              {errors.ruc && (
-                <p className="text-destructive text-sm">{errors.ruc}</p>
+              {form.errors.ruc && (
+                <p className="text-destructive text-sm">{form.errors.ruc}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="company-address">Dirección</Label>
+            <p className="text-muted-foreground text-xs">Dirección completa</p>
             <Textarea
               id="company-address"
-              value={companyData.address}
+              value={form.data.address}
               onChange={(e) =>
-                setCompanyData({ ...companyData, address: e.target.value })
+                form.setField("address", e.target.value)
               }
+              {...form.ariaProps("address")}
             />
-            {errors.address && (
-              <p className="text-destructive text-sm">{errors.address}</p>
+            {form.errors.address && (
+              <p className="text-destructive text-sm">{form.errors.address}</p>
             )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="company-phone">Teléfono</Label>
+              <p className="text-muted-foreground text-xs">Teléfono válido</p>
               <Input
                 id="company-phone"
-                value={companyData.phone}
+                value={form.data.phone}
                 onChange={(e) =>
-                  setCompanyData({ ...companyData, phone: e.target.value })
+                    form.setField("phone", e.target.value.replace(/\D/g, ""))
                 }
+                maxLength={10}
+                {...form.ariaProps("phone")}
               />
-              {errors.phone && (
-                <p className="text-destructive text-sm">{errors.phone}</p>
+              {form.errors.phone && (
+                <p className="text-destructive text-sm">{form.errors.phone}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="company-email">Email</Label>
+              <p className="text-muted-foreground text-xs">Correo electrónico válido</p>
               <Input
                 id="company-email"
                 type="email"
-                value={companyData.email}
+                value={form.data.email}
                 onChange={(e) =>
-                  setCompanyData({ ...companyData, email: e.target.value })
+                    form.setField("email", e.target.value)
                 }
+                {...form.ariaProps("email")}
               />
-              {errors.email && (
-                <p className="text-destructive text-sm">{errors.email}</p>
+              {form.errors.email && (
+                <p className="text-destructive text-sm">{form.errors.email}</p>
               )}
             </div>
           </div>
