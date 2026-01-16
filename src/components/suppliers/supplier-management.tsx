@@ -13,12 +13,19 @@ import { SupplierDetail } from "./supplier-detail";
 import { SupplierFormData } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SupplierMap } from "@/components/gis/supplier-map";
-import { exportToPDF, exportToExcel, exportSuppliersToPDF } from "@/lib/export-utils";
+import { ExportModal } from "@/components/inventory/export-modal";
+import { exportSuppliersToPDF, exportToExcel } from "@/lib/export-utils";
 
 import type { GeographicEntity } from "@/contexts/gis-context";
 
 export function SupplierManagement() {
-  const { suppliers: gisSuppliers, addEntity, removeEntity, updateEntity, getEnhancedCityCoordinates } = useGIS();
+  const {
+    suppliers: gisSuppliers,
+    addEntity,
+    removeEntity,
+    updateEntity,
+    getEnhancedCityCoordinates,
+  } = useGIS();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -68,9 +75,7 @@ export function SupplierManagement() {
         email: supplierData.email,
         phone: supplierData.phone,
         rating:
-          typeof supplierData.rating === "number"
-            ? supplierData.rating
-            : 5,
+          typeof supplierData.rating === "number" ? supplierData.rating : 5,
       },
     };
 
@@ -112,7 +117,12 @@ export function SupplierManagement() {
 
   // Unificar datos extendidos: notas + metadata del contexto GIS
   const getExtendedData = (supplier: any) => {
-    const meta = supplier && typeof supplier.metadata === "object" && supplier.metadata !== null ? supplier.metadata : {};
+    const meta =
+      supplier &&
+      typeof supplier.metadata === "object" &&
+      supplier.metadata !== null
+        ? supplier.metadata
+        : {};
 
     if (!supplier || !supplier.notes) {
       return { ...meta };
@@ -129,7 +139,10 @@ export function SupplierManagement() {
           return { ...meta, ...parsed };
         }
         return { ...meta, additionalNotes: supplier.notes };
-      } else if (typeof supplier.notes === "object" && supplier.notes !== null) {
+      } else if (
+        typeof supplier.notes === "object" &&
+        supplier.notes !== null
+      ) {
         return { ...meta, ...supplier.notes };
       }
     } catch (error) {
@@ -186,7 +199,9 @@ export function SupplierManagement() {
       extendedData.businessName
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      (supplier.email || extendedData.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (supplier.email || extendedData.email || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       (supplier.phone || extendedData.phone || "").includes(searchQuery) ||
       extendedData.taxId?.includes(searchQuery);
 
@@ -195,7 +210,9 @@ export function SupplierManagement() {
     const matchesStatus =
       filterStatus === "all" || supplier.status === filterStatus;
     const matchesCity =
-      filterCity === "all" || extendedData.city === filterCity || supplier.city === filterCity;
+      filterCity === "all" ||
+      extendedData.city === filterCity ||
+      supplier.city === filterCity;
 
     return matchesSearch && matchesCategory && matchesStatus && matchesCity;
   });
@@ -305,40 +322,38 @@ export function SupplierManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Proveedores</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            Gestión de Proveedores
+          </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
             Administra la información de tus proveedores y sus productos
           </p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad"];
-              const data = filteredSuppliers.map((s) => {
-                const extended = getExtendedData(s);
-                const city = extended.city || s.city || "";
-                return [
-                  s.name,
-                  extended.contactPerson || s.contactPerson || "",
-                  extended.email || s.email || "",
-                  extended.phone || s.phone || "",
-                  city
-                ];
-              });
-              exportSuppliersToPDF({ headers, data, fileName: "Proveedores" });
-            }}
-            className="flex-1 sm:flex-none"
-          >
-            <span className="hidden sm:inline">Exportar PDF</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              const headers = ["Nombre", "Contacto", "Email", "Teléfono", "Ciudad", "Estado"];
+          <ExportModal
+            products={filteredSuppliers.map((s) => {
+              const extended = getExtendedData(s);
+              const city = extended.city || s.city || "";
+              return {
+                ...s,
+                contactPerson: extended.contactPerson || s.contactPerson || "",
+                email: extended.email || s.email || "",
+                phone: extended.phone || s.phone || "",
+                city: city,
+                // Mapear campos para que coincidan con la estructura esperada por el modal si es necesario
+                // O ajustar el modal para aceptar proveedores
+              };
+            })}
+            title="Exportar Proveedores"
+            description={`Exporta tus proveedores en el formato que prefieras. Se exportarán ${filteredSuppliers.length} proveedores.`}
+            onExport={(format) => {
+              const headers = [
+                "Nombre",
+                "Contacto",
+                "Email",
+                "Teléfono",
+                "Ciudad",
+              ];
               const data = filteredSuppliers.map((s) => {
                 const extended = getExtendedData(s);
                 const city = extended.city || s.city || "";
@@ -348,18 +363,44 @@ export function SupplierManagement() {
                   extended.email || s.email || "",
                   extended.phone || s.phone || "",
                   city,
-                  s.status
                 ];
               });
-              exportToExcel({ headers, data, fileName: "Proveedores" });
+
+              const fileName = "Proveedores";
+              if (format === "pdf") {
+                exportSuppliersToPDF({ headers, data, fileName });
+              } else {
+                // Agregar estado para Excel si se desea, o mantener igual que PDF
+                const excelData = filteredSuppliers.map((s) => {
+                  const extended = getExtendedData(s);
+                  const city = extended.city || s.city || "";
+                  return [
+                    s.name,
+                    extended.contactPerson || s.contactPerson || "",
+                    extended.email || s.email || "",
+                    extended.phone || s.phone || "",
+                    city,
+                    s.status,
+                  ];
+                });
+                const excelHeaders = [
+                  "Nombre",
+                  "Contacto",
+                  "Email",
+                  "Teléfono",
+                  "Ciudad",
+                  "Estado",
+                ];
+                exportToExcel({
+                  headers: excelHeaders,
+                  data: excelData,
+                  fileName,
+                });
+              }
             }}
-            className="flex-1 sm:flex-none"
-          >
-            <span className="hidden sm:inline">Exportar Excel</span>
-            <span className="sm:hidden">Excel</span>
-          </Button>
-          <Button 
-            onClick={() => handleOpenForm()} 
+          />
+          <Button
+            onClick={() => handleOpenForm()}
             size="sm"
             className="flex-1 sm:flex-none"
           >
@@ -372,12 +413,12 @@ export function SupplierManagement() {
 
       {/* Tabs para vista lista y mapa */}
       <Tabs defaultValue="list" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 gap-2 p-1 bg-muted/50 rounded-lg">
-          <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Vista Lista
-          </TabsTrigger>
-          <TabsTrigger value="map" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Vista Mapa
+        <TabsList className="grid w-full grid-cols-1 gap-2 p-1 bg-muted/50 rounded-lg">
+          <TabsTrigger
+            value="list"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            Lista de Proveedores
           </TabsTrigger>
         </TabsList>
 
@@ -406,11 +447,6 @@ export function SupplierManagement() {
             onClearFilters={clearAllFilters}
           />
         </TabsContent>
-
-        <TabsContent value="map" className="space-y-6">
-          {/* Mapa de proveedores con GIS */}
-          <SupplierMap onViewEntity={handleViewSupplierFromMap} />
-        </TabsContent>
       </Tabs>
 
       {/* Form Dialog */}
@@ -419,7 +455,9 @@ export function SupplierManagement() {
         onClose={handleCloseForm}
         onSubmit={handleSubmitForm}
         editingSupplier={editingSupplier}
-        initialData={editingSupplier ? buildInitialFormData(editingSupplier) : undefined}
+        initialData={
+          editingSupplier ? buildInitialFormData(editingSupplier) : undefined
+        }
         isLoading={isFormLoading}
       />
 

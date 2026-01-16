@@ -28,18 +28,20 @@ import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Suspense } from "react";
 
+import { useAuth } from "@/contexts/auth-context";
+
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
-  { name: "Inventario", href: "/inventory", icon: Package },
-  { name: "Clientes", href: "/customers", icon: IdCard },
-  { name: "Proveedores", href: "/suppliers", icon: Truck },
-  { name: "Usuarios", href: "/users", icon: Users },
-  { name: "Análisis", href: "/analytics", icon: BarChart3 },
-  { name: "Obsolescencia", href: "/obsolescence", icon: AlertTriangle },
-  { name: "Clasificación", href: "/classification", icon: Brain },
-  { name: "Configuración", href: "/settings", icon: Settings },
-  { name: "Mi Perfil", href: "/profile", icon: User },
+  { name: "Dashboard", href: "/dashboard", icon: Home, permission: "dashboard.view" },
+  { name: "Punto de Venta", href: "/pos", icon: ShoppingCart, permission: "pos.use" },
+  { name: "Inventario", href: "/inventory", icon: Package, permission: "inventory.view" },
+  { name: "Clientes", href: "/customers", icon: IdCard, permission: "customers.view" },
+  { name: "Proveedores", href: "/suppliers", icon: Truck, permission: "suppliers.manage" },
+  { name: "Usuarios", href: "/users", icon: Users, permission: "users.manage" },
+  { name: "Análisis", href: "/analytics", icon: BarChart3, permission: "analytics.view" },
+  { name: "Obsolescencia", href: "/obsolescence", icon: AlertTriangle, permission: "analytics.view" },
+  { name: "Clasificación", href: "/classification", icon: Brain, permission: "analytics.view" },
+  { name: "Configuración", href: "/settings", icon: Settings, permission: "settings.manage" },
+  { name: "Mi Perfil", href: "/profile", icon: User, permission: "profile.edit" },
 ];
 
 interface AppSidebarProps {
@@ -49,6 +51,7 @@ interface AppSidebarProps {
 function MobileSidebarContent({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { hasPermission } = useAuth();
 
   const handleNavigation = (href: string) => {
     router.push(href);
@@ -62,20 +65,22 @@ function MobileSidebarContent({ onClose }: { onClose: () => void }) {
       </div>
       <div className="flex-1 p-4">
         <nav className="space-y-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Button
-                key={item.name}
-                variant={isActive ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => handleNavigation(item.href)}
-              >
-                <item.icon className="h-4 w-4 mr-3" />
-                {item.name}
-              </Button>
-            );
-          })}
+          {navigation
+            .filter((item) => hasPermission(item.permission))
+            .map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Button
+                  key={item.name}
+                  variant={isActive ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => handleNavigation(item.href)}
+                >
+                  <item.icon className="h-4 w-4 mr-3" />
+                  {item.name}
+                </Button>
+              );
+            })}
         </nav>
       </div>
     </nav>
@@ -141,6 +146,7 @@ function DesktopSidebar({ className }: { className?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { hasPermission } = useAuth();
 
   const handleNavigation = (href: string) => {
     router.push(href);
@@ -213,10 +219,12 @@ function DesktopSidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <nav className="flex-1 p-3 sm:p-3 md:p-4">
         <ul className="space-y-2 sm:space-y-1.5 md:space-y-2">
-          {navigation.map((item) => (
-            <li key={item.name}>
-              <Button
-                variant="ghost"
+          {navigation
+            .filter((item) => hasPermission(item.permission))
+            .map((item) => (
+              <li key={item.name}>
+                <Button
+                  variant="ghost"
                 onClick={() => handleNavigation(item.href)}
                 className={cn(
                   "w-full justify-start h-10 sm:h-10 md:h-12 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",

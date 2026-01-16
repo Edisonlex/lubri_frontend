@@ -1,4 +1,3 @@
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -20,7 +19,11 @@ export const exportObsolescenceHistoryToPDF = ({
     body: data,
     startY: 25,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [66, 135, 245],
+      textColor: 255,
+      fontStyle: "bold",
+    },
     alternateRowStyles: { fillColor: [240, 240, 240] },
     margin: { top: 25 },
   });

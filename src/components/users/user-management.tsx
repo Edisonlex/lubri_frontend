@@ -9,7 +9,11 @@ import { usePOS } from "@/contexts/pos-context";
 import { UserForm } from "./user-form";
 import { UserFilters } from "./user-filters";
 import { UserList } from "./user-list";
-import { exportToPDF, exportToExcel, exportUsersToPDF } from "@/lib/export-utils";
+import {
+  exportToPDF,
+  exportToExcel,
+  exportUsersToPDF,
+} from "@/lib/export-utils";
 import {
   Dialog,
   DialogContent,

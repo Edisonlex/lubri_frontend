@@ -1,13 +1,8 @@
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ExportData } from "./types";
 
-export const exportUsersToPDF = ({
-  headers,
-  data,
-  fileName,
-}: ExportData) => {
+export const exportUsersToPDF = ({ headers, data, fileName }: ExportData) => {
   const doc = new jsPDF(); // Default portrait
 
   doc.text(`Reporte de Usuarios - ${new Date().toLocaleDateString()}`, 14, 15);

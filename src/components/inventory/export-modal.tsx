@@ -31,7 +31,14 @@ export function ExportModal({
   disabled,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
-}: ExportModalProps) {
+  title = "Exportar Inventario",
+  description,
+  onExport,
+}: ExportModalProps & {
+  title?: string;
+  description?: string;
+  onExport?: (format: "pdf" | "excel") => void;
+}) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +49,7 @@ export function ExportModal({
 
   const handleExport = async (format: "pdf" | "excel") => {
     if (products.length === 0) {
-      setError("No hay productos para exportar");
+      setError("No hay datos para exportar");
       return;
     }
 
@@ -50,13 +57,19 @@ export function ExportModal({
     setError(null);
 
     try {
-      const { headers, data } = prepareInventoryData(products);
-      const fileName = `inventario_${new Date().toISOString().split("T")[0]}`;
-
-      if (format === "pdf") {
-        exportToPDF({ headers, data, fileName });
+      if (onExport) {
+        // Use custom export handler if provided
+        await onExport(format);
       } else {
-        exportToExcel({ headers, data, fileName });
+        // Default behavior for inventory
+        const { headers, data } = prepareInventoryData(products);
+        const fileName = `inventario_${new Date().toISOString().split("T")[0]}`;
+
+        if (format === "pdf") {
+          exportToPDF({ headers, data, fileName });
+        } else {
+          exportToExcel({ headers, data, fileName });
+        }
       }
 
       setIsOpen(false);
@@ -71,6 +84,8 @@ export function ExportModal({
       setIsExporting(false);
     }
   };
+
+  const defaultDescription = `Exporta tu inventario en el formato que prefieras. Se exportarán ${products.length} productos.`;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -88,10 +103,9 @@ export function ExportModal({
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Exportar Inventario</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Exporta tu inventario en el formato que prefieras. Se exportarán{" "}
-            {products.length} productos.
+            {description || defaultDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,8 +147,8 @@ export function ExportModal({
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <div className="text-xs text-muted-foreground flex-1">
             {products.length === 0
-              ? "No hay productos para exportar"
-              : `Listos para exportar ${products.length} productos`}
+              ? "No hay datos para exportar"
+              : `Listos para exportar ${products.length} registros`}
           </div>
           <Button
             variant="outline"

@@ -166,9 +166,14 @@ export default function LoginPage() {
     try {
       setSending(true);
       const resp = await api.requestPasswordReset(resetEmail.trim());
-      if (!resp.demoCode) {
+      if (!resp.exists) {
         setResetErrors({ email: "El email no está registrado" });
         toast.error("Email no registrado");
+        return;
+      }
+      if (!resp.demoCode) {
+        setResetErrors({ email: "Error al generar código" });
+        toast.error("Error al generar código");
         return;
       }
       setResetErrors({});

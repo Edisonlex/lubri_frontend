@@ -1,4 +1,3 @@
-
 export interface ExportData {
   headers: string[];
   data: any[][];

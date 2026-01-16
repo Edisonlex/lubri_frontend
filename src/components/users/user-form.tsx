@@ -19,7 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UserFormData, roles, statuses, convertApiUserToFormData } from "./types";
+import {
+  UserFormData,
+  roles,
+  statuses,
+  convertApiUserToFormData,
+} from "./types";
 import { userFormSchema } from "@/lib/validation";
 import { useZodLiveForm } from "@/hooks/use-zod-form";
 
@@ -47,7 +52,10 @@ export function UserForm({
   isLoading = false,
 }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
-  const schema = useMemo(() => userFormSchema({ requirePassword: !editingUser }), [editingUser]);
+  const schema = useMemo(
+    () => userFormSchema({ requirePassword: !editingUser }),
+    [editingUser]
+  );
   const form = useZodLiveForm(schema, initialFormData);
 
   useEffect(() => {
@@ -91,13 +99,13 @@ export function UserForm({
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre completo</Label>
-              <p className="text-muted-foreground text-xs">Mínimo 2 caracteres</p>
+              <p className="text-muted-foreground text-xs">
+                Mínimo 2 caracteres
+              </p>
               <Input
                 id="name"
                 value={form.data.name}
-                onChange={(e) =>
-                  form.setField("name", e.target.value)
-                }
+                onChange={(e) => form.setField("name", e.target.value)}
                 placeholder="Ingresa el nombre completo"
                 required
                 {...form.ariaProps("name", "name-help")}
@@ -108,14 +116,14 @@ export function UserForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <p className="text-muted-foreground text-xs">Formato de correo válido</p>
+              <p className="text-muted-foreground text-xs">
+                Formato de correo válido
+              </p>
               <Input
                 id="email"
                 type="email"
                 value={form.data.email}
-                onChange={(e) =>
-                  form.setField("email", e.target.value)
-                }
+                onChange={(e) => form.setField("email", e.target.value)}
                 placeholder="usuario@ejemplo.com"
                 required
                 {...form.ariaProps("email", "email-help")}
@@ -127,14 +135,14 @@ export function UserForm({
             {!editingUser && (
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
-                <p className="text-muted-foreground text-xs">Mínimo 6 caracteres</p>
+                <p className="text-muted-foreground text-xs">
+                  Mínimo 6 caracteres
+                </p>
                 <Input
                   id="password"
                   type="password"
                   value={form.data.password}
-                  onChange={(e) =>
-                    form.setField("password", e.target.value)
-                  }
+                  onChange={(e) => form.setField("password", e.target.value)}
                   placeholder="Contraseña temporal"
                   required
                   {...form.ariaProps("password", "password-help")}
@@ -149,12 +157,12 @@ export function UserForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="role">Rol</Label>
-                <p className="text-muted-foreground text-xs">Selecciona el rol del usuario</p>
+                <p className="text-muted-foreground text-xs">
+                  Selecciona el rol del usuario
+                </p>
                 <Select
                   value={form.data.role}
-                  onValueChange={(value) =>
-                    form.setField("role", value)
-                  }
+                  onValueChange={(value) => form.setField("role", value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -173,12 +181,12 @@ export function UserForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
-                <p className="text-muted-foreground text-xs">Activo o Inactivo</p>
+                <p className="text-muted-foreground text-xs">
+                  Activo o Inactivo
+                </p>
                 <Select
                   value={form.data.status}
-                  onValueChange={(value) =>
-                    form.setField("status", value)
-                  }
+                  onValueChange={(value) => form.setField("status", value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -192,7 +200,9 @@ export function UserForm({
                   </SelectContent>
                 </Select>
                 {form.errors.status && (
-                  <p className="text-destructive text-sm">{form.errors.status}</p>
+                  <p className="text-destructive text-sm">
+                    {form.errors.status}
+                  </p>
                 )}
               </div>
             </div>

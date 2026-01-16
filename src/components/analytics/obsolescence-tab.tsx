@@ -1,16 +1,68 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Calendar, DollarSign, AlertTriangle, RefreshCw, Settings, TrendingDown, Download } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Package,
+  Calendar,
+  DollarSign,
+  AlertTriangle,
+  RefreshCw,
+  Settings,
+  TrendingDown,
+  Download,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api, type Product, type Sale } from "@/lib/api";
 import { reportsService } from "@/lib/reports-service";
-import { exportToExcel, exportToPDF, exportObsolescenceHistoryToPDF, exportObsolescenceHistoryToExcel } from "@/lib/export-utils";
+import {
+  exportToExcel,
+  exportToPDF,
+  exportObsolescenceHistoryToPDF,
+  exportObsolescenceHistoryToExcel,
+} from "@/lib/export-utils";
 import { useAlerts } from "@/contexts/alerts-context";
 import { toast } from "sonner";
 
@@ -20,7 +72,15 @@ interface ObsolescencePoint {
   financialImpact: number;
 }
 
-export function ObsolescenceTab() {
+interface ObsolescenceTabProps {
+  selectedPeriod?: string;
+  dateRange?: { from: Date; to: Date };
+}
+
+export function ObsolescenceTab({
+  selectedPeriod = "6m",
+  dateRange,
+}: ObsolescenceTabProps) {
   const isMobile = useIsMobile();
   const { checkAndCreateAlerts, refreshAlerts } = useAlerts();
   const [products, setProducts] = useState<Product[]>([]);
@@ -28,6 +88,42 @@ export function ObsolescenceTab() {
   const [rotationThreshold, setRotationThreshold] = useState(0.4);
   const [staleDaysThreshold, setStaleDaysThreshold] = useState(180);
   const [sales, setSales] = useState<Sale[]>([]);
+
+  // Action states
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [actionType, setActionType] = useState<
+    "discount" | "bundle" | "return" | null
+  >(null);
+  const [actionValue, setActionValue] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Update threshold based on selected period
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      const diffTime = Math.abs(
+        dateRange.to.getTime() - dateRange.from.getTime()
+      );
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setStaleDaysThreshold(diffDays > 0 ? diffDays : 1);
+    } else {
+      switch (selectedPeriod) {
+        case "1m":
+          setStaleDaysThreshold(30);
+          break;
+        case "3m":
+          setStaleDaysThreshold(90);
+          break;
+        case "6m":
+          setStaleDaysThreshold(180);
+          break;
+        case "1y":
+          setStaleDaysThreshold(365);
+          break;
+        default:
+          setStaleDaysThreshold(180);
+      }
+    }
+  }, [selectedPeriod, dateRange]);
 
   useEffect(() => {
     const load = async () => {
@@ -74,46 +170,105 @@ export function ObsolescenceTab() {
       const staleDays = lastSaleTs
         ? Math.floor((Date.now() - lastSaleTs) / (1000 * 60 * 60 * 24))
         : daysSinceDate(p.lastUpdated);
-      return (rot <= rotationThreshold || staleDays >= staleDaysThreshold) && (p.stock || 0) > 0;
+      return (
+        (rot <= rotationThreshold || staleDays >= staleDaysThreshold) &&
+        (p.stock || 0) > 0
+      );
     });
   }, [products, rotationThreshold, staleDaysThreshold, lastSaleByProduct]);
 
   const metrics = useMemo(() => {
     const count = obsoleteProducts.length;
-    const avgDays = count === 0 ? 0 : Math.round(
-      obsoleteProducts.reduce((sum, p) => {
-        const lastSaleTs = lastSaleByProduct[p.id];
-        const d = lastSaleTs
-          ? Math.floor((Date.now() - lastSaleTs) / (1000 * 60 * 60 * 24))
-          : daysSinceDate(p.lastUpdated);
-        return sum + d;
-      }, 0) / count
+    const avgDays =
+      count === 0
+        ? 0
+        : Math.round(
+            obsoleteProducts.reduce((sum, p) => {
+              const lastSaleTs = lastSaleByProduct[p.id];
+              const d = lastSaleTs
+                ? Math.floor((Date.now() - lastSaleTs) / (1000 * 60 * 60 * 24))
+                : daysSinceDate(p.lastUpdated);
+              return sum + d;
+            }, 0) / count
+          );
+    const impact = obsoleteProducts.reduce(
+      (sum, p) => sum + (p.cost || 0) * (p.stock || 0),
+      0
     );
-    const impact = obsoleteProducts.reduce((sum, p) => sum + (p.cost || 0) * (p.stock || 0), 0);
     return { count, avgDays, impact };
   }, [obsoleteProducts, lastSaleByProduct]);
 
   const history: ObsolescencePoint[] = useMemo(() => {
-    const byMonth = new Map<string, { label: string; obsoleteCount: number; financialImpact: number }>();
+    const byMonth = new Map<
+      string,
+      { label: string; obsoleteCount: number; financialImpact: number }
+    >();
     products.forEach((p) => {
-      const lastTs = lastSaleByProduct[p.id] ?? new Date(p.lastUpdated).getTime();
+      const lastTs =
+        lastSaleByProduct[p.id] ?? new Date(p.lastUpdated).getTime();
       const d = new Date(lastTs);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleString("es-ES", { month: "short", year: "numeric" });
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}`;
+      const label = d.toLocaleString("es-ES", {
+        month: "short",
+        year: "numeric",
+      });
       const rot = p.rotationRate || 0;
-      const staleDays = Math.floor((Date.now() - lastTs) / (1000 * 60 * 60 * 24));
-      const isObsolete = (rot <= rotationThreshold || staleDays >= staleDaysThreshold) && (p.stock || 0) > 0;
-      const prev = byMonth.get(key) || { label, obsoleteCount: 0, financialImpact: 0 };
+      const staleDays = Math.floor(
+        (Date.now() - lastTs) / (1000 * 60 * 60 * 24)
+      );
+      const isObsolete =
+        (rot <= rotationThreshold || staleDays >= staleDaysThreshold) &&
+        (p.stock || 0) > 0;
+      const prev = byMonth.get(key) || {
+        label,
+        obsoleteCount: 0,
+        financialImpact: 0,
+      };
       byMonth.set(key, {
         label,
         obsoleteCount: prev.obsoleteCount + (isObsolete ? 1 : 0),
-        financialImpact: prev.financialImpact + (isObsolete ? (p.cost || 0) * (p.stock || 0) : 0),
+        financialImpact:
+          prev.financialImpact +
+          (isObsolete ? (p.cost || 0) * (p.stock || 0) : 0),
       });
     });
     return Array.from(byMonth.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([, v]) => ({ label: v.label, obsoleteCount: v.obsoleteCount, financialImpact: Math.round(v.financialImpact) }));
-  }, [products, rotationThreshold, staleDaysThreshold, lastSaleByProduct]);
+      .map(([, v]) => ({
+        label: v.label,
+        obsoleteCount: v.obsoleteCount,
+        financialImpact: Math.round(v.financialImpact),
+      }))
+      .filter((point) => {
+        if (!point.label) return false;
+        // Parse label back to date for comparison (Assuming label is "ShortMonth Year" e.g., "Ene 2025")
+        // Note: The key in map was "YYYY-MM", let's use that if possible, but map returns array.
+        // Better to filter based on keys before mapping to labels, but here we are.
+        // Let's assume the chart displays the relevant range.
+        // Actually, easiest is to filter by index based on selectedPeriod if no dateRange
+        return true;
+      })
+      .slice(
+        selectedPeriod === "1m"
+          ? -1
+          : selectedPeriod === "3m"
+          ? -3
+          : selectedPeriod === "6m"
+          ? -6
+          : selectedPeriod === "1y"
+          ? -12
+          : 0
+      );
+  }, [
+    products,
+    rotationThreshold,
+    staleDaysThreshold,
+    lastSaleByProduct,
+    selectedPeriod,
+  ]);
 
   const lowMovement = useMemo(() => {
     return [...products]
@@ -142,9 +297,11 @@ export function ObsolescenceTab() {
       p.category,
       (p.rotationRate || 0).toFixed(2),
       p.stock,
-      `$${(((p.cost || 0) * (p.stock || 0)) || 0).toFixed(2)}`,
+      `$${((p.cost || 0) * (p.stock || 0) || 0).toFixed(2)}`,
     ]);
-    const fileName = `Reporte_Obsolescencia_${new Date().toISOString().split("T")[0]}`;
+    const fileName = `Reporte_Obsolescencia_${
+      new Date().toISOString().split("T")[0]
+    }`;
     if (type === "excel") {
       exportToExcel({ headers, data, fileName });
       toast.success("Reporte exportado a Excel");
@@ -161,7 +318,9 @@ export function ObsolescenceTab() {
       h.obsoleteCount,
       `$${Number(h.financialImpact).toLocaleString()}`,
     ]);
-    const fileName = `Historico_Obsolescencia_${new Date().toISOString().split("T")[0]}`;
+    const fileName = `Historico_Obsolescencia_${
+      new Date().toISOString().split("T")[0]
+    }`;
     if (type === "excel") {
       exportObsolescenceHistoryToExcel({ headers, data, fileName });
       toast.success("Histórico exportado a Excel");
@@ -171,43 +330,208 @@ export function ObsolescenceTab() {
     }
   };
 
-  const applyCorrectiveAction = (p: Product, action: string) => {
-    toast.info(`${action} aplicado a ${p.name}`);
+  const applyCorrectiveAction = (
+    p: Product,
+    action: "discount" | "bundle" | "return"
+  ) => {
+    setSelectedProduct(p);
+    setActionType(action);
+    setActionValue("");
+  };
+
+  const confirmAction = async () => {
+    if (!selectedProduct || !actionType) return;
+
+    setActionLoading(true);
+    try {
+      let updateData: Partial<Product> = {};
+      let message = "";
+
+      if (actionType === "discount") {
+        const discountPct = parseFloat(actionValue);
+        if (isNaN(discountPct) || discountPct <= 0 || discountPct > 100) {
+          toast.error("Por favor ingrese un porcentaje válido");
+          setActionLoading(false);
+          return;
+        }
+        const newPrice = (selectedProduct.price || 0) * (1 - discountPct / 100);
+        updateData = { price: newPrice };
+        message = `Descuento del ${discountPct}% aplicado. Nuevo precio: $${newPrice.toFixed(
+          2
+        )}`;
+      } else if (actionType === "bundle") {
+        const bundleSuffix = actionValue.trim() || "BUNDLE";
+        const newName = `${selectedProduct.name} + ${bundleSuffix}`;
+        updateData = { name: newName };
+        message = `Producto marcado como bundle: ${newName}`;
+      } else if (actionType === "return") {
+        const returnQty = parseInt(actionValue);
+        if (
+          isNaN(returnQty) ||
+          returnQty <= 0 ||
+          returnQty > (selectedProduct.stock || 0)
+        ) {
+          toast.error("Cantidad inválida");
+          setActionLoading(false);
+          return;
+        }
+        const newStock = (selectedProduct.stock || 0) - returnQty;
+        updateData = { stock: newStock };
+        message = `Devolución de ${returnQty} unidades procesada. Stock restante: ${newStock}`;
+      }
+
+      await api.updateProduct(selectedProduct.id, updateData);
+
+      // Update local state
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === selectedProduct.id ? { ...p, ...updateData } : p
+        )
+      );
+
+      toast.success(message);
+      setSelectedProduct(null);
+      setActionType(null);
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al aplicar la acción");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Action Dialog */}
+      <Dialog
+        open={!!selectedProduct}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {actionType === "discount" && "Aplicar Descuento"}
+              {actionType === "bundle" && "Crear Bundle"}
+              {actionType === "return" && "Gestionar Devolución"}
+            </DialogTitle>
+            <DialogDescription>
+              {actionType === "discount" &&
+                `Aplicar descuento a ${selectedProduct?.name}. Precio actual: $${selectedProduct?.price}`}
+              {actionType === "bundle" &&
+                `Agrupar ${selectedProduct?.name} con otro producto o promoción.`}
+              {actionType === "return" &&
+                `Devolver stock de ${selectedProduct?.name} al proveedor ${
+                  selectedProduct?.supplier || ""
+                }. Stock actual: ${selectedProduct?.stock}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {actionType === "discount" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="discount" className="text-right">
+                  Porcentaje %
+                </Label>
+                <Input
+                  id="discount"
+                  type="number"
+                  placeholder="20"
+                  className="col-span-3"
+                  value={actionValue}
+                  onChange={(e) => setActionValue(e.target.value)}
+                />
+              </div>
+            )}
+
+            {actionType === "bundle" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="bundle" className="text-right">
+                  Etiqueta
+                </Label>
+                <Input
+                  id="bundle"
+                  placeholder="Ej: GRATIS Filtro"
+                  className="col-span-3"
+                  value={actionValue}
+                  onChange={(e) => setActionValue(e.target.value)}
+                />
+              </div>
+            )}
+
+            {actionType === "return" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="return" className="text-right">
+                  Cantidad
+                </Label>
+                <Input
+                  id="return"
+                  type="number"
+                  placeholder="Cantidad a devolver"
+                  className="col-span-3"
+                  value={actionValue}
+                  max={selectedProduct?.stock}
+                  onChange={(e) => setActionValue(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedProduct(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmAction} disabled={actionLoading}>
+              {actionLoading ? "Procesando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-sm font-medium">Productos Obsoletos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Productos Obsoletos
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{metrics.count}</div>
-            <CardDescription className="text-xs">Rotación baja o sin movimiento</CardDescription>
+            <CardDescription className="text-xs">
+              Rotación baja o sin movimiento
+            </CardDescription>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-sm font-medium">Tiempo Promedio en Inventario</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Tiempo Promedio en Inventario
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{metrics.avgDays} días</div>
-            <CardDescription className="text-xs">Desde última actualización</CardDescription>
+            <CardDescription className="text-xs">
+              Desde última actualización
+            </CardDescription>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-sm font-medium">Impacto Financiero</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Impacto Financiero
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold">${metrics.impact.toLocaleString()}</div>
-            <CardDescription className="text-xs">Costo inmovilizado en stock</CardDescription>
+            <div className="text-2xl font-bold">
+              ${metrics.impact.toLocaleString()}
+            </div>
+            <CardDescription className="text-xs">
+              Costo inmovilizado en stock
+            </CardDescription>
           </CardContent>
         </Card>
 
@@ -217,7 +541,9 @@ export function ObsolescenceTab() {
             <Settings className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-4 pt-0 space-y-2">
-            <div className="text-xs">Rotación ≤ {rotationThreshold.toFixed(2)}</div>
+            <div className="text-xs">
+              Rotación ≤ {rotationThreshold.toFixed(2)}
+            </div>
             <input
               type="range"
               min={0}
@@ -227,12 +553,14 @@ export function ObsolescenceTab() {
               onChange={(e) => setRotationThreshold(Number(e.target.value))}
               className="w-full"
             />
-            <div className="text-xs">Antigüedad ≥ {staleDaysThreshold} días</div>
+            <div className="text-xs">
+              Antigüedad ≥ {staleDaysThreshold} días
+            </div>
             <input
               type="range"
               min={30}
-              max={360}
-              step={15}
+              max={365}
+              step={5}
               value={staleDaysThreshold}
               onChange={(e) => setStaleDaysThreshold(Number(e.target.value))}
               className="w-full"
@@ -243,13 +571,25 @@ export function ObsolescenceTab() {
 
       <Card>
         <CardHeader className={isMobile ? "px-4 pt-4" : "px-6 pt-6"}>
-          <CardTitle className={isMobile ? "text-base" : "text-lg"}>Histórico de Obsolescencia</CardTitle>
-          <CardDescription className={isMobile ? "text-xs" : "text-sm"}>Tendencia de productos obsoletos e impacto</CardDescription>
+          <CardTitle className={isMobile ? "text-base" : "text-lg"}>
+            Histórico de Obsolescencia
+          </CardTitle>
+          <CardDescription className={isMobile ? "text-xs" : "text-sm"}>
+            Tendencia de productos obsoletos e impacto
+          </CardDescription>
           <div className="mt-2 flex items-center gap-2">
-            <Button variant="default" size="sm" onClick={() => exportHistory("excel")}>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => exportHistory("excel")}
+            >
               <Download className="h-4 w-4 mr-2" /> Exportar resumen
             </Button>
-            <Button variant="outline" size="sm" onClick={() => exportHistory("pdf")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportHistory("pdf")}
+            >
               <Download className="h-4 w-4 mr-2" /> Exportar PDF
             </Button>
           </div>
@@ -257,24 +597,54 @@ export function ObsolescenceTab() {
         <CardContent className={isMobile ? "px-2 pb-3" : "px-6 pb-6"}>
           <div className={`h-48 ${isMobile ? "" : "sm:h-60 md:h-80"}`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={history} margin={{ bottom: 20, left: 0, right: 0, top: 10 }} barCategoryGap={0} barGap={2}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                <XAxis dataKey="label" tick={{ fontSize: isMobile ? 10 : 12 }} padding={{ left: 0, right: 0 }} />
+              <BarChart
+                data={history}
+                margin={{ bottom: 20, left: 0, right: 0, top: 10 }}
+                barCategoryGap={0}
+                barGap={2}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--muted))"
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  padding={{ left: 0, right: 0 }}
+                />
                 <YAxis yAxisId="left" tick={{ fontSize: isMobile ? 10 : 12 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: isMobile ? 10 : 12 }} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                   }}
                   formatter={(value, name) => [
-                    name === "Impacto" ? `$${Number(value).toLocaleString()}` : `${value}`,
+                    name === "Impacto"
+                      ? `$${Number(value).toLocaleString()}`
+                      : `${value}`,
                     name,
                   ]}
                 />
                 <Legend iconType="circle" />
-                <Bar dataKey="obsoleteCount" name="Obsoletos" fill="#16a34a" radius={[3,3,0,0]} yAxisId="left" />
-                <Bar dataKey="financialImpact" name="Impacto" fill="#059669" radius={[3,3,0,0]} yAxisId="right" />
+                <Bar
+                  dataKey="obsoleteCount"
+                  name="Obsoletos"
+                  fill="#16a34a"
+                  radius={[3, 3, 0, 0]}
+                  yAxisId="left"
+                />
+                <Bar
+                  dataKey="financialImpact"
+                  name="Impacto"
+                  fill="#059669"
+                  radius={[3, 3, 0, 0]}
+                  yAxisId="right"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -285,16 +655,32 @@ export function ObsolescenceTab() {
         <CardHeader className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm">Productos con Bajo Movimiento</CardTitle>
-              <CardDescription className="text-xs">Top 10 por menor rotación</CardDescription>
+              <CardTitle className="text-sm">
+                Productos con Bajo Movimiento
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Top 10 por menor rotación
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={generateAlerts}>
                 <AlertTriangle className="h-4 w-4 mr-2" /> Generar alertas
               </Button>
-              <Button variant="default" size="sm" onClick={() => exportReport("excel")}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Exportar reporte
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm">
+                    <Download className="h-4 w-4 mr-2" /> Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportReport("excel")}>
+                    Exportar a Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportReport("pdf")}>
+                    Exportar a PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
@@ -319,24 +705,53 @@ export function ObsolescenceTab() {
                     <TableCell>{p.brand}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <TrendingDown className="h-3 w-3" /> {(p.rotationRate || 0).toFixed(2)}
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        <TrendingDown className="h-3 w-3" />{" "}
+                        {(p.rotationRate || 0).toFixed(2)}
                       </Badge>
                     </TableCell>
                     <TableCell>{p.stock}</TableCell>
-                    <TableCell>${(((p.cost || 0) * (p.stock || 0)) || 0).toFixed(2)}</TableCell>
+                    <TableCell>
+                      ${((p.cost || 0) * (p.stock || 0) || 0).toFixed(2)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => applyCorrectiveAction(p, "Descuento")}>Descuento</Button>
-                        <Button variant="outline" size="sm" onClick={() => applyCorrectiveAction(p, "Bundle")}>Bundle</Button>
-                        <Button variant="outline" size="sm" onClick={() => applyCorrectiveAction(p, "Devolución")}>Devolución</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyCorrectiveAction(p, "discount")}
+                        >
+                          Descuento
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyCorrectiveAction(p, "bundle")}
+                        >
+                          Bundle
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyCorrectiveAction(p, "return")}
+                        >
+                          Devolución
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {lowMovement.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">Sin productos con bajo movimiento</TableCell>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center text-muted-foreground"
+                    >
+                      Sin productos con bajo movimiento
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>

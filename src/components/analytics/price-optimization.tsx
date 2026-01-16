@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
-import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { exportPriceOptimizationToPDF } from "@/lib/export-utils";
 import { toast } from "sonner";
 
 interface PriceRecommendation {
@@ -38,8 +38,10 @@ interface PriceOptimizationData {
 export function PriceOptimization() {
   const [data, setData] = useState<PriceOptimizationData | null>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [originalPrices, setOriginalPrices] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
 
   const loadData = async () => {
     try {
@@ -50,6 +52,15 @@ export function PriceOptimization() {
       ]);
       setData(priceData);
       setProducts(productsData);
+      
+      // Guardar precios originales al cargar si no existen
+      const prices: Record<string, number> = {};
+      productsData.forEach((p: any) => {
+        prices[p.id] = p.price;
+      });
+      // Solo actualizar si es la carga inicial para no perder referencias
+      setOriginalPrices(prev => Object.keys(prev).length === 0 ? prices : prev);
+
     } catch (error) {
       console.error("Error loading price optimization data:", error);
       toast.error("Error al cargar recomendaciones de precios");
@@ -98,7 +109,7 @@ export function PriceOptimization() {
         `$${rec.potentialRevenue.toFixed(2)}`,
       ];
     });
-    exportToPDF({ headers, data: rows, fileName: "Recomendaciones_Precios" });
+    exportPriceOptimizationToPDF({ headers, data: rows, fileName: "Recomendaciones_Precios" });
   };
 
   const handleApplyRecommendations = async () => {
@@ -117,6 +128,34 @@ export function PriceOptimization() {
       toast.error("No se pudieron aplicar las recomendaciones");
     } finally {
       setIsApplying(false);
+    }
+  };
+
+  const handleRevertChanges = async () => {
+    if (!data || Object.keys(originalPrices).length === 0) return;
+    
+    try {
+      setIsReverting(true);
+      // Revertir solo los productos que están en las recomendaciones
+      const revertPromises = data.recommendations
+        .filter(rec => originalPrices[rec.productId] !== undefined)
+        .map(rec => 
+          api.updateProduct(rec.productId, { price: originalPrices[rec.productId] })
+        );
+      
+      if (revertPromises.length === 0) {
+        toast.info("No hay cambios para revertir");
+        return;
+      }
+
+      await Promise.all(revertPromises);
+      toast.success("Cambios revertidos: precios restaurados");
+      await loadData();
+    } catch (error) {
+      console.error("Error revertiendo cambios:", error);
+      toast.error("No se pudieron revertir los cambios");
+    } finally {
+      setIsReverting(false);
     }
   };
 
@@ -313,7 +352,17 @@ export function PriceOptimization() {
                   <FileText className="h-4 w-4 mr-2" />
                   Exportar Reporte
                 </Button>
-                <Button onClick={handleApplyRecommendations} disabled={isApplying}>
+                {Object.keys(originalPrices).length > 0 && (
+                  <Button 
+                    variant="secondary" 
+                    onClick={handleRevertChanges} 
+                    disabled={isReverting || isApplying}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isReverting ? "animate-spin" : ""}`} />
+                    {isReverting ? "Revirtiendo..." : "Revertir Cambios"}
+                  </Button>
+                )}
+                <Button onClick={handleApplyRecommendations} disabled={isApplying || isReverting}>
                   <Target className="h-4 w-4 mr-2" />
                   {isApplying ? "Aplicando..." : "Aplicar Recomendaciones"}
                 </Button>

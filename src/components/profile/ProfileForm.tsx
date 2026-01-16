@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User } from "lucide-react";
 import { profileSchema } from "@/lib/validation";
-import React from "react";
+import { useZodLiveForm } from "@/hooks/use-zod-form";
+import React, { useEffect } from "react";
 
 interface ProfileData {
   name: string;
@@ -35,24 +36,20 @@ export function ProfileForm({
   onSave,
   isSaving,
 }: ProfileFormProps) {
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const handleChange = (field: keyof ProfileData, value: string) => {
-    onProfileChange({ ...profile, [field]: value });
-  };
+  const form = useZodLiveForm(profileSchema, profile);
 
-  const validateAndSave = () => {
-    const result = profileSchema.safeParse(profile);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        const key = String(err.path[0] ?? "general");
-        fieldErrors[key] = err.message;
-      });
-      setErrors(fieldErrors);
-      return;
+  useEffect(() => {
+    form.setData(profile);
+  }, [profile]);
+
+  const hasErrors = Object.keys(form.errors).length > 0;
+
+  const handleSave = () => {
+    const validation = form.validate();
+    if (validation.ok) {
+      onProfileChange(validation.value);
+      onSave();
     }
-    setErrors({});
-    onSave();
   };
 
   return (
@@ -70,25 +67,31 @@ export function ProfileForm({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre Completo</Label>
+            <p className="text-muted-foreground text-xs">Mínimo 2 caracteres</p>
             <Input
               id="name"
-              value={profile.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              value={form.data.name}
+              onChange={(e) => form.setField("name", e.target.value)}
+              {...form.ariaProps("name")}
+              className={form.errors.name ? "border-destructive" : ""}
             />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name}</p>
+            {form.errors.name && (
+              <p className="text-destructive text-sm font-medium">{form.errors.name}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
+            <p className="text-muted-foreground text-xs">Correo electrónico válido</p>
             <Input
               id="email"
               type="email"
-              value={profile.email}
-              onChange={(e) => handleChange("email", e.target.value)}
+              value={form.data.email}
+              onChange={(e) => form.setField("email", e.target.value)}
+              {...form.ariaProps("email")}
+              className={form.errors.email ? "border-destructive" : ""}
             />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email}</p>
+            {form.errors.email && (
+              <p className="text-destructive text-sm font-medium">{form.errors.email}</p>
             )}
           </div>
         </div>
@@ -96,27 +99,32 @@ export function ProfileForm({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="phone">Teléfono</Label>
+            <p className="text-muted-foreground text-xs">Teléfono válido (10 dígitos)</p>
             <Input
               id="phone"
-              value={profile.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
+              value={form.data.phone}
+              onChange={(e) => form.setField("phone", e.target.value.replace(/\D/g, ""))}
+              maxLength={10}
+              {...form.ariaProps("phone")}
+              className={form.errors.phone ? "border-destructive" : ""}
             />
-            {errors.phone && (
-              <p className="text-destructive text-sm">{errors.phone}</p>
+            {form.errors.phone && (
+              <p className="text-destructive text-sm font-medium">{form.errors.phone}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Rol</Label>
+            <p className="text-muted-foreground text-xs">Rol asignado (solo lectura)</p>
             <Input
               id="role"
-              value={profile.role}
+              value={form.data.role}
               disabled
               className="bg-muted"
             />
           </div>
         </div>
 
-        <Button onClick={validateAndSave} className="w-full" disabled={isSaving}>
+        <Button onClick={handleSave} className="w-full" disabled={isSaving || hasErrors}>
           {isSaving ? "Guardando..." : "Guardar Cambios"}
         </Button>
       </CardContent>

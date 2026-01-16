@@ -21,12 +21,14 @@ interface DatePickerWithRangeProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
   value?: CustomDateRange | undefined;
   onChange?: (range: CustomDateRange | undefined) => void;
+  onDateRangeChange?: (range: CustomDateRange | undefined) => void;
 }
 
 export function DatePickerWithRange({
   className,
   value,
   onChange,
+  onDateRangeChange,
   ...props
 }: DatePickerWithRangeProps) {
   const isMobile = useIsMobile();
@@ -47,6 +49,12 @@ export function DatePickerWithRange({
   const handleDateChange = (
     newDate: { from?: Date; to?: Date } | undefined
   ) => {
+    // Si tenemos onDateRangeChange (el nuevo prop), lo usamos
+    if (onDateRangeChange) {
+      onDateRangeChange(newDate as CustomDateRange | undefined);
+    }
+    
+    // Mantener compatibilidad con onChange existente
     if (onChange) {
       onChange(newDate as CustomDateRange | undefined);
     } else {

@@ -99,6 +99,8 @@ export function SupplierForm({
     onClose();
   };
 
+  const hasErrors = Object.keys(form.errors).length > 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -128,12 +130,13 @@ export function SupplierForm({
                   required
                   aria-invalid={Boolean(form.errors.name)}
                   aria-describedby="name-help"
+                  className={form.errors.name ? "border-destructive" : ""}
                 />
                 <span id="name-help" className="sr-only">
                   Nombre mínimo 2 caracteres
                 </span>
                 {form.errors.name && (
-                  <p className="text-destructive text-sm">{form.errors.name}</p>
+                  <p className="text-destructive text-sm font-medium">{form.errors.name}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -151,12 +154,13 @@ export function SupplierForm({
                   required
                   aria-invalid={Boolean(form.errors.contactPerson)}
                   aria-describedby="contactPerson-help"
+                  className={form.errors.contactPerson ? "border-destructive" : ""}
                 />
                 <span id="contactPerson-help" className="sr-only">
                   Persona de contacto requerida
                 </span>
                 {form.errors.contactPerson && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.contactPerson}
                   </p>
                 )}
@@ -167,7 +171,7 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <p className="text-muted-foreground text-xs">
-                  Formato de correo válido
+                  Formato de correo válido (ej: usuario@dominio.com)
                 </p>
                 <Input
                   id="email"
@@ -180,12 +184,13 @@ export function SupplierForm({
                   required
                   aria-invalid={Boolean(form.errors.email)}
                   aria-describedby="email-help"
+                  className={form.errors.email ? "border-destructive" : ""}
                 />
                 <span id="email-help" className="sr-only">
                   Email válido requerido
                 </span>
                 {form.errors.email && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.email}
                   </p>
                 )}
@@ -193,7 +198,7 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono *</Label>
                 <p className="text-muted-foreground text-xs">
-                  Solo dígitos, código local o +593
+                  Solo dígitos, código local o +593 (10 dígitos)
                 </p>
                 <Input
                   id="phone"
@@ -205,12 +210,13 @@ export function SupplierForm({
                   required
                   aria-invalid={Boolean(form.errors.phone)}
                   aria-describedby="phone-help"
+                  className={form.errors.phone ? "border-destructive" : ""}
                 />
                 <span id="phone-help" className="sr-only">
                   Teléfono ecuatoriano válido requerido
                 </span>
                 {form.errors.phone && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.phone}
                   </p>
                 )}
@@ -220,6 +226,9 @@ export function SupplierForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="businessName">Razón Social</Label>
+                <p className="text-muted-foreground text-xs">
+                  Nombre legal de la empresa (opcional)
+                </p>
                 <Input
                   id="businessName"
                   value={form.data.businessName}
@@ -227,9 +236,10 @@ export function SupplierForm({
                     form.setField("businessName", e.target.value)
                   }
                   placeholder="Razón social de la empresa"
+                  className={form.errors.businessName ? "border-destructive" : ""}
                 />
                 {form.errors.businessName && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.businessName}
                   </p>
                 )}
@@ -237,7 +247,7 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="taxId">RUC</Label>
                 <p className="text-muted-foreground text-xs">
-                  Debe ser un RUC ecuatoriano válido
+                  Debe ser un RUC ecuatoriano válido (13 dígitos)
                 </p>
                 <Input
                   id="taxId"
@@ -248,12 +258,13 @@ export function SupplierForm({
                   placeholder="1234567890001"
                   aria-invalid={Boolean(form.errors.taxId)}
                   aria-describedby="taxId-help"
+                  className={form.errors.taxId ? "border-destructive" : ""}
                 />
                 <span id="taxId-help" className="sr-only">
                   RUC ecuatoriano válido
                 </span>
                 {form.errors.taxId && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.taxId}
                   </p>
                 )}
@@ -263,11 +274,14 @@ export function SupplierForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">Ciudad</Label>
+                <p className="text-muted-foreground text-xs">
+                  Ciudad principal de operaciones
+                </p>
                 <Select
                   value={form.data.city}
                   onValueChange={(value) => form.setField("city", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={form.errors.city ? "border-destructive" : ""}>
                     <SelectValue placeholder="Selecciona una ciudad" />
                   </SelectTrigger>
                   <SelectContent>
@@ -279,17 +293,20 @@ export function SupplierForm({
                   </SelectContent>
                 </Select>
                 {form.errors.city && (
-                  <p className="text-destructive text-sm">{form.errors.city}</p>
+                  <p className="text-destructive text-sm font-medium">{form.errors.city}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
+                <p className="text-muted-foreground text-xs">
+                  Tipo de productos que suministra
+                </p>
                 <Select
                   value={form.data.category}
                   onValueChange={(value) => form.setField("category", value)}
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={form.errors.category ? "border-destructive" : ""}>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -301,7 +318,7 @@ export function SupplierForm({
                   </SelectContent>
                 </Select>
                 {form.errors.category && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.category}
                   </p>
                 )}
@@ -310,15 +327,19 @@ export function SupplierForm({
 
             <div className="space-y-2">
               <Label htmlFor="address">Dirección</Label>
+              <p className="text-muted-foreground text-xs">
+                Dirección completa (Calle, Nro, Referencia)
+              </p>
               <Textarea
                 id="address"
                 value={form.data.address}
                 onChange={(e) => form.setField("address", e.target.value)}
                 placeholder="Dirección completa del proveedor"
                 rows={2}
+                className={form.errors.address ? "border-destructive" : ""}
               />
               {form.errors.address && (
-                <p className="text-destructive text-sm">
+                <p className="text-destructive text-sm font-medium">
                   {form.errors.address}
                 </p>
               )}
@@ -329,6 +350,9 @@ export function SupplierForm({
                 <Label htmlFor="contactPhone">
                   Teléfono de contacto adicional
                 </Label>
+                <p className="text-muted-foreground text-xs">
+                  Opcional. Solo dígitos.
+                </p>
                 <Input
                   id="contactPhone"
                   value={form.data.contactPhone}
@@ -339,9 +363,10 @@ export function SupplierForm({
                     )
                   }
                   placeholder="0987654321"
+                  className={form.errors.contactPhone ? "border-destructive" : ""}
                 />
                 {form.errors.contactPhone && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.contactPhone}
                   </p>
                 )}
@@ -360,12 +385,13 @@ export function SupplierForm({
                   placeholder="https://www.ejemplo.com"
                   aria-invalid={Boolean(form.errors.website)}
                   aria-describedby="website-help"
+                  className={form.errors.website ? "border-destructive" : ""}
                 />
                 <span id="website-help" className="sr-only">
                   URL debe comenzar con http:// o https://
                 </span>
                 {form.errors.website && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.website}
                   </p>
                 )}
@@ -375,13 +401,16 @@ export function SupplierForm({
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentTerms">Términos de pago</Label>
+                <p className="text-muted-foreground text-xs">
+                  Condiciones de crédito
+                </p>
                 <Select
                   value={form.data.paymentTerms}
                   onValueChange={(value) =>
                     form.setField("paymentTerms", value)
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={form.errors.paymentTerms ? "border-destructive" : ""}>
                     <SelectValue placeholder="Selecciona términos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -393,13 +422,16 @@ export function SupplierForm({
                   </SelectContent>
                 </Select>
                 {form.errors.paymentTerms && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.paymentTerms}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deliveryTime">Tiempo de entrega</Label>
+                <p className="text-muted-foreground text-xs">
+                  Estimado (ej: 3-5 días)
+                </p>
                 <Input
                   id="deliveryTime"
                   value={form.data.deliveryTime}
@@ -407,9 +439,10 @@ export function SupplierForm({
                     form.setField("deliveryTime", e.target.value.trim())
                   }
                   placeholder="ej: 3-5 días"
+                  className={form.errors.deliveryTime ? "border-destructive" : ""}
                 />
                 {form.errors.deliveryTime && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.deliveryTime}
                   </p>
                 )}
@@ -434,12 +467,13 @@ export function SupplierForm({
                   placeholder="0.00"
                   aria-invalid={Boolean(form.errors.minimumOrder)}
                   aria-describedby="minimumOrder-help"
+                  className={form.errors.minimumOrder ? "border-destructive" : ""}
                 />
                 <span id="minimumOrder-help" className="sr-only">
                   Pedido mínimo debe ser ≥ 0
                 </span>
                 {form.errors.minimumOrder && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.minimumOrder}
                   </p>
                 )}
@@ -450,7 +484,7 @@ export function SupplierForm({
               <div className="space-y-2">
                 <Label htmlFor="rating">Calificación (1-5)</Label>
                 <p className="text-muted-foreground text-xs">
-                  Selecciona un valor entre 1 y 5
+                  Evaluación del proveedor
                 </p>
                 <Select
                   value={form.data.rating?.toString() || "5"}
@@ -458,7 +492,7 @@ export function SupplierForm({
                     form.setField("rating", parseInt(value))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={form.errors.rating ? "border-destructive" : ""}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -470,20 +504,23 @@ export function SupplierForm({
                   </SelectContent>
                 </Select>
                 {form.errors.rating && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.rating}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
+                <p className="text-muted-foreground text-xs">
+                  Estado actual del proveedor
+                </p>
                 <Select
                   value={form.data.status}
                   onValueChange={(value: string) =>
                     form.setField("status", value)
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={form.errors.status ? "border-destructive" : ""}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -492,7 +529,7 @@ export function SupplierForm({
                   </SelectContent>
                 </Select>
                 {form.errors.status && (
-                  <p className="text-destructive text-sm">
+                  <p className="text-destructive text-sm font-medium">
                     {form.errors.status}
                   </p>
                 )}
@@ -501,15 +538,19 @@ export function SupplierForm({
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notas adicionales</Label>
+              <p className="text-muted-foreground text-xs">
+                Información interna relevante
+              </p>
               <Textarea
                 id="notes"
                 value={form.data.notes}
                 onChange={(e) => form.setField("notes", e.target.value)}
                 placeholder="Información adicional sobre el proveedor"
                 rows={3}
+                className={form.errors.notes ? "border-destructive" : ""}
               />
               {form.errors.notes && (
-                <p className="text-destructive text-sm">{form.errors.notes}</p>
+                <p className="text-destructive text-sm font-medium">{form.errors.notes}</p>
               )}
             </div>
           </div>
@@ -517,7 +558,7 @@ export function SupplierForm({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || hasErrors}>
               {isLoading
                 ? "Guardando..."
                 : editingSupplier

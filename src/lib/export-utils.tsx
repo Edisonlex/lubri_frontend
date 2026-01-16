@@ -5,6 +5,8 @@ export * from "./reports/customers-report";
 export * from "./reports/suppliers-report";
 export * from "./reports/users-report";
 export * from "./reports/obsolescence-report";
+export * from "./reports/price-optimization-report";
+export * from "./reports/classification-report";
 
 // Helper functions for data preparation
 export const prepareInventoryData = (products: any[]) => {

@@ -1,4 +1,3 @@
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -18,7 +17,7 @@ export const exportSalesToPDF = ({ headers, data, fileName }: ExportData) => {
       cellPadding: 2,
     },
     headStyles: {
-      fillColor: [34, 139, 34], // Verde para ventas
+      fillColor: [66, 135, 245], // Azul para consistencia
       textColor: 255,
       fontStyle: "bold",
     },
@@ -29,10 +28,12 @@ export const exportSalesToPDF = ({ headers, data, fileName }: ExportData) => {
   });
 
   // Agregar resumen
-  const totalVentas = data.reduce(
-    (sum, row) => sum + parseFloat(row[4] || 0),
-    0
-  );
+  const totalVentas = data.reduce((sum, row) => {
+    // Extraer el valor numérico de la columna Total (índice 4), eliminando símbolos de moneda
+    const valStr = String(row[4] || "").replace(/[^0-9.-]/g, "");
+    return sum + (parseFloat(valStr) || 0);
+  }, 0);
+
   doc.text(
     `Total de Ventas: $${totalVentas.toFixed(2)}`,
     14,

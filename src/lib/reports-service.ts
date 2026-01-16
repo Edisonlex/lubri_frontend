@@ -18,7 +18,9 @@ const handleBackendError = (error: unknown, context: string): boolean => {
   const message = error instanceof Error ? error.message : String(error);
   const isBackendMissing =
     message.includes("Respuesta no JSON del servidor") ||
-    message.includes("La operación falló. El backend puede no estar implementado") ||
+    message.includes(
+      "La operación falló. El backend puede no estar implementado"
+    ) ||
     message.includes("Failed to fetch") ||
     message.includes("NetworkError");
 
@@ -129,7 +131,8 @@ export async function getInventoryAnalyticsWithFallback(): Promise<InventoryAnal
           value: minStock - (product.stock || 0),
         }));
 
-      const cost = (product: LocalProduct) => product.cost ?? product.price * 0.7;
+      const cost = (product: LocalProduct) =>
+        product.cost ?? product.price * 0.7;
       const totalValue = products.reduce(
         (sum, product) => sum + (product.stock || 0) * cost(product),
         0
@@ -367,7 +370,10 @@ export async function getCustomerAnalyticsWithFallback(): Promise<CustomerAnalyt
     );
     const newCustomersThisMonth = customers.filter((customer) => {
       const registrationDate = new Date(customer.registrationDate);
-      return registrationDate >= currentMonthStart && registrationDate <= currentMonthEnd;
+      return (
+        registrationDate >= currentMonthStart &&
+        registrationDate <= currentMonthEnd
+      );
     }).length;
     const localAnalytics: CustomerAnalytics = {
       totalCustomers,
@@ -464,7 +470,10 @@ export async function getCustomerAnalyticsWithFallback(): Promise<CustomerAnalyt
 
       const newCustomersThisMonth = customers.filter((customer) => {
         const registrationDate = new Date(customer.registrationDate);
-        return registrationDate >= currentMonthStart && registrationDate <= currentMonthEnd;
+        return (
+          registrationDate >= currentMonthStart &&
+          registrationDate <= currentMonthEnd
+        );
       }).length;
 
       const localAnalytics: CustomerAnalytics = {
@@ -538,31 +547,28 @@ export async function generateSalesReport(
 
 // Función para obtener pronóstico de demanda con fallback
 export async function getDemandForecastWithFallback(): Promise<any[]> {
-  try {
-    // Intentar obtener del backend primero
-    // Nota: Este método no existe en backendApi según tu archivo anterior
-    // Tendrías que agregarlo o ajustar según tu API real
-    // const backendForecast = await backendApi.getDemandForecast();
-    // return backendForecast;
-
-    throw new Error("Backend no implementado para pronóstico de demanda");
-  } catch (error) {
-    const isBackendNotImplemented = handleBackendError(
-      error,
-      "obtener pronóstico de demanda"
-    );
-    if (!isBackendNotImplemented) {
-      console.error(
-        "Error obteniendo pronóstico de demanda del backend:",
-        error
-      );
-    }
-
-    // Fallback a datos locales simulados
+  const BACKEND_ENABLED = isBackendEnabled();
+  if (!BACKEND_ENABLED) {
     try {
       const products = await api.getProducts();
+      const sales = await api.getSales();
       const currentDate = new Date();
       const forecast: any[] = [];
+
+      // Agrupar ventas por producto
+      const salesByProduct: Record<string, number> = {};
+      sales.forEach((sale) => {
+        sale.items.forEach((item) => {
+          salesByProduct[item.productId] =
+            (salesByProduct[item.productId] || 0) + item.quantity;
+        });
+      });
+
+      // Tomar top 5 productos más vendidos
+      const topProducts = products
+        .map((p) => ({ ...p, totalSales: salesByProduct[p.id] || 0 }))
+        .sort((a, b) => b.totalSales - a.totalSales)
+        .slice(0, 5);
 
       // Generar pronóstico para los próximos 6 meses
       for (let i = 1; i <= 6; i++) {
@@ -576,20 +582,20 @@ export async function getDemandForecastWithFallback(): Promise<any[]> {
           year: "numeric",
         });
 
-        // Tomar primeros 5 productos
-        const selectedProducts = products.slice(0, 5);
-
-        for (const product of selectedProducts) {
-          const salesCount =
-            (product as any).salesCount || Math.floor(Math.random() * 100) + 10;
+        for (const product of topProducts) {
+          // Calculo simple: promedio mensual + variacion aleatoria pequeña
+          // Asumimos que totalSales es histórico total. Para hacerlo mejor, necesitaríamos fecha de ventas.
+          // Simplificación: usaremos un factor base del stock actual o ventas históricas
+          const baseDemand = Math.max(product.totalSales / 6, 5); // Promedio estimado o min 5
+          const trendFactor = 1 + (Math.random() * 0.2 - 0.1); // +/- 10%
 
           forecast.push({
             month: monthName,
             productId: product.id,
             productName: product.name,
-            actual: i <= 2 ? Math.floor(salesCount * 0.8) : null, // Solo para meses pasados
-            forecast: Math.floor(salesCount * (1 + Math.random() * 0.3)),
-            confidence: 0.7 + Math.random() * 0.2,
+            actual: null, // Futuro
+            forecast: Math.round(baseDemand * trendFactor),
+            confidence: 0.8 + Math.random() * 0.15,
           });
         }
       }
@@ -597,7 +603,75 @@ export async function getDemandForecastWithFallback(): Promise<any[]> {
       return forecast;
     } catch (localError) {
       console.error("Error generando pronóstico local:", localError);
-      throw error;
+      return []; // Retornar array vacío en lugar de lanzar error para no romper la UI
+    }
+  }
+
+  try {
+    const response = await api.getDemandForecast();
+    return response.forecastByProduct || [];
+  } catch (error) {
+    const isBackendNotImplemented = handleBackendError(
+      error,
+      "obtener pronóstico de demanda"
+    );
+    if (!isBackendNotImplemented) {
+      console.error(
+        "Error obteniendo pronóstico de demanda del backend:",
+        error
+      );
+    }
+
+    // Fallback a datos locales si falla backend
+    try {
+      const products = await api.getProducts();
+      const sales = await api.getSales();
+      const currentDate = new Date();
+      const forecast: any[] = [];
+
+      const salesByProduct: Record<string, number> = {};
+      sales.forEach((sale) => {
+        sale.items.forEach((item) => {
+          salesByProduct[item.productId] =
+            (salesByProduct[item.productId] || 0) + item.quantity;
+        });
+      });
+
+      const topProducts = products
+        .map((p) => ({ ...p, totalSales: salesByProduct[p.id] || 0 }))
+        .sort((a, b) => b.totalSales - a.totalSales)
+        .slice(0, 5);
+
+      for (let i = 1; i <= 6; i++) {
+        const date = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + i,
+          1
+        );
+        const monthName = date.toLocaleString("es-ES", {
+          month: "long",
+          year: "numeric",
+        });
+
+        for (const product of topProducts) {
+          const baseDemand = Math.max(product.totalSales / 6, 5);
+          const trendFactor = 1 + (Math.random() * 0.2 - 0.1);
+
+          forecast.push({
+            month: monthName,
+            productId: product.id,
+            productName: product.name,
+            actual: null,
+            forecast: Math.round(baseDemand * trendFactor),
+            confidence: 0.8 + Math.random() * 0.15,
+          });
+        }
+      }
+
+      return forecast;
+    } catch (localError) {
+      console.error("Error generando pronóstico local:", localError);
+      return [];
     }
   }
 }

@@ -11,7 +11,7 @@ import { api, type Product, classifyProductCategory } from "@/lib/api";
 import { reportsService } from "@/lib/reports-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { exportToExcel, exportToPDF } from "@/lib/export-utils";
+import { exportToExcel, exportAutoClassificationToPDF } from "@/lib/export-utils";
 
 interface DecisionLog {
   productId: string;
@@ -252,7 +252,6 @@ export function ClassificationPanel() {
                       <TableHead className="w-48">Decisión</TableHead>
                       <TableHead className="sm:w-[420px] w-[240px]">Explicación</TableHead>
                       <TableHead className="w-40">Fecha</TableHead>
-                      <TableHead className="w-32">Feedback</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -262,21 +261,11 @@ export function ClassificationPanel() {
                         <TableCell>{l.decision}</TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-normal break-words sm:max-w-[420px] max-w-[240px]">{l.explanation}</TableCell>
                         <TableCell>{new Date(l.timestamp).toLocaleString("es-ES")}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button variant={l.feedback === "up" ? "default" : "outline"} size="sm" onClick={() => applyFeedback(l, "up")}>
-                              <ThumbsUp className="h-4 w-4" />
-                            </Button>
-                            <Button variant={l.feedback === "down" ? "default" : "outline"} size="sm" onClick={() => applyFeedback(l, "down")}>
-                              <ThumbsDown className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))}
                     {logs.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">Sin registros</TableCell>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">Sin registros</TableCell>
                       </TableRow>
                     )}
                   </TableBody>

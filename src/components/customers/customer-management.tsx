@@ -162,12 +162,9 @@ export function CustomerManagement() {
 
       {/* Tabs para vista tabla y mapa */}
       <Tabs defaultValue="table" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 gap-2 p-1 bg-muted/50 rounded-lg">
+        <TabsList className="grid w-full grid-cols-1 gap-2 p-1 bg-muted/50 rounded-lg">
           <TabsTrigger value="table" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Vista Tabla
-          </TabsTrigger>
-          <TabsTrigger value="map" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Vista Mapa
+            Lista de Clientes
           </TabsTrigger>
         </TabsList>
 
@@ -186,11 +183,6 @@ export function CustomerManagement() {
               setIsReminderOpen(true);
             }}
           />
-        </TabsContent>
-
-        <TabsContent value="map" className="space-y-6">
-          {/* Mapa de clientes con GIS */}
-          <CustomerMap customers={geoCustomersFromPOS} />
         </TabsContent>
       </Tabs>
 

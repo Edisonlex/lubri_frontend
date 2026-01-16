@@ -17,17 +17,21 @@ import { useRouter } from "next/navigation";
 interface AnalyticsHeaderProps {
   selectedPeriod: string;
   onPeriodChange: (period: string) => void;
+  onDateRangeChange?: (range: { from: Date; to: Date } | undefined) => void;
   title?: string;
   subtitle?: string;
   hideQuickLinks?: boolean;
+  hideFilters?: boolean;
 }
 
 export function AnalyticsHeader({
   selectedPeriod,
   onPeriodChange,
+  onDateRangeChange,
   title = "Análisis & Reportes",
   subtitle = "Dashboards interactivos y reportes avanzados",
   hideQuickLinks = false,
+  hideFilters = false,
 }: AnalyticsHeaderProps) {
   const [showFilters, setShowFilters] = useState(false);
   const router = useRouter();
@@ -44,9 +48,7 @@ export function AnalyticsHeader({
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-balance">
             {title}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {subtitle}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
         </div>
 
         {/* Botón de filtros para móvil */}
@@ -91,70 +93,71 @@ export function AnalyticsHeader({
       )}
 
       {/* Controles de Filtro */}
-      <div
-        className={`
-          ${showFilters ? "flex" : "hidden"} 
-          sm:flex flex-col sm:flex-row items-stretch gap-3
-          p-3 sm:p-0 border rounded-lg sm:border-0 bg-card sm:bg-transparent
-        `}
-      >
-        {/* Select de Período */}
-        <div className="flex-1 min-w-0">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Período
-          </label>
-          <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-            <SelectTrigger className="w-full h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1m" className="text-sm">
-                1 Mes
-              </SelectItem>
-              <SelectItem value="3m" className="text-sm">
-                3 Meses
-              </SelectItem>
-              <SelectItem value="6m" className="text-sm">
-                6 Meses
-              </SelectItem>
-              <SelectItem value="1y" className="text-sm">
-                1 Año
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Date Picker */}
-        <div className="flex-1 min-w-0">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Rango Personalizado
-          </label>
-          <DatePickerWithRange>
-            <Button
-              variant="outline"
-              className="w-full h-9 justify-start text-left font-normal text-sm"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              <span>Seleccionar fechas</span>
-            </Button>
-          </DatePickerWithRange>
-        </div>
-
-        {/* Botón de cerrar en móvil */}
-        {showFilters && (
-          <div className="sm:hidden flex items-end pb-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(false)}
-              className="text-muted-foreground"
-            >
-              Cerrar
-            </Button>
+      {!hideFilters && (
+        <div
+          className={`
+            ${showFilters ? "flex" : "hidden"} 
+            sm:flex flex-col sm:flex-row items-stretch gap-3
+            p-3 sm:p-0 border rounded-lg sm:border-0 bg-card sm:bg-transparent
+          `}
+        >
+          {/* Select de Período */}
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              Período
+            </label>
+            <Select value={selectedPeriod} onValueChange={onPeriodChange}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1m" className="text-sm">
+                  1 Mes
+                </SelectItem>
+                <SelectItem value="3m" className="text-sm">
+                  3 Meses
+                </SelectItem>
+                <SelectItem value="6m" className="text-sm">
+                  6 Meses
+                </SelectItem>
+                <SelectItem value="1y" className="text-sm">
+                  1 Año
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-      </div>
 
+          {/* Date Picker */}
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              Rango Personalizado
+            </label>
+            <DatePickerWithRange onDateRangeChange={onDateRangeChange}>
+              <Button
+                variant="outline"
+                className="w-full h-9 justify-start text-left font-normal text-sm"
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Seleccionar fechas</span>
+              </Button>
+            </DatePickerWithRange>
+          </div>
+
+          {/* Botón de cerrar en móvil */}
+          {showFilters && (
+            <div className="sm:hidden flex items-end pb-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(false)}
+                className="text-muted-foreground"
+              >
+                Cerrar
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

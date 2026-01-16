@@ -25,9 +25,10 @@ import {
 
 interface ReportsTabProps {
   customers: any[];
+  dateRange?: { from: Date; to: Date };
 }
 
-export function ReportsTab({ customers }: ReportsTabProps) {
+export function ReportsTab({ customers, dateRange }: ReportsTabProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const companyInfo = {
@@ -58,13 +59,29 @@ export function ReportsTab({ customers }: ReportsTabProps) {
   const handleSalesReport = async (format: "pdf" | "excel") => {
     setLoading("sales");
     try {
-      const sales = await api.getSales();
+      const allSales = await api.getSales();
+      
+      // Filtrar por rango de fechas si existe
+      const sales = dateRange ? allSales.filter(sale => {
+        const saleDate = new Date(sale.date);
+        // Normalizar fechas para comparación sin hora
+        const from = new Date(dateRange.from);
+        from.setHours(0,0,0,0);
+        const to = new Date(dateRange.to);
+        to.setHours(23,59,59,999);
+        return saleDate >= from && saleDate <= to;
+      }) : allSales;
+
       const { headers, data } = prepareSalesData(sales);
 
+      const fileName = dateRange 
+        ? `ventas_${dateRange.from.toISOString().split('T')[0]}_${dateRange.to.toISOString().split('T')[0]}`
+        : "ventas_total";
+
       if (format === "pdf") {
-        exportSalesToPDF({ headers, data, fileName: "ventas" });
+        exportSalesToPDF({ headers, data, fileName });
       } else {
-        exportSalesToExcel({ headers, data, fileName: "ventas", companyInfo });
+        exportSalesToExcel({ headers, data, fileName, companyInfo });
       }
     } catch (error) {
       console.error("Error generando reporte de ventas:", error);

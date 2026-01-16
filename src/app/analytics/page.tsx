@@ -46,6 +46,7 @@ const VALID_TABS = new Set([
 
 export default function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("6m");
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
@@ -97,15 +98,64 @@ export default function AnalyticsPage() {
       ];
 
       const now = new Date();
-      const lastMonths = Array.from({ length: 6 }).map((_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      
+      // Filtrar ventas según período seleccionado o rango personalizado
+      const filteredSales = salesList.filter(sale => {
+        const saleDate = new Date(sale.date);
+        
+        if (dateRange && dateRange.from && dateRange.to) {
+          const from = new Date(dateRange.from);
+          from.setHours(0,0,0,0);
+          const to = new Date(dateRange.to);
+          to.setHours(23,59,59,999);
+          return saleDate >= from && saleDate <= to;
+        }
+
+        // Si no hay rango personalizado, usar selectedPeriod
+        const limitDate = new Date();
+        switch (selectedPeriod) {
+          case "1m":
+            limitDate.setMonth(now.getMonth() - 1);
+            break;
+          case "3m":
+            limitDate.setMonth(now.getMonth() - 3);
+            break;
+          case "6m":
+            limitDate.setMonth(now.getMonth() - 6);
+            break;
+          case "1y":
+            limitDate.setFullYear(now.getFullYear() - 1);
+            break;
+          default:
+            limitDate.setMonth(now.getMonth() - 6);
+        }
+        return saleDate >= limitDate;
+      });
+
+      // Determinar meses a mostrar en el gráfico
+      let monthsToShow = 6;
+      if (dateRange && dateRange.from && dateRange.to) {
+        // Calcular diferencia en meses
+        monthsToShow = (dateRange.to.getFullYear() - dateRange.from.getFullYear()) * 12 + (dateRange.to.getMonth() - dateRange.from.getMonth()) + 1;
+        monthsToShow = Math.max(1, Math.min(monthsToShow, 12)); // Mínimo 1, máximo 12 para gráfico
+      } else {
+        switch (selectedPeriod) {
+          case "1m": monthsToShow = 1; break;
+          case "3m": monthsToShow = 3; break;
+          case "6m": monthsToShow = 6; break;
+          case "1y": monthsToShow = 12; break;
+        }
+      }
+
+      const lastMonths = Array.from({ length: monthsToShow }).map((_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (monthsToShow - 1 - i), 1);
         return { key: `${d.getFullYear()}-${d.getMonth() + 1}`, label: monthNames[d.getMonth()] };
       });
 
       const monthlyTotals: Record<string, { ventas: number; productos: number }> = {};
       for (const m of lastMonths) monthlyTotals[m.key] = { ventas: 0, productos: 0 };
 
-      salesList.forEach((sale) => {
+      filteredSales.forEach((sale) => {
         const d = new Date(sale.date);
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
         if (monthlyTotals[key]) {
@@ -120,13 +170,13 @@ export default function AnalyticsPage() {
         productos: monthlyTotals[key]?.productos || 0,
       }));
 
-      // Construir distribución por categoría en tiempo real
+      // Construir distribución por categoría en tiempo real (basado en ventas filtradas)
       const productCategoryMap = new Map<string, string>();
       productsList.forEach((p: any) => productCategoryMap.set(p.id, p.category || "Otros"));
 
       const categoryTotals: Record<string, number> = {};
       let totalRevenue = 0;
-      salesList.forEach((sale) => {
+      filteredSales.forEach((sale) => {
         totalRevenue += sale.total;
         sale.items.forEach((it: any) => {
           const cat = productCategoryMap.get(it.productId) || "Otros";
@@ -143,7 +193,7 @@ export default function AnalyticsPage() {
           color: categoryColors[index % categoryColors.length],
         }));
 
-      // Pronóstico simple basado en tendencia de los últimos meses
+      // Pronóstico simple basado en tendencia de los últimos meses (usando datos filtrados o históricos completos si es muy corto)
       const recent = processedSalesData.slice(-4);
       const processedForecastData = recent.map((r, idx) => ({
         month: r.month,
@@ -155,11 +205,11 @@ export default function AnalyticsPage() {
       setCategoryData(processedCategoryData);
       setForecastData(processedForecastData);
       setAnalyticsData({
-        totalSales: salesList.length,
-        totalRevenue: salesList.reduce((sum: number, s: any) => sum + (s.total || 0), 0),
+        totalSales: filteredSales.length,
+        totalRevenue: filteredSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0),
         averageTicket:
-          salesList.length > 0
-            ? salesList.reduce((sum: number, s: any) => sum + (s.total || 0), 0) / salesList.length
+          filteredSales.length > 0
+            ? filteredSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0) / filteredSales.length
             : 0,
         paymentMethods: salesAnalytics.paymentMethods,
       });
@@ -196,12 +246,14 @@ export default function AnalyticsPage() {
               <AnalyticsHeader
                 selectedPeriod={selectedPeriod}
                 onPeriodChange={setSelectedPeriod}
+                onDateRangeChange={setDateRange}
               />
 
               <Suspense fallback={<LoadingState />}>
                 <AnalyticsTabsWrapper
                   selectedPeriod={selectedPeriod}
                   setSelectedPeriod={setSelectedPeriod}
+                  dateRange={dateRange}
                   salesData={salesData}
                   categoryData={categoryData}
                   forecastData={forecastData}
@@ -221,6 +273,7 @@ export default function AnalyticsPage() {
 function AnalyticsTabsWrapper({
   selectedPeriod,
   setSelectedPeriod,
+  dateRange,
   salesData,
   categoryData,
   forecastData,
@@ -301,15 +354,6 @@ function AnalyticsTabsWrapper({
           <span className="hidden sm:inline">Reportes</span>
           <span className="sm:hidden">Rep.</span>
         </TabsTrigger>
-
-
-        <TabsTrigger
-          value="gis"
-          className="text-xs sm:text-sm px-2 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm flex-none min-w-[80px] sm:min-w-[120px]"
-        >
-          <span className="hidden sm:inline">Mapa Geográfico</span>
-          <span className="sm:hidden">GIS</span>
-        </TabsTrigger>
       </TabsList>
 
       <div className="mb-8"></div>
@@ -334,31 +378,15 @@ function AnalyticsTabsWrapper({
         value="inventory"
         className="space-y-3 sm:space-y-4 md:space-y-6"
       >
-        <InventoryRotationTab customers={customers} />
+        <InventoryRotationTab customers={customers} selectedPeriod={selectedPeriod} dateRange={dateRange} />
       </TabsContent>
 
       <TabsContent value="pricing" className="space-y-6">
         <PriceOptimization />
       </TabsContent>
 
-      
-
       <TabsContent value="reports" className="space-y-6">
-        <ReportsTab customers={customers} />
-      </TabsContent>
-
-
-      <TabsContent value="gis" className="space-y-6">
-        <GISProvider>
-          <UniversalMap
-            mode="analytics"
-            height="500px"
-            showControls={true}
-            showFilters={true}
-            showLegend={true}
-            title="Análisis Geográfico de Ventas"
-          />
-        </GISProvider>
+        <ReportsTab customers={customers} dateRange={dateRange} />
       </TabsContent>
     </Tabs>
   );
