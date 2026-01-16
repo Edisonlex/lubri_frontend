@@ -6,12 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Settings, Brain, ListTree, ThumbsUp, ThumbsDown, Info, Download, CheckCircle } from "lucide-react";
 import { api, type Product, classifyProductCategory } from "@/lib/api";
 import { reportsService } from "@/lib/reports-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { exportToExcel, exportAutoClassificationToPDF } from "@/lib/export-utils";
+import { exportToExcel, exportAutoClassificationToPDF, exportToPDF } from "@/lib/export-utils";
 
 interface DecisionLog {
   productId: string;
@@ -31,8 +47,10 @@ export function ClassificationPanel() {
   const [loading, setLoading] = useState(true);
   const [classification, setClassification] = useState<any>(null);
   const [logs, setLogs] = useState<DecisionLog[]>([]);
-
-  
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingCorrections, setPendingCorrections] = useState<DecisionLog[]>([]);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isRecalculateConfirmOpen, setIsRecalculateConfirmOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -91,19 +109,29 @@ export function ClassificationPanel() {
     toast.message("Feedback registrado");
   };
 
-  const applyCorrections = async () => {
+  const handleApplyCorrectionsClick = () => {
     const toFix = logs.filter((l) => l.predictedCategory !== l.currentCategory);
     if (toFix.length === 0) {
-      toast.info("No hay correcciones pendientes");
+      toast.info("No hay correcciones pendientes", {
+        description: "Todos los productos están clasificados correctamente según el modelo.",
+      });
       return;
     }
+    setPendingCorrections(toFix);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmCorrections = async () => {
+    setIsConfirmOpen(false);
     try {
       await Promise.all(
-        toFix.map((l) =>
+        pendingCorrections.map((l) =>
           api.updateProduct(l.productId, { category: l.predictedCategory as any })
         )
       );
-      toast.success("Categorías actualizadas automáticamente");
+      toast.success("Categorías actualizadas", {
+        description: `Se aplicaron correcciones a ${pendingCorrections.length} productos.`,
+      });
       recalculate();
     } catch (e) {
       console.error(e);
@@ -122,10 +150,10 @@ export function ClassificationPanel() {
     ];
     const fileName = `Resumen_Clasificacion_${new Date().toISOString().split("T")[0]}`;
     if (type === "excel") {
-      exportToExcel({ headers, data, fileName });
+      exportToExcel({ headers, data, fileName, title: "Resumen de Clasificación" });
       toast.success("Resumen exportado a Excel");
     } else {
-      exportToPDF({ headers, data, fileName });
+      exportToPDF({ headers, data, fileName, title: "Resumen de Clasificación", orientation: "portrait" });
       toast.success("Resumen exportado a PDF");
     }
   };
@@ -172,11 +200,18 @@ export function ClassificationPanel() {
                 <CardDescription className="text-xs">Aplicar correcciones sugeridas</CardDescription>
               </CardHeader>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-                <Button onClick={applyCorrections} size="sm" className="w-full sm:w-auto">
+                <Button onClick={handleApplyCorrectionsClick} size="sm" className="w-full sm:w-auto">
                   <CheckCircle className="h-4 w-4 mr-2" /> Aplicar correcciones
                 </Button>
-                <Button variant="outline" onClick={recalculate} size="sm" className="w-full sm:w-auto">
-                  <ListTree className="h-4 w-4 mr-2" /> Recalcular
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsRecalculateConfirmOpen(true)} 
+                  size="sm" 
+                  className="w-full sm:w-auto"
+                  disabled={isRecalculating}
+                >
+                  <ListTree className={`h-4 w-4 mr-2 ${isRecalculating ? "animate-spin" : ""}`} /> 
+                  {isRecalculating ? "Analizando..." : "Recalcular"}
                 </Button>
               </CardContent>
             </Card>
@@ -199,13 +234,22 @@ export function ClassificationPanel() {
             <CardHeader className="p-4">
               <CardTitle className="text-sm">Resumen de Clasificación</CardTitle>
               <CardDescription className="text-xs">Agrupación automática por categoría y precisión</CardDescription>
-              <div className="mt-2 flex items-center gap-2">
-                <Button variant="default" size="sm" onClick={() => exportSummary("excel")}>
-                  <Download className="h-4 w-4 mr-2" /> Exportar resumen
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => exportSummary("pdf")}>
-                  <Download className="h-4 w-4 mr-2" /> Exportar PDF
-                </Button>
+              <div className="mt-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="default" size="sm">
+                      <Download className="h-4 w-4 mr-2" /> Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => exportSummary("excel")}>
+                      Exportar a Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportSummary("pdf")}>
+                      Exportar a PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="p-4">
@@ -277,6 +321,81 @@ export function ClassificationPanel() {
 
         
       </Tabs>
+
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Confirmar Correcciones Automáticas</DialogTitle>
+            <DialogDescription>
+              Se aplicarán cambios de categoría a {pendingCorrections.length} productos. 
+              Revise los cambios antes de confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto min-h-[200px] border rounded-md">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Categoría Actual</TableHead>
+                  <TableHead>Nueva Categoría</TableHead>
+                  <TableHead className="text-right">Confianza</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingCorrections.map((c) => (
+                  <TableRow key={c.productId}>
+                    <TableCell className="font-medium">{c.productName}</TableCell>
+                    <TableCell className="text-muted-foreground line-through decoration-destructive">
+                      {c.currentCategory}
+                    </TableCell>
+                    <TableCell className="text-green-600 font-medium flex items-center gap-2">
+                      {c.predictedCategory}
+                      <CheckCircle className="h-3 w-3" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {(c.confidence * 100).toFixed(0)}%
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmCorrections}>
+              Confirmar y Aplicar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRecalculateConfirmOpen} onOpenChange={setIsRecalculateConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Recálculo</DialogTitle>
+            <DialogDescription>
+              Esta acción analizará nuevamente todos los productos ({products.length}) utilizando las reglas de clasificación actuales.
+              <br /><br />
+              Esto actualizará los registros de decisión y las estadísticas del panel, pero no modificará los datos de los productos en la base de datos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRecalculateConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              setIsRecalculateConfirmOpen(false);
+              recalculate();
+            }}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

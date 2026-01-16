@@ -26,7 +26,7 @@ export interface Preferences {
 
 interface PreferencesContextType {
   preferences: Preferences;
-  setPreferences: (p: Preferences) => void;
+  setPreferences: React.Dispatch<React.SetStateAction<Preferences>>;
   savePreferences: (p?: Preferences) => void;
   isNotificationsEnabledForRole: (role: UserRole) => boolean;
 }

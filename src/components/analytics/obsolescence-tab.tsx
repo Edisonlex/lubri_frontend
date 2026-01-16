@@ -303,10 +303,10 @@ export function ObsolescenceTab({
       new Date().toISOString().split("T")[0]
     }`;
     if (type === "excel") {
-      exportToExcel({ headers, data, fileName });
+      exportToExcel({ headers, data, fileName, title: "Reporte de Obsolescencia" });
       toast.success("Reporte exportado a Excel");
     } else {
-      exportToPDF({ headers, data, fileName });
+      exportToPDF({ headers, data, fileName, title: "Reporte de Obsolescencia" });
       toast.success("Reporte exportado a PDF");
     }
   };
@@ -428,50 +428,99 @@ export function ObsolescenceTab({
 
           <div className="grid gap-4 py-4">
             {actionType === "discount" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="discount" className="text-right">
-                  Porcentaje %
-                </Label>
-                <Input
-                  id="discount"
-                  type="number"
-                  placeholder="20"
-                  className="col-span-3"
-                  value={actionValue}
-                  onChange={(e) => setActionValue(e.target.value)}
-                />
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="discount" className="text-right">
+                    Porcentaje %
+                  </Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    placeholder="20"
+                    className="col-span-3"
+                    value={actionValue}
+                    onChange={(e) => setActionValue(e.target.value)}
+                  />
+                </div>
+                {selectedProduct && !isNaN(parseFloat(actionValue)) && parseFloat(actionValue) > 0 && (
+                  <div className="rounded-md bg-muted p-3 text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Precio Actual:</span>
+                      <span>${(selectedProduct.price || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-destructive">
+                      <span>Descuento ({actionValue}%):</span>
+                      <span>-${((selectedProduct.price || 0) * (parseFloat(actionValue) / 100)).toFixed(2)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-medium">
+                      <span>Nuevo Precio Estimado:</span>
+                      <span className="text-green-600">
+                        ${((selectedProduct.price || 0) * (1 - parseFloat(actionValue) / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {actionType === "bundle" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="bundle" className="text-right">
-                  Etiqueta
-                </Label>
-                <Input
-                  id="bundle"
-                  placeholder="Ej: GRATIS Filtro"
-                  className="col-span-3"
-                  value={actionValue}
-                  onChange={(e) => setActionValue(e.target.value)}
-                />
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="bundle" className="text-right">
+                    Etiqueta
+                  </Label>
+                  <Input
+                    id="bundle"
+                    placeholder="Ej: GRATIS Filtro"
+                    className="col-span-3"
+                    value={actionValue}
+                    onChange={(e) => setActionValue(e.target.value)}
+                  />
+                </div>
+                {selectedProduct && actionValue.trim() && (
+                  <div className="rounded-md bg-muted p-3 text-sm">
+                    <span className="text-muted-foreground block mb-1">Vista previa del nombre:</span>
+                    <span className="font-medium">{selectedProduct.name} + {actionValue}</span>
+                  </div>
+                )}
               </div>
             )}
 
             {actionType === "return" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="return" className="text-right">
-                  Cantidad
-                </Label>
-                <Input
-                  id="return"
-                  type="number"
-                  placeholder="Cantidad a devolver"
-                  className="col-span-3"
-                  value={actionValue}
-                  max={selectedProduct?.stock}
-                  onChange={(e) => setActionValue(e.target.value)}
-                />
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="return" className="text-right">
+                    Cantidad
+                  </Label>
+                  <Input
+                    id="return"
+                    type="number"
+                    placeholder="Cantidad a devolver"
+                    className="col-span-3"
+                    value={actionValue}
+                    max={selectedProduct?.stock}
+                    onChange={(e) => setActionValue(e.target.value)}
+                  />
+                </div>
+                {selectedProduct && !isNaN(parseInt(actionValue)) && parseInt(actionValue) > 0 && (
+                  <div className="rounded-md bg-muted p-3 text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Stock Actual:</span>
+                      <span>{selectedProduct.stock} unidades</span>
+                    </div>
+                    <div className="flex justify-between text-destructive">
+                      <span>Devolución:</span>
+                      <span>-{parseInt(actionValue)} unidades</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-medium">
+                      <span>Nuevo Stock:</span>
+                      <span>{(selectedProduct.stock || 0) - parseInt(actionValue)} unidades</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Valor recuperado estimado: ${((selectedProduct.cost || 0) * parseInt(actionValue)).toFixed(2)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -578,20 +627,21 @@ export function ObsolescenceTab({
             Tendencia de productos obsoletos e impacto
           </CardDescription>
           <div className="mt-2 flex items-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => exportHistory("excel")}
-            >
-              <Download className="h-4 w-4 mr-2" /> Exportar resumen
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportHistory("pdf")}
-            >
-              <Download className="h-4 w-4 mr-2" /> Exportar PDF
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm">
+                  <Download className="h-4 w-4 mr-2" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportHistory("excel")}>
+                  Exportar a Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportHistory("pdf")}>
+                  Exportar a PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
         <CardContent className={isMobile ? "px-2 pb-3" : "px-6 pb-6"}>

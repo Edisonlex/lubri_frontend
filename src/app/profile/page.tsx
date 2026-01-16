@@ -182,8 +182,12 @@ export default function ProfilePage() {
   const handleSavePreferences = async () => {
     try {
       setIsSaving(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
       savePreferences();
+
+      if (currentUser) {
+        await api.updatePreferences(currentUser.id, preferences);
+      }
 
       await api.createAuditLog({
         action: "Actualización de preferencias de usuario",

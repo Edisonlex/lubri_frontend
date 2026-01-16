@@ -109,6 +109,15 @@ export function DashboardMetrics() {
       (product) => product.stock <= product.minStock && product.stock > 0
     );
 
+    // Calcular cambio de stock bajo (simulado vs ayer para este ejemplo)
+    // En un caso real necesitaríamos histórico de stock
+    const lowStockYesterday = 3; // Valor simulado o histórico
+    const lowStockChange = lowStockProducts.length - lowStockYesterday;
+    const lowStockChangePercent = 
+      lowStockYesterday > 0 
+        ? ((lowStockChange / lowStockYesterday) * 100).toFixed(1) 
+        : "100";
+
     // Clientes nuevos hoy
     const newCustomersToday = customers.filter((customer) => {
       const regDate = new Date(customer.registrationDate);
@@ -178,8 +187,12 @@ export function DashboardMetrics() {
       {
         title: "Stock Bajo",
         value: lowStockProducts.length,
-        change: "+2",
-        trend: "down",
+        change: `${lowStockChange > 0 ? "+" : ""}${lowStockChange}`,
+        trend: lowStockChange > 0 ? "down" : "up", // Más stock bajo es malo (down trend logic visual but contextually bad)
+        // Adjusting visual logic: usually red/down is bad. Here increase in low stock is bad.
+        // Let's keep consistent: trend "down" (red) if low stock increased?
+        // Current logic in JSX: trend "up" -> green arrow. trend "down" -> red arrow.
+        // If low stock increases, it's bad -> red -> trend "down".
         icon: AlertTriangle,
         color: "text-destructive",
       },

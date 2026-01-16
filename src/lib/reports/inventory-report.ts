@@ -3,17 +3,33 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { ExportData } from "./types";
 
-export const exportToPDF = ({ headers, data, fileName }: ExportData) => {
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "A4" });
+export const exportToPDF = ({ headers, data, fileName, title, orientation = "landscape" }: ExportData) => {
+  const doc = new jsPDF({ orientation, unit: "pt", format: "A4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
   doc.setFontSize(14);
   doc.text(
-    `Reporte de Inventario - ${new Date().toLocaleDateString()}`,
+    `${title || "Reporte de Inventario"} - ${new Date().toLocaleDateString()}`,
     40,
     40
   );
+
+  // Definir estilos de columna solo si es el reporte de inventario predeterminado (landscape)
+  // o si coincide con la estructura esperada de inventario.
+  // Para otros reportes, dejamos que autoTable calcule o usamos undefined.
+  const isInventoryReport = (!title || title.includes("Inventario")) && orientation === "landscape";
+  
+  const columnStyles = isInventoryReport ? {
+    0: { cellWidth: 80 }, // SKU
+    1: { cellWidth: 160 }, // Nombre
+    2: { cellWidth: 90 }, // Marca
+    3: { cellWidth: 90 }, // Categoría
+    4: { cellWidth: 75 }, // Precio
+    5: { cellWidth: 70 }, // Stock
+    6: { cellWidth: 140 }, // Proveedor
+    7: { cellWidth: 80 }, // Ubicación
+  } : {};
 
   autoTable(doc, {
     head: [headers],
@@ -34,16 +50,7 @@ export const exportToPDF = ({ headers, data, fileName }: ExportData) => {
     alternateRowStyles: {
       fillColor: [240, 240, 240],
     },
-    columnStyles: {
-      0: { cellWidth: 80 }, // SKU
-      1: { cellWidth: 160 }, // Nombre
-      2: { cellWidth: 90 }, // Marca
-      3: { cellWidth: 90 }, // Categoría
-      4: { cellWidth: 75 }, // Precio
-      5: { cellWidth: 70 }, // Stock
-      6: { cellWidth: 140 }, // Proveedor
-      7: { cellWidth: 80 }, // Ubicación
-    },
+    columnStyles: columnStyles,
     margin: { top: 60, left: 30, right: 30 },
     tableWidth: pageWidth - 60,
     didDrawPage: (dataHook: any) => {
@@ -63,6 +70,7 @@ export const exportToExcel = ({
   data,
   fileName,
   companyInfo,
+  title,
 }: ExportData) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet([]);
@@ -74,7 +82,7 @@ export const exportToExcel = ({
     [companyInfo?.phone ? `Tel: ${companyInfo.phone}` : ""],
     [companyInfo?.email ? `Email: ${companyInfo.email}` : ""],
     [""],
-    ["REPORTE DE INVENTARIO"],
+    [title || "REPORTE DE INVENTARIO"],
     [`Generado el: ${new Date().toLocaleDateString()}`],
     [`Total de productos: ${data.length}`],
     [""],

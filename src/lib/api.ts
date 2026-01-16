@@ -1,5 +1,7 @@
 // src/lib/api.ts - ARCHIVO COMPLETO UNIFICADO
 
+import { backendApi, isBackendEnabled } from "./backend-api";
+
 // ===== INTERFACES UNIFICADAS =====
 export interface Product {
   id: string;
@@ -1472,12 +1474,74 @@ const mockResetCodes: Record<string, string> = {};
 export const api = {
   // Productos
   getProducts: async (): Promise<Product[]> => {
+    if (isBackendEnabled()) {
+      try {
+        // Fetch a large number of products or implement pagination handling
+        const response = await backendApi.getProducts(1, 1000);
+        // Map backend product to frontend product if necessary
+        return response.data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          stock: p.stock,
+          cost: p.cost || 0,
+          // Default values for fields that might be missing in backend response
+          brand: p.brand || "Generico",
+          category: (p.category || "otros") as string,
+          minStock: 10, // Default or map from backend if available
+          maxStock: 100,
+          sku: p.barcode || "SKU-UNK",
+          supplier: "Proveedor",
+          location: "Almacén",
+          lastUpdated: p.updatedAt || new Date().toISOString(),
+          status: "active" as const,
+          rotationRate: 0, // Should be calculated or returned by backend
+          profitMargin: 0,
+          imageUrl: p.imageUrl,
+        }));
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener productos del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve([...mockProducts]), 500);
     });
   },
 
   getProductById: async (id: string): Promise<Product | null> => {
+    if (isBackendEnabled()) {
+      try {
+        const response = await backendApi.getProduct(id);
+        const p = response.data;
+        return {
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          stock: p.stock,
+          cost: p.cost || 0,
+          brand: p.brand || "Generico",
+          category: (p.category || "otros") as string,
+          minStock: 10,
+          maxStock: 100,
+          sku: p.barcode || "SKU-UNK",
+          supplier: "Proveedor",
+          location: "Almacén",
+          lastUpdated: p.updatedAt || new Date().toISOString(),
+          status: "active" as const,
+          rotationRate: 0,
+          profitMargin: 0,
+          imageUrl: p.imageUrl,
+        };
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener producto del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => {
         const product = mockProducts.find((p) => p.id === id) || null;
@@ -1487,6 +1551,30 @@ export const api = {
   },
 
   createProduct: async (product: Omit<Product, "id">): Promise<Product> => {
+    if (isBackendEnabled()) {
+      try {
+        // Adapt frontend product to backend expectation
+        const backendPayload = {
+          name: product.name,
+          price: product.price,
+          cost: product.cost,
+          stock: product.stock,
+          category: product.category,
+          barcode: product.barcode || product.sku,
+          brand: product.brand,
+          // Add other fields as needed by backend
+        };
+        const response = await backendApi.createProduct(backendPayload);
+        // Return consistent Product interface
+        return {
+          ...product,
+          id: response.data.id,
+          lastUpdated: new Date().toISOString(),
+        };
+      } catch (error) {
+        console.warn("Fallo al crear producto en backend, usando mock:", error);
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => {
         const inferred = classifyProductCategory(product);
@@ -1506,6 +1594,45 @@ export const api = {
     id: string,
     product: Partial<Product>
   ): Promise<Product> => {
+    if (isBackendEnabled()) {
+      try {
+        const backendPayload: any = { ...product };
+        if (product.sku) backendPayload.barcode = product.sku;
+
+        const response = await backendApi.updateProduct(id, backendPayload);
+        // Return updated product (simplified mapping)
+        return {
+          id: response.data.id,
+          name: response.data.name,
+          price: response.data.price,
+          stock: response.data.stock,
+          cost: response.data.cost || product.cost || 0,
+          // Ensure required fields exist with defaults
+          category: (response.data.category ||
+            product.category ||
+            "otros") as string,
+          brand: response.data.brand || product.brand || "Generico",
+          minStock: product.minStock || 10,
+          maxStock: product.maxStock || 100,
+          sku: response.data.barcode || product.sku || "SKU-UNK",
+          supplier: product.supplier || "Proveedor",
+          location: product.location || "Almacén",
+          status: (product.status || "active") as
+            | "active"
+            | "inactive"
+            | "discontinued",
+          lastUpdated: response.data.updatedAt || new Date().toISOString(),
+          rotationRate: product.rotationRate || 0,
+          profitMargin: product.profitMargin || 0,
+          imageUrl: response.data.imageUrl || product.imageUrl,
+        };
+      } catch (error) {
+        console.warn(
+          "Fallo al actualizar producto en backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const index = mockProducts.findIndex((p) => p.id === id);
@@ -1569,6 +1696,33 @@ export const api = {
 
   // Clientes
   getCustomers: async (): Promise<Customer[]> => {
+    if (isBackendEnabled()) {
+      try {
+        const response = await backendApi.getCustomers(1, 1000);
+        return response.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          email: c.email || "",
+          phone: c.phone || "",
+          address: c.address || "",
+          city: "Desconocida",
+          idNumber: c.ruc || "N/A",
+          customerType: "individual" as const, // Default
+          vehicles: [],
+          totalPurchases: 0,
+          lastPurchase: new Date().toISOString(),
+          registrationDate: c.createdAt,
+          status: "active" as const,
+          notes: "",
+          preferredContact: "phone" as const,
+        }));
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener clientes del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve([...mockCustomers]), 500);
     });
@@ -1629,6 +1783,36 @@ export const api = {
 
   // Ventas
   getSales: async (): Promise<Sale[]> => {
+    if (isBackendEnabled()) {
+      try {
+        const response = await backendApi.getSales(1, 1000);
+        return response.data.map((s) => ({
+          id: s.id,
+          date: s.createdAt,
+          customerId: s.customerId || null,
+          customerName: s.customer?.name || "Cliente Ocasional",
+          items: s.products.map((p) => ({
+            productId: p.productId,
+            productName: "Producto " + p.productId, // Backend might not return name in items
+            quantity: p.quantity,
+            unitPrice: p.price,
+            subtotal: p.quantity * p.price,
+          })),
+          subtotal: s.total / 1.12, // Approximation if tax not provided
+          tax: s.total - s.total / 1.12,
+          total: s.total,
+          paymentMethod: s.paymentMethod as any,
+          status: s.status as any,
+          userId: "1", // Default
+          invoiceNumber: "FAC-" + s.id.substring(0, 8),
+        }));
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener ventas del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve([...mockSales]), 500);
     });
@@ -1765,6 +1949,30 @@ export const api = {
 
   // Clasificación automática de productos
   getProductClassification: async (): Promise<any> => {
+    if (isBackendEnabled()) {
+      try {
+        // Use inventory analytics as a proxy or specific endpoint if available
+        const response = await backendApi.getInventoryAnalytics();
+        // Transform if necessary, or return mock structure if backend structure is different
+        // Ideally backend should provide a dedicated endpoint for classification details
+        return {
+          byCategory: response.data.categoryDistribution.reduce(
+            (acc: any, item) => {
+              // Mocking the list of products per category from distribution since analytics only gives counts
+              acc[item.name.toLowerCase()] = [];
+              return acc;
+            },
+            {}
+          ),
+          accuracyEstimate: 0.95, // Placeholder
+        };
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener clasificación del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => {
         const byCategory = mockProducts.reduce(
@@ -1814,6 +2022,8 @@ export const api = {
 
   // Productos obsoletos
   getObsoleteProducts: async (): Promise<any> => {
+    // Note: Backend implementation for obsolete products might be different or require specific endpoint
+    // If backend has this endpoint, use it here.
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -1874,6 +2084,25 @@ export const api = {
 
   // Proveedores
   getSuppliers: async (): Promise<Supplier[]> => {
+    if (isBackendEnabled()) {
+      try {
+        const response = await backendApi.getSuppliers(1, 1000);
+        return response.data.map((s) => ({
+          id: s.id,
+          name: s.name,
+          contactPerson: s.contactPerson || "Contacto",
+          email: s.email || "",
+          phone: s.phone || "",
+          address: s.address || "",
+          status: "active" as const,
+        }));
+      } catch (error) {
+        console.warn(
+          "Fallo al obtener proveedores del backend, usando mock:",
+          error
+        );
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve([...mockSuppliers]), 500);
     });
@@ -1954,6 +2183,21 @@ export const api = {
           reject(new Error("Usuario no encontrado"));
         }
       }, 700);
+    });
+  },
+
+  updatePreferences: async (
+    userId: string,
+    preferences: any
+  ): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log(
+          `Preferencias actualizadas para usuario ${userId}:`,
+          preferences
+        );
+        resolve();
+      }, 500);
     });
   },
 
